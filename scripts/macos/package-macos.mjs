@@ -40,7 +40,7 @@ async function copyPayload(source, destination) {
     'scripts/seed-roadmaps.mjs', 'scripts/seed-supabase.mjs', 'scripts/cache-originals.mjs', 'scripts/purge-expired-surveys.mjs',
     'packages/territories/series.mjs', 'packages/security', 'supabase/migrations',
     'node_modules/@electric-sql/pglite', 'node_modules/@noble/hashes',
-    'package.json', 'docs/offline-macos.md', 'docs/stage-07-acceptance.md', 'docs/stage-08-acceptance.md', 'CHANGELOG.md',
+    'package.json', 'docs', 'CHANGELOG.md',
     'THIRD_PARTY_NOTICES.md', 'licenses',
   ];
   for (const path of relativePaths) {
