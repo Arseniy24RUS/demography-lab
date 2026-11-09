@@ -13,6 +13,8 @@ import { HttpError, invokeRpc, object } from './rpc.mjs';
 import { bearer, sameSecret, authenticate, identify, hostLogin, refresh, logout } from './auth.mjs';
 
 const BODY_LIMIT=1024*1024;
+// The SQL workspace contract permits 5 MiB of state plus the bounded RPC envelope.
+const WORKSPACE_BODY_LIMIT=5*1024*1024+16*1024;
 const MIME=new Map(Object.entries({'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8',
   '.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8',
   '.geojson':'application/geo+json; charset=utf-8','.svg':'image/svg+xml','.ico':'image/x-icon',
@@ -193,8 +195,8 @@ export async function startServer({runtime,host=process.env.DW_OFFLINE_HOST??'0.
     if(path.startsWith('/rest/v1/rpc/')) {
       if(request.method!=='POST')throw new HttpError(405,'METHOD_NOT_ALLOWED');
       if(isSurvey&&(request.headers.authorization||request.headers.cookie))throw new HttpError(403,'SURVEY_AUTH_FORBIDDEN');
-      const input=await body(request);
       const name=path.slice('/rest/v1/rpc/'.length);
+      const input=await body(request,!isSurvey&&name==='dw_workspace_commit'?WORKSPACE_BODY_LIMIT:BODY_LIMIT);
       const result=await runtime.enqueue(async()=>{
         const identity=isSurvey?null:await authenticate(runtime,bearer(request));
         return invokeRpc(runtime.db,runtime.catalogue,name,input,identity,isSurvey);
@@ -225,7 +227,7 @@ export async function startServer({runtime,host=process.env.DW_OFFLINE_HOST??'0.
       }
       if(path==='/offline/auth/identify')return json(response,200,await runtime.enqueue(()=>identify(runtime,input)));
       if(path==='/offline/auth/register'||path==='/offline/auth/recover')
-        return json(response,410,{code:'SIMPLE_IDENTIFICATION_REQUIRED',message:'Введите email и ФИО',details:null,hint:null});
+        return json(response,410,{code:'SIMPLE_IDENTIFICATION_REQUIRED',message:'Введите email',details:null,hint:null});
       if(path==='/auth/v1/token'&&context.url.searchParams.get('grant_type')==='refresh_token')
         return json(response,200,await runtime.enqueue(()=>refresh(runtime,input)));
       if(path==='/auth/v1/logout') {

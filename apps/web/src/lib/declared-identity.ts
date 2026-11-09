@@ -6,9 +6,19 @@ export interface WorkshopIdentitySession {
   user: { id: string; email?: string | null; user_metadata?: { full_name?: string } };
 }
 export interface EntryError { message: string; code?: string }
+export interface ProfileRequired { profileRequired: true; email: string }
 interface RpcResult { data: unknown; error: EntryError | null }
 const uuid = /^[a-f\d]{8}-(?:[a-f\d]{4}-){3}[a-f\d]{12}$/iu;
 const token = /^[a-f\d]{64}$/u;
+
+/** A first visit is a lookup, not an account creation or a profile update. */
+export function profileRequired(value: unknown, email: string): ProfileRequired | null {
+  if (!value || typeof value !== 'object' || !('profileRequired' in value)) return null;
+  const row = value as Record<string, unknown>;
+  if (row.profileRequired !== true || row.email !== email || 'session' in row)
+    throw new Error('Сервер вернул некорректные сведения о входе.');
+  return { profileRequired: true, email };
+}
 
 function parseSession(value: unknown): WorkshopIdentitySession {
   const session = (value as { session?: WorkshopIdentitySession } | null)?.session;
@@ -75,12 +85,19 @@ export class DeclaredIdentity {
       return { data: null, error: { message: 'fetch: server unavailable', code: 'NETWORK' } };
     }
   }
-  async identify(input: { email: string; fullName: string }) {
+  async identify(input: { email: string; fullName?: string }): Promise<WorkshopIdentitySession | ProfileRequired> {
+    const generation = ++this.generation;
+    const email = input.email.normalize('NFC').trim().toLowerCase();
     const { data, error } = await this.request('dw_identify', {
-      p_email: input.email.normalize('NFC').trim().toLowerCase(),
-      p_full_name: input.fullName.normalize('NFC').trim().replace(/\s+/gu, ' '),
+      p_email: email,
+      ...(input.fullName === undefined ? {} : {
+        p_full_name: input.fullName.normalize('NFC').trim().replace(/\s+/gu, ' '),
+      }),
     });
+    if (generation !== this.generation) throw new Error('IDENTITY_CHANGED');
     if (error) throw Object.assign(new Error(error.message), { code: error.code });
+    const required = profileRequired(data, email);
+    if (required) return required;
     const session = parseSession(data);
     this.set(session);
     return session;
@@ -123,12 +140,13 @@ export class DeclaredIdentity {
     return result;
   }
   async signOut() {
+    const generation = ++this.generation;
     const saved = this.session ?? this.read();
     if (saved) {
       const { error } = await this.request('dw_entry_logout', { p_token: saved.access_token });
       if (error && error.message !== 'AUTH_REQUIRED')
         throw new Error('Не удалось завершить вход. Проверьте соединение и повторите действие.');
     }
-    this.set(null);
+    if (generation === this.generation) this.set(null);
   }
 }

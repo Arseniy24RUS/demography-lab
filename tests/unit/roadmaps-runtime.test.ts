@@ -154,7 +154,7 @@ describe('Roadmap asynchronous identity and selection boundaries', () => {
     });
     expect(result.current.snapshot).toBeNull();
     expect(result.current.index).toBeNull();
-    expect(result.current.error).toContain('Введите email и ФИО');
+    expect(result.current.error).toContain('Введите email на странице входа.');
   });
   it('keeps projector selection when an earlier projection arrives late', async () => {
     const old = deferred<ReturnType<typeof runtimeProjection>>();

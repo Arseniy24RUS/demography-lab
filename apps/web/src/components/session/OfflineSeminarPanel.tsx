@@ -75,7 +75,7 @@ export function OfflineSeminarPanel({ state, actions }: { state: SessionAreaStat
               {status.lastBackup ? <p className="offline-backup-path">{status.lastBackup.path}</p> : null}
             </div>
             <div><span className="offline-eyebrow">Вход участников</span>
-              <strong>Только email и ФИО</strong>
+              <strong>Вход по email</strong>
               <p className="session-hint">Покажите QR-код платформы. После входа участник продолжит свою работу.</p></div>
           </div>
           <div className="session-action-row">
@@ -110,7 +110,7 @@ export function OfflineSeminarPanel({ state, actions }: { state: SessionAreaStat
           <section><h3>2. Мастерская</h3>
             <QRCodeSVG value={link.href} size={220} level="M" marginSize={4} title="Открыть демографическую мастерскую" />
             <a href={link.href} target="_blank" rel="noreferrer">{link.origin}</a>
-            <p className="session-hint">Откройте мастерскую и укажите email и ФИО.</p>
+            <p className="session-hint">Откройте мастерскую и введите email. При первом входе укажите ФИО.</p>
           </section>
         </div>
       </Modal> : null}

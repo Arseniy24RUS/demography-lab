@@ -400,7 +400,8 @@ describe('Workshop data and projection isolation', { concurrency: false }, () =>
     await expectPermission(asUser(db, e.alice, (tx) => tx.query('select private.dw_family_list($1)', [e.sessionId])));
     await expectPermission(asUser(db, e.alice, (tx) => tx.query("select private.dw_workshop_touch($1,'forged',true)", [e.sessionId])));
     const status = await db.query("select relname,relrowsecurity from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='private' and relname like 'dw_%' and relkind='r'");
-    assert.equal(status.rows.length, 32); assert.ok(status.rows.every((r) => r.relrowsecurity));
+    // Stage 8.2 adds the actor-owned notebook and its durable operation receipts.
+    assert.equal(status.rows.length, 34); assert.ok(status.rows.every((r) => r.relrowsecurity));
   });
 
   it('returns only allowlisted projector fields and minimal session-scoped realtime notifications', async () => {

@@ -366,14 +366,14 @@ export function useSession(options: {
     applySnapshot,
   ]);
 
-  const run = async (label: string, work: () => Promise<void>) => {
+  const run = async <T>(label: string, work: () => Promise<T>): Promise<T> => {
     if (runLock.current) throw new Error('Дождитесь завершения текущего действия.');
     runLock.current = true;
     setState((s) => ({ ...s, busy: label, error: null, notice: null }));
     try {
-      await work();
+      return await work();
     } catch (e) {
-      setState((s) => ({ ...s, error: errorText(e) }));
+      if (apiErrorCode(e) !== 'IDENTITY_CHANGED') setState((s) => ({ ...s, error: errorText(e) }));
       if (apiErrorCode(e) === 'REVISION_CONFLICT') await refreshing.current();
       throw e;
     } finally {
@@ -410,8 +410,9 @@ export function useSession(options: {
   };
   const actions: SessionAreaActions = {
     identify: (input) => run('Открываем вашу работу', async () => {
-      await requireApi().identify(input);
+      const result = await requireApi().identify(input);
       setState((s) => ({ ...s, notice: null }));
+      return result;
     }),
     joinOpenSession: (id) => run('Открываем занятие', async () => {
       if (!uuidPattern.test(id)) throw new Error('Некорректный адрес занятия.');
@@ -453,16 +454,32 @@ export function useSession(options: {
           invitation: null,
           availableSessions: [],
           auth: { status: 'signed-out', email: null, userId: null },
-          notice: 'Вы вышли. Чтобы продолжить работу, введите тот же email и ФИО.',
+          notice: 'Вы вышли. Чтобы продолжить работу, введите тот же email.',
         }));
       }),
-    saveProfile: (fullName) =>
+    saveProfile: (fullName, expectedRevision) =>
       run('Сохраняем ФИО', async () => {
         const name = fullName.trim();
         if (name.length < 2 || name.length > 200)
           throw new Error('Укажите ФИО длиной от 2 до 200 символов.');
-        await requireApi().saveProfile(name, current.current.bootstrap?.profile?.revision ?? 0);
-        const bootstrap = await requireApi().bootstrap();
+        const identity = current.current.auth.userId;
+        const token = identityToken.current;
+        const stillCurrent = () => current.current.auth.userId === identity && identityToken.current === token;
+        const a = requireApi();
+        try {
+          await a.saveProfile(name, expectedRevision ?? current.current.bootstrap?.profile?.revision ?? 0);
+        } catch (cause) {
+          if (!stillCurrent()) return;
+          if (apiErrorCode(cause) === 'REVISION_CONFLICT') {
+            const bootstrap = await a.bootstrap();
+            if (!stillCurrent()) return;
+            setState((s) => ({ ...s, bootstrap }));
+          }
+          throw cause;
+        }
+        if (!stillCurrent()) return;
+        const bootstrap = await a.bootstrap();
+        if (!stillCurrent()) return;
         setState((s) => ({ ...s, bootstrap, notice: 'Профиль сохранён.' }));
       }),
     createSession: (input) =>

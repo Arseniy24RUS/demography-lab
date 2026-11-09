@@ -19,7 +19,7 @@ function signedIn(fullName: string, teacher = false): SessionAreaState {
   };
 }
 function props(state = base) {
-  return { state, actions: { signOut: vi.fn().mockResolvedValue(undefined) },
+  return { state, actions: { signOut: vi.fn().mockResolvedValue(undefined), saveProfile: vi.fn().mockResolvedValue(undefined) },
     onOpenEntry: vi.fn(), onSignedOut: vi.fn(), onError: vi.fn() };
 }
 afterEach(cleanup);
@@ -79,5 +79,50 @@ describe('shared workspace account controls', () => {
     view.rerender(createElement(AccountControls, { ...p, state: base }));
     expect(screen.queryByText('returning@example.test')).toBeNull();
     expect(screen.getByRole('button', { name: 'Войти' })).toBeTruthy();
+  });
+
+  it('opens the saved name for editing, cancels unchanged, and saves an explicit revision', async () => {
+    const p = props(signedIn('Иванов Иван Иванович', true));
+    render(createElement(AccountControls, p));
+    fireEvent.click(screen.getByRole('button', { name: 'Изменить ФИО' }));
+    const input = screen.getByLabelText('Фамилия, имя, отчество') as HTMLInputElement;
+    expect(input.value).toBe('Иванов Иван Иванович');
+    fireEvent.change(input, { target: { value: 'Черновик имени' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Отмена' }));
+    expect(p.actions.saveProfile).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Изменить ФИО' }));
+    expect((screen.getByLabelText('Фамилия, имя, отчество') as HTMLInputElement).value).toBe('Иванов Иван Иванович');
+    fireEvent.change(screen.getByLabelText('Фамилия, имя, отчество'), { target: { value: 'Иванов Пётр Иванович' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
+    await waitFor(() => expect(p.actions.saveProfile).toHaveBeenCalledWith('Иванов Пётр Иванович', 1));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  });
+
+  it('retains a failed edit and compares a changed server profile before an explicit retry', async () => {
+    const p = props(signedIn('Иванов Иван Иванович'));
+    p.actions.saveProfile.mockRejectedValueOnce(new Error('Профиль изменён в другом окне.'));
+    const view = render(createElement(AccountControls, p));
+    fireEvent.click(screen.getByRole('button', { name: 'Изменить ФИО' }));
+    fireEvent.change(screen.getByLabelText('Фамилия, имя, отчество'), { target: { value: 'Мой вариант ФИО' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('другом окне'));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText('Фамилия, имя, отчество')));
+    const updated = { ...p.state, bootstrap: { ...p.state.bootstrap!,
+      profile: { ...p.state.bootstrap!.profile!, fullName: 'Изменение в другом окне', revision: 2 } } };
+    view.rerender(createElement(AccountControls, { ...p, state: updated }));
+    expect((screen.getByLabelText('Фамилия, имя, отчество') as HTMLInputElement).value).toBe('Мой вариант ФИО');
+    expect(screen.getByRole('status').textContent).toContain('Изменение в другом окне');
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить мой вариант' }));
+    await waitFor(() => expect(p.actions.saveProfile).toHaveBeenLastCalledWith('Мой вариант ФИО', 2));
+  });
+
+  it('closes a profile editor immediately on logout or a different identity', () => {
+    const p = props(signedIn('Первый участник'));
+    const view = render(createElement(AccountControls, p));
+    fireEvent.click(screen.getByRole('button', { name: 'Изменить ФИО' }));
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    view.rerender(createElement(AccountControls, { ...p, state: signedIn('Другой участник') }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByText('Первый участник')).toBeNull();
   });
 });

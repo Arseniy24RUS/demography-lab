@@ -1,6 +1,6 @@
 import { randomUuid } from '../../../../packages/security/crypto.mjs';
 import { createClient, type SupabaseClient, type Session } from '@supabase/supabase-js';
-import { DeclaredIdentity, type WorkshopIdentitySession } from './declared-identity';
+import { DeclaredIdentity, profileRequired, type WorkshopIdentitySession } from './declared-identity';
 import { localIdentify } from './offline-api';
 import {
   parseBootstrap,
@@ -15,12 +15,13 @@ import type {
   SessionScope,
   SharedPracticeBundle,
   AvailableSession,
+  SessionAreaActions,
 } from '../../../../packages/collaboration/types';
 import type { CloudConfig } from './cloud-config';
 
 const messages: Record<string, string> = {
-  AUTH_REQUIRED: 'Введите email и ФИО, чтобы продолжить свою работу.',
-  EMAIL_NOT_VERIFIED: 'Введите email и ФИО на странице входа.',
+  AUTH_REQUIRED: 'Введите email, чтобы продолжить свою работу.',
+  EMAIL_NOT_VERIFIED: 'Введите email на странице входа.',
   PROFILE_REQUIRED: 'Укажите ФИО, чтобы участвовать в занятии.',
   FORBIDDEN: 'Для этого действия недостаточно прав. Обновите состояние занятия.',
   NOT_FOUND: 'Занятие или запись недоступны этой учётной записи.',
@@ -40,6 +41,7 @@ const messages: Record<string, string> = {
   INVALID_INVITATION: 'Приглашение недоступно. Откройте ссылку преподавателя или выберите занятие из списка.',
   JOIN_CLOSED: 'Преподаватель закрыл вход в это занятие.',
   RATE_LIMITED: 'Слишком много попыток. Повторите ввод после окончания защитного интервала.',
+  IDENTITY_CHANGED: 'Вход уже изменён в другом окне.',
   REGION_UNAVAILABLE: 'Для этого региона ещё нет подготовленного текста на сервере.',
   REGION_TAKEN: 'Программу уже взял другой участник. Обновите карту и выберите свободный регион.',
   COMPLETION_NOTE_REQUIRED:
@@ -128,6 +130,7 @@ export class SessionApiError extends Error {
 export class SessionApi {
   readonly client: SupabaseClient;
   private readonly entry: DeclaredIdentity | null;
+  private identityAttempt = 0;
   private receipts = new Map<string, { fingerprint: string; id: string }>();
   constructor(readonly config: CloudConfig) {
     this.entry = !config.offline && config.identification === 'declared-email' ? new DeclaredIdentity(config) : null;
@@ -149,37 +152,49 @@ export class SessionApi {
   async identitySession(): Promise<WorkshopIdentitySession | null> {
     if (this.entry) return this.entry.getSession();
     const { data, error } = await this.client.auth.getSession();
-    if (error) throw new Error('Не удалось открыть вашу работу. Введите email и ФИО снова.');
+    if (error) throw new Error('Не удалось открыть вашу работу. Введите email снова.');
     return data.session;
   }
-  async identify(input: { email: string; fullName: string }) {
+  async identify(input: { email: string; fullName?: string }): ReturnType<SessionAreaActions['identify']> {
+    const attempt = ++this.identityAttempt;
     const email = input.email.normalize('NFC').trim().toLowerCase();
-    const fullName = input.fullName.normalize('NFC').trim().replace(/\s+/gu, ' ');
+    const fullName = input.fullName?.normalize('NFC').trim().replace(/\s+/gu, ' ');
     if (!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/u.test(email) || email.length > 254 ||
-      fullName.length < 2 || fullName.length > 200) throw new SessionApiError('INVALID_INPUT');
+      (fullName !== undefined && (fullName.length < 2 || fullName.length > 200)))
+      throw new SessionApiError('INVALID_INPUT');
     if (this.entry) {
-      try { return await this.entry.identify({ email, fullName }); }
+      try {
+        const result = await this.entry.identify({ email, ...(fullName === undefined ? {} : { fullName }) });
+        if (attempt !== this.identityAttempt) throw new Error('IDENTITY_CHANGED');
+        return 'profileRequired' in result ? { status: 'profile-required', email: result.email } : { status: 'signed-in' };
+      }
       catch (error) {
+        if (error instanceof Error && error.message === 'IDENTITY_CHANGED') throw new SessionApiError('IDENTITY_CHANGED');
         if (error instanceof Error && (error.message === 'INVALID_INPUT' || error.message === 'RATE_LIMITED'))
           throw new SessionApiError(error.message);
         throw new Error('Не удалось войти. Проверьте соединение и повторите действие.');
       }
     }
-    if (!this.config.offline) throw new Error('Обновите настройки платформы для входа по email и ФИО.');
-    const { session } = await localIdentify(this.config, { email, fullName });
-    await this.acceptLocalSession(session);
-    return session;
+    if (!this.config.offline) throw new Error('Обновите настройки платформы для входа по email.');
+    const result = await localIdentify(this.config, { email, ...(fullName === undefined ? {} : { fullName }) });
+    if (attempt !== this.identityAttempt) throw new SessionApiError('IDENTITY_CHANGED');
+    const required = profileRequired(result, email);
+    if (required) return { status: 'profile-required', email: required.email };
+    if (!('session' in result)) throw new Error('Локальный сервер вернул некорректный ответ о входе.');
+    await this.acceptLocalSession(result.session);
+    return { status: 'signed-in' };
   }
   async acceptLocalSession(session: Session) {
     if (!this.config.offline) throw new Error('Локальный вход недоступен на этом адресе.');
     const { error } = await this.client.auth.setSession({ access_token: session.access_token, refresh_token: session.refresh_token });
-    if (error) throw new Error('Не удалось сохранить вход. Введите email и ФИО снова.');
+    if (error) throw new Error('Не удалось сохранить вход. Введите email снова.');
   }
   async acceptHostLink(token: string) {
     if (!this.entry) throw new Error('Ссылка преподавателя недоступна на этом адресе.');
     return this.entry.acceptHostLink(token);
   }
   async signOut() {
+    this.identityAttempt += 1;
     this.receipts.clear();
     if (this.entry) return this.entry.signOut();
     const { error } = await this.client.auth.signOut({ scope: 'local' });

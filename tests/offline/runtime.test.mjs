@@ -99,7 +99,7 @@ describe('Production offline runtime: simple identities, domain RPC, isolation a
     assert.equal((await request('/offline/admin/status',{method:'GET',token:hostSession.access_token})).status,200);
   });
 
-  it('identifies through two fields and reuses one participant across case variants, devices and retries',async()=>{
+  it('completes a new profile and reuses one participant across case variants, devices and retries',async()=>{
     const input={email:'  CLAIMED@Example.Test  ',fullName:'  Участник   А  '};
     for(const invalid of[{...input,email:'invalid'}, {...input,fullName:' '}, {...input,role:'host'}, {...input,recoverySecret:privateSecret()}])
       assert.equal((await request('/offline/auth/identify',{json:invalid})).status,400);
@@ -118,7 +118,7 @@ describe('Production offline runtime: simple identities, domain RPC, isolation a
     const boot=await rpc(alice,'dw_bootstrap');assert.equal(boot.canCreateSession,false);assert.equal(boot.profile.fullName,'Участник А');
     assert.equal((await request('/offline/admin/status',{method:'GET',token:aliceSession.access_token})).status,403);
     for(const path of['/offline/auth/register','/offline/auth/recover']) {
-      const obsolete=await request(path,{json:input});assert.equal(obsolete.status,410);assert.equal(obsolete.body.message,'Введите email и ФИО');
+      const obsolete=await request(path,{json:input});assert.equal(obsolete.status,410);assert.equal(obsolete.body.message,'Введите email');
     }
     const denied=await alice.rpc('dw_create_session',{p_operation_id:id(),p_title:'Unauthorized',p_scope:'federal',p_region_id:null});
     assert.ok(denied.error);
@@ -169,7 +169,8 @@ describe('Production offline runtime: simple identities, domain RPC, isolation a
     assert.equal(repeat.body.session.user.id,ids[1]);
     const profiles=(await app.runtime.db.query('select user_id,full_name,revision from public.dw_profiles where user_id=any($1::uuid[])',[ids])).rows;
     assert.equal(profiles.length,3);assert.equal(profiles.find(x=>x.user_id===ids[2]).full_name,'Прежнее имя 2');
-    assert.equal(profiles.find(x=>x.user_id===ids[1]).revision,2);
+    assert.equal(profiles.find(x=>x.user_id===ids[1]).full_name,'Прежнее имя 1');
+    assert.equal(profiles.find(x=>x.user_id===ids[1]).revision,1);
   });
 
   it('uses identical Unicode canonicalization for new entries and old device identities',async()=>{

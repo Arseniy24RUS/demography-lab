@@ -67,7 +67,7 @@ it('upgrades the actual five-migration 0.7 schema with existing memberships, aut
     const identity=await runtime.enqueue(()=>authenticate(runtime,entered.session.access_token));
     const rpc=(name,args={})=>runtime.enqueue(()=>invokeRpc(runtime.db,runtime.catalogue,name,args,identity,false));
     const boot=await rpc('dw_bootstrap');
-    assert.equal(boot.sessions[0].id,lesson.id);assert.equal(boot.profile.fullName,'Уточнённое ФИО');
+    assert.equal(boot.sessions[0].id,lesson.id);assert.equal(boot.profile.fullName,'Прежний слушатель 0');
     const restored=await rpc('dw_barriers_snapshot',{p_session_id:lesson.id});
     assert.equal(restored.barriers[0].id,previous.barriers[0].id);
     assert.equal(restored.barriers[0].authorId,previous.barriers[0].authorId);
@@ -80,6 +80,7 @@ it('upgrades the actual five-migration 0.7 schema with existing memberships, aut
     const teacherBoot=await runtime.enqueue(()=>invokeRpc(runtime.db,runtime.catalogue,'dw_bootstrap',{},teacherIdentity,false));
     assert.equal(teacherBoot.canCreateSession,true);assert.equal(teacherBoot.sessions[0].id,lesson.id);
     assert.equal(teacherBoot.sessions[0].role,'host');
+    assert.equal(teacherBoot.profile.fullName,'Преподаватель прежнего выпуска');
     assert.equal((await runtime.db.query('select owner_id from public.dw_sessions where id=$1',[lesson.id])).rows[0].owner_id,host.user.id);
     await runtime.close();runtime=null;
     runtime=await openRuntime({dataDir,testSeed:async()=>({fixture:true})});

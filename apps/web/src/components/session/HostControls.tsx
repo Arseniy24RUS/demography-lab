@@ -206,7 +206,7 @@ export function HostControls({
             <div>
               <p className="session-invitation-label">{session.title}</p>
               <p className="session-hint">
-                Участники откроют ссылку, введут email и ФИО и сразу присоединятся к занятию.
+                Участники откроют ссылку и введут email. ФИО потребуется только при первом входе.
               </p>
             </div>
           </div>

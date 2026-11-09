@@ -48,7 +48,7 @@ export function ReviewExport({
     risks: 'review',
     monitoring: 'review',
   };
-  async function download(versionId: string, format: 'docx' | 'pdf' | 'json' | 'zip') {
+  async function download(versionId: string, format: 'docx' | 'pdf') {
     await task.run(async () => {
       const version = await controller.actions.readVersion(snapshot.roadmapId, versionId);
       if (!mounted.current) return;
@@ -261,7 +261,7 @@ export function ReviewExport({
                     <Download size={22} />
                   </div>
                   <div className="rm-export-buttons">
-                    {(['docx', 'pdf', 'json', 'zip'] as const).map((format) => (
+                    {(['docx', 'pdf'] as const).map((format) => (
                       <button
                         key={format}
                         className="button button-secondary"
@@ -269,7 +269,7 @@ export function ReviewExport({
                         onClick={() => void download(version.id, format)}
                       >
                         <Download size={15} />
-                        {format === 'zip' ? 'Комплект ZIP' : format.toUpperCase()}
+                        {format.toUpperCase()}
                       </button>
                     ))}
                   </div>
@@ -311,7 +311,7 @@ export function ReviewExport({
           </div>
         ) : (
           <EmptySection>
-            Зафиксируйте первую версию, чтобы скачать DOCX, PDF, JSON или полный комплект. После
+            Зафиксируйте первую версию, чтобы скачать дорожную карту в DOCX или PDF. После
             этого команда сможет продолжить редактирование.
           </EmptySection>
         )}

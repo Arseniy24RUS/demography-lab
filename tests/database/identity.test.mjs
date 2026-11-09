@@ -79,14 +79,17 @@ it('keeps non-reserved operator emails separate and expires a promoted participa
   await fail(restore(claimant),'AUTH_REQUIRED');await fail(identify(mail),'FORBIDDEN');
 });
 
-it('joins available sessions idempotently and preserves work and live name updates across fresh identification',async()=>{
+it('joins idempotently, keeps a saved name during login, and broadcasts explicit profile edits',async()=>{
   const host=await owner(),a=await identify(id()+'@example.test','Прежнее Имя'),s=await create(host),sid=s.session.id;
   const choices=await rpc(a,'dw_available_sessions');assert(choices.some(x=>x.id===sid));
   assert.deepEqual(Object.keys(choices.find(x=>x.id===sid)).sort(),['id','regionId','scope','title']);
   const op=id();await join(a,sid,op);await join(a,sid,op);
   assert.equal((await db.query('select count(*) n from public.dw_memberships where session_id=$1 and user_id=$2',[sid,a.user.id])).rows[0].n,1);
   const before=await rpc(host,'dw_session_snapshot',{p_session_id:sid});
-  const b=await identify(a.user.email,'Новое Имя');assert.equal(a.user.id,b.user.id);
+  const b=await identify(a.user.email,'Неявная замена при входе');assert.equal(a.user.id,b.user.id);
+  const profile=(await rpc(b,'dw_bootstrap')).profile;
+  assert.equal(profile.fullName,'Прежнее Имя');
+  await rpc(b,'dw_save_profile',{p_operation_id:id(),p_expected_revision:profile.revision,p_full_name:'Новое Имя'});
   const after=await rpc(host,'dw_session_snapshot',{p_session_id:sid});
   assert(after.cursor>before.cursor);assert.equal(after.members.find(m=>m.userId===a.user.id).fullName,'Новое Имя');
   assert.equal((await rpc(b,'dw_bootstrap')).sessions.find(x=>x.id===sid).role,'participant');

@@ -3,7 +3,7 @@ import type { Locator, Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { unzipSync, strFromU8 } from 'fflate';
-import type { RoadmapSnapshot } from '../../packages/roadmaps/types';
+import type { RoadmapSnapshot, RoadmapVersion } from '../../packages/roadmaps/types';
 import {
   ALICE_NAME,
   HOST_NAME,
@@ -161,12 +161,17 @@ async function freeze(page: Page, title: string) {
     page.locator('.rm-version').getByRole('heading', { name: title, exact: true }),
   ).toBeVisible();
 }
-async function download(page: Page, format: 'JSON' | 'DOCX' | 'PDF', title?: string) {
+async function download(page: Page, format: 'DOCX' | 'PDF', title?: string) {
   const row = title
     ? page
         .locator('.rm-version')
         .filter({ has: page.getByRole('heading', { name: title, exact: true }) })
     : page.locator('.rm-version').first();
+  const material = page.waitForResponse(response => response.ok() && (
+    response.url().endsWith('/dw_roadmap_version') ||
+    (response.url().endsWith('/dw_entry_rpc') && response.request().postDataJSON()?.p_method === 'dw_roadmap_version')
+  ));
+  await expect(row.getByRole('button', { name: /^(JSON|ZIP)$/u })).toHaveCount(0);
   const pending = page.waitForEvent('download');
   await row.getByRole('button', { name: format, exact: true }).click();
   const file = await pending;
@@ -175,7 +180,8 @@ async function download(page: Page, format: 'JSON' | 'DOCX' | 'PDF', title?: str
   expect(path).toBeTruthy();
   const bytes = await readFile(path!);
   expect(bytes.length).toBeGreaterThan(500);
-  return { bytes, filename: file.suggestedFilename() };
+  const version = await (await material).json() as RoadmapVersion;
+  return { bytes, filename: file.suggestedFilename(), version };
 }
 
 test('touch corrections are shared, historical scenarios stay pinned and exported versions keep their exact statistics', async ({
@@ -203,9 +209,7 @@ test('touch corrections are shared, historical scenarios stay pinned and exporte
     page.getByText('Факт закреплён с его источником и значением.', { exact: true }),
   ).toBeVisible();
   await freeze(page, 'До актуализации');
-  const originalExport = JSON.parse(
-    (await download(page, 'JSON', 'До актуализации')).bytes.toString('utf8'),
-  );
+  const originalExport = (await download(page, 'DOCX', 'До актуализации')).version;
   await tab(page, 'Диагностика');
 
   const context = await freshContext(browser, true);
@@ -327,34 +331,29 @@ test('touch corrections are shared, historical scenarios stay pinned and exporte
     await noOverflow(page, 1440);
 
     await freeze(page, 'После актуализации');
-    const json = JSON.parse(
-      (await download(page, 'JSON', 'После актуализации')).bytes.toString('utf8'),
-    );
+    const word = await download(page, 'DOCX', 'После актуализации');
+    const json = word.version;
     expect(createHash('sha256').update(json.canonicalJson).digest('hex')).toBe(
-      json.contentHash.value,
+      json.sha256,
     );
     expect(JSON.parse(json.canonicalJson)).toEqual(json.snapshot);
     expect(json.snapshot.schemaVersion).toBe(2);
     expect(
-      json.snapshot.statistics.find(
-        (entry: { metricId: string }) => entry.metricId === 'births_total',
-      ).seriesId,
-    ).toBe(updatedId);
+      json.snapshot.statistics?.find((entry) => entry.metricId === 'births_total'),
+    ).toMatchObject({ seriesId: updatedId });
     expect(
-      json.snapshot.series.find((entry: { id: string }) => entry.id === updatedId).sourceReference,
-    ).toBe(SOURCE);
-    const word = await download(page, 'DOCX', 'После актуализации');
+      json.snapshot.series.find((entry) => entry.id === updatedId),
+    ).toMatchObject({ sourceReference: SOURCE });
     const xml = strFromU8(unzipSync(new Uint8Array(word.bytes))['word/document.xml']!);
     expect(xml).toContain('Ардатовский');
     expect(xml).toContain(SOURCE);
     expect(xml).toContain('155');
     const pdf = await download(page, 'PDF', 'После актуализации');
     expect(pdf.bytes.subarray(0, 5).toString()).toBe('%PDF-');
-    const repeatedOriginal = JSON.parse(
-      (await download(page, 'JSON', 'До актуализации')).bytes.toString('utf8'),
-    );
+    expect(pdf.version.canonicalJson).toBe(json.canonicalJson);
+    const repeatedOriginal = (await download(page, 'DOCX', 'До актуализации')).version;
     expect(repeatedOriginal.canonicalJson).toBe(originalExport.canonicalJson);
-    expect(repeatedOriginal.contentHash).toEqual(originalExport.contentHash);
+    expect(repeatedOriginal.sha256).toBe(originalExport.sha256);
 
     const projectorPayloads: Array<Promise<unknown>> = [];
     page.context().once('page', (opened) => {

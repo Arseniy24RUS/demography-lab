@@ -12,7 +12,7 @@ const response = (value: unknown, status = 200) => new Response(JSON.stringify(v
 
 describe('declared classroom identity', () => {
   beforeEach(() => { localStorage.clear(); });
-  it('uses two declared fields and creates no email, OTP or registration request', async () => {
+  it('sends the name only when completing a first profile and creates no email, OTP or registration request', async () => {
     const send = vi.fn<typeof fetch>().mockResolvedValue(response({ session: session() }));
     const api = new DeclaredIdentity(config, send);
     const changes: unknown[] = [];
@@ -83,7 +83,7 @@ describe('declared classroom identity', () => {
     await api.rpc('dw_bootstrap', {});
     expect(JSON.parse(String(send.mock.calls[2][1]?.body)).p_token).toBe('a'.repeat(64));
   });
-  it('invalidates a revoked session and allows a fresh two-field entry', async () => {
+  it('invalidates a revoked session and allows a fresh email-only entry', async () => {
     const send = vi.fn<typeof fetch>()
       .mockResolvedValueOnce(response({ session: session() }))
       .mockResolvedValueOnce(response({ message: 'AUTH_REQUIRED', code: '42501' }, 401))
@@ -92,6 +92,43 @@ describe('declared classroom identity', () => {
     await api.identify({ email: 'listener@example.test', fullName: 'Иванов Иван Иванович' });
     expect((await api.rpc('dw_bootstrap', {})).error?.message).toBe('AUTH_REQUIRED');
     expect(localStorage.getItem('dw-entry-v1:identity.example.test')).toBeNull();
-    expect((await api.identify({ email: 'listener@example.test', fullName: 'Иванов Иван Иванович' })).user.id).toBe(session().user.id);
+    const fresh = await api.identify({ email: 'listener@example.test' });
+    expect('user' in fresh && fresh.user.id).toBe(session().user.id);
+  });
+
+  it('returns an unknown-email name step without storing a session or notifying login listeners', async () => {
+    const send = vi.fn<typeof fetch>().mockResolvedValue(response({ profileRequired: true, email: 'new@example.test' }));
+    const api = new DeclaredIdentity(config, send);
+    const changed = vi.fn(); api.onChange(changed);
+    expect(await api.identify({ email: ' New@Example.TEST ' })).toEqual({ profileRequired: true, email: 'new@example.test' });
+    expect(JSON.parse(String(send.mock.calls[0][1]?.body))).toEqual({ p_email: 'new@example.test' });
+    expect(changed).not.toHaveBeenCalled();
+    expect(localStorage.getItem('dw-entry-v1:identity.example.test')).toBeNull();
+  });
+
+  it('restores the saved name with an email-only request', async () => {
+    const send = vi.fn<typeof fetch>().mockResolvedValue(response({ session: session() }));
+    const api = new DeclaredIdentity(config, send);
+    const result = await api.identify({ email: 'listener@example.test' });
+    expect('user' in result && result.user.user_metadata?.full_name).toBe('Иванов Иван Иванович');
+    expect(JSON.parse(String(send.mock.calls[0][1]?.body))).toEqual({ p_email: 'listener@example.test' });
+  });
+
+  it('rejects a mismatched first-visit email rather than assigning a different profile', async () => {
+    const send = vi.fn<typeof fetch>().mockResolvedValue(response({ profileRequired: true, email: 'different@example.test' }));
+    await expect(new DeclaredIdentity(config, send).identify({ email: 'new@example.test' })).rejects.toThrow('некорректные сведения');
+    expect(localStorage.getItem('dw-entry-v1:identity.example.test')).toBeNull();
+  });
+
+  it('does not restore a late login after logout', async () => {
+    let complete!: (response: Response) => void;
+    const send = vi.fn<typeof fetch>().mockImplementation(() => new Promise<Response>((resolve) => { complete = resolve; }));
+    const api = new DeclaredIdentity(config, send);
+    const pending = api.identify({ email: 'listener@example.test' });
+    const rejected = expect(pending).rejects.toThrow('IDENTITY_CHANGED');
+    await api.signOut();
+    complete(response({ session: session() }));
+    await rejected;
+    expect(localStorage.getItem('dw-entry-v1:identity.example.test')).toBeNull();
   });
 });

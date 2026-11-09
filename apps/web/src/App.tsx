@@ -1,14 +1,12 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   BookOpen,
-  Download,
   HelpCircle,
   Library,
   FileText,
   Link2,
   CheckCircle2,
   AlertCircle,
-  Upload,
   X,
   Send,
   Map as MapIcon,
@@ -24,7 +22,7 @@ import type { CorpusManifest, PracticeCatalog, CorpusDocument, RichVariant } fro
 import { loadManifest, loadCatalog, loadDocument, readable } from './lib/corpus';
 import { loadFamilyCatalog, EXTERNAL_CATALOG_FAMILY } from './lib/family-catalog';
 import { useWorkspace, newId } from './hooks/useWorkspace';
-import type { CustomPracticeCard, ValidatedWorkspaceImport } from './storage';
+import type { CustomPracticeCard } from './storage';
 import {
   anchorQuote,
   ensureAnnotation,
@@ -33,7 +31,6 @@ import {
   withLocalEvidence,
 } from './lib/workspace-domain';
 import type { FieldReview } from './lib/workspace-domain';
-import { downloadWorkspace, readWorkspaceArchive, mergeImportedWorkspace } from './lib/archive';
 import { LibraryPanel } from './components/LibraryPanel';
 import { DocumentReader } from './components/DocumentReader';
 import { EvidenceInspector } from './components/EvidenceInspector';
@@ -105,23 +102,18 @@ export function App() {
   const [focusAnchor, setFocusAnchor] = useState<TextAnchor | null>(null);
   const [focusNonce, setFocusNonce] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [dialog, setDialog] = useState<'help' | 'source' | 'note' | 'import' | 'atlas' | null>(
+  const [dialog, setDialog] = useState<'help' | 'source' | 'note' | 'atlas' | null>(
     null,
   );
   const [note, setNote] = useState('');
   const [editor, setEditor] = useState<{ card?: CustomPracticeCard } | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
-  const [incoming, setIncoming] = useState<ValidatedWorkspaceImport | null>(null);
-  const [importBusy, setImportBusy] = useState(false);
   const [shareDraft, setShareDraft] = useState<{
     bundle: SharedPracticeBundle;
     expectedRevision: number | null;
     sessionId: string;
   } | null>(null);
   const [shareBusy, setShareBusy] = useState(false);
-  const fileInput = useRef<HTMLInputElement>(null);
-  const { snapshot, mutate, saving, error: storageError } = useWorkspace();
-  const state = snapshot?.state;
   const notify = useCallback((message: string, error = false) => setToast({ message, error }), []);
   const fail = useCallback(
     (e: unknown) => notify(e instanceof Error ? e.message : 'Не удалось выполнить действие.', true),
@@ -135,6 +127,25 @@ export function App() {
     initialSessionId: route.get('session'),
     projectorMode,
   });
+  const { snapshot, mutate, saving, error: storageError, workspaceTarget, legacyCount, adoptLegacy,
+    reload: reloadWorkspace } = useWorkspace({
+      api: session.api,
+      userId: session.state.auth.status === 'signed-in' ? session.state.auth.userId : null,
+    });
+  const state = snapshot?.state;
+  const lastWorkspaceUser = useRef<string | null>(null);
+  useEffect(() => {
+    const user = session.state.auth.userId;
+    if (lastWorkspaceUser.current && lastWorkspaceUser.current !== user) {
+      setEditor(null);
+      setShareDraft(null);
+      setNote('');
+      setSelection(null);
+      setSelectedId(null);
+      setDialog(value => value === 'note' ? null : value);
+    }
+    lastWorkspaceUser.current = user;
+  }, [session.state.auth.userId]);
   const workshop = useWorkshop({
     api: session.api,
     sessionId: session.sessionId,
@@ -298,40 +309,6 @@ export function App() {
       if (target) setDocumentId(target.id);
     }
   }
-  function exportWork() {
-    if (!snapshot) return;
-    try {
-      downloadWorkspace(snapshot);
-      notify('Архив сохранён. Имя и email в него не включены.');
-    } catch (e) {
-      fail(e);
-    }
-  }
-  async function pickImport(file: File) {
-    setImportBusy(true);
-    try {
-      const parsed = await readWorkspaceArchive(file);
-      setIncoming(parsed);
-      setDialog('import');
-    } catch (e) {
-      fail(e);
-    } finally {
-      setImportBusy(false);
-      if (fileInput.current) fileInput.current.value = '';
-    }
-  }
-  async function confirmImport() {
-    if (!incoming) return;
-    try {
-      await mutate((draft) => mergeImportedWorkspace(draft, incoming.workspace));
-      setDialog(null);
-      setIncoming(null);
-      setView('work');
-      notify('Работа добавлена. Импортированные проверки отмечены для повторного сопоставления.');
-    } catch (e) {
-      fail(e);
-    }
-  }
   async function saveEvidence(review: FieldReview, rationale: string) {
     if (!doc || !selection || !selected) return;
     try {
@@ -421,7 +398,7 @@ export function App() {
       shared.session.role === 'observer'
     ) {
       notify(
-        'На текущем этапе приём работ закрыт или у вас роль наблюдателя. Карточка сохранена локально.',
+        'На текущем этапе приём работ закрыт или у вас роль наблюдателя. Карточка остаётся в разделе «Моя работа».',
         true,
       );
       return;
@@ -573,14 +550,7 @@ export function App() {
           >
             <HelpCircle size={19} />
           </button>
-          <button
-            className="button button-primary"
-            onClick={exportWork}
-            aria-label="Сохранить архив работы"
-          >
-            <Download size={16} />
-            <span className="export-label">Сохранить архив</span>
-          </button>
+
         </div>
         <AccountControls state={session.state} actions={session.actions}
           onOpenEntry={() => {
@@ -615,6 +585,9 @@ export function App() {
       {storageError ? (
         <div className="notice error" role="alert" style={{ margin: '0 20px 16px' }}>
           {storageError}
+          <button className="button button-quiet" onClick={() => void reloadWorkspace()}>
+            Повторить загрузку работы
+          </button>
         </div>
       ) : null}
       {view === 'documents' ? (
@@ -764,45 +737,29 @@ export function App() {
           onEdit={(c) => {
             void editCard(c);
           }}
-          onProfile={async (profile) => {
-            try {
-              await mutate((draft) => {
-                draft.profile = profile;
-              });
-              notify('Сведения сохранены на этом устройстве.');
-            } catch (e) {
-              fail(e);
-            }
-          }}
-          onExport={exportWork}
-          onImport={() => fileInput.current?.click()}
-          busy={saving}
+          saving={saving}
+          savedTo={workspaceTarget}
+          signedIn={session.state.auth.status === 'signed-in'}
+          legacyCount={legacyCount}
+          onAdoptLegacy={() => void adoptLegacy().catch(fail)}
+          onOpenSession={() => setView('sessions')}
         />
       )}
       <footer className="workspace-footer">
         <span className="save-status" aria-live="polite">
           <span className={`save-dot ${storageError ? 'error' : saving ? 'busy' : ''}`} />
           {storageError
-            ? 'Изменения не сохранены — проверьте сообщение'
+            ? 'Сохранение не подтверждено — проверьте сообщение'
             : saving
-              ? 'Сохранение на устройстве…'
-              : view === 'sessions'
-                ? 'Локальная тетрадь сохраняется на этом устройстве'
-                : 'Работа сохраняется на этом устройстве'}
+              ? 'Сохраняем работу…'
+              : workspaceTarget === 'offline'
+                ? 'Работа сохраняется на Mac преподавателя'
+                : workspaceTarget === 'cloud'
+                  ? 'Работа сохраняется в вашем профиле'
+                  : 'Заметки в этом браузере · войдите для сохранения в профиле'}
         </span>
-        <span className="footer-version">Версия 0.8.1 · локальная ревизия {snapshot.revision}</span>
+        <span className="footer-version">Версия 0.8.2</span>
       </footer>
-      <input
-        ref={fileInput}
-        type="file"
-        className="import-input"
-        accept=".zip,.json,application/zip,application/json"
-        aria-label="Файл рабочей тетради"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) void pickImport(file);
-        }}
-      />
       {dialog === 'source' ? (
         <SourceDetails entry={entry} doc={doc} onClose={() => setDialog(null)} />
       ) : null}
@@ -852,15 +809,15 @@ export function App() {
             </div>
             <div className="help-step">
               <span>
-                <strong>Сохраните работу.</strong> Проверки остаются в браузере. ZIP позволяет
-                перенести их на другое устройство.
+                <strong>Продолжайте работу.</strong> После входа цитаты и карточки сохраняются
+                в вашем профиле. Готовую дорожную карту можно скачать в DOCX или PDF.
               </span>
             </div>
           </div>
           <div className="notice info">
-            Локальная тетрадь сохраняет ваши черновики на устройстве. Для совместной работы откройте
-            «Занятия», войдите с кодом из письма и присоединитесь по коду преподавателя. Кнопка
-            «Отправить в занятие» передаёт выбранную карточку с её цитатами на общую доску.
+            Для совместной работы откройте «Занятия» и введите email. Если вы здесь впервые,
+            следующим шагом укажите ФИО. Кнопка «Отправить в занятие» передаёт выбранную карточку
+            с её цитатами на общую доску.
           </div>
           <p className="modal-intro">
             Подготовленный текст и редакция программы доступны для исследования. Действие норм на
@@ -969,65 +926,6 @@ export function App() {
           ) : null}
         </Modal>
       ) : null}
-      {dialog === 'import' && incoming ? (
-        <Modal
-          title="Добавить работу из архива"
-          onClose={() => {
-            setDialog(null);
-            setIncoming(null);
-          }}
-          actions={
-            <>
-              <button
-                className="button button-secondary"
-                onClick={() => {
-                  setDialog(null);
-                  setIncoming(null);
-                }}
-              >
-                Отмена
-              </button>
-              <button
-                className="button button-primary"
-                disabled={saving}
-                onClick={() => void confirmImport()}
-              >
-                <Upload size={15} />
-                Добавить к моей работе
-              </button>
-            </>
-          }
-        >
-          <p className="modal-intro">
-            Архив проверен по схеме. Новые записи будут добавлены; существующие объекты с теми же
-            идентификаторами сохранят текущую редакцию.
-          </p>
-          <table className="data-table">
-            <tbody>
-              <tr>
-                <td>Цитаты</td>
-                <td>{incoming.workspace.annotations.length}</td>
-              </tr>
-              <tr>
-                <td>Карточки</td>
-                <td>{incoming.workspace.customCards.length}</td>
-              </tr>
-              <tr>
-                <td>Решения по связям</td>
-                <td>{incoming.workspace.linkDecisions.length}</td>
-              </tr>
-              <tr>
-                <td>Редакции источников</td>
-                <td>{incoming.workspace.sourceReferences.length}</td>
-              </tr>
-            </tbody>
-          </table>
-          <div className="notice">
-            Импорт не удостоверяет автора файла. Отметки проверки полей переводятся в состояние
-            повторного сопоставления с источником. Ваши имя и email остаются без изменения.
-          </div>
-        </Modal>
-      ) : null}
       {toast ? (
         <div
           className={`toast ${toast.error ? 'error' : ''}`}
@@ -1042,11 +940,6 @@ export function App() {
           >
             <X size={14} />
           </button>
-        </div>
-      ) : null}
-      {importBusy ? (
-        <div className="toast" role="status">
-          Проверка архива…
         </div>
       ) : null}
     </div>

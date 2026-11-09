@@ -1,13 +1,10 @@
-import { readFileSync } from 'node:fs';
-import { strFromU8, unzipSync } from 'fflate';
 import { expect, test } from '@playwright/test';
 import type { Locator, Page, TestInfo } from '@playwright/test';
+import type { WorkspaceSnapshot } from '../../apps/web/src/storage';
 
 const MORDOVIA = 'Республика Мордовия';
 const PRACTICE_TITLE = 'Компенсация родительской платы за детский сад';
 const QUERY = 'компенсация платы, взимаемой';
-const PROFILE_NAME = 'Учебный участник E2E';
-const PROFILE_EMAIL = 'e2e@example.invalid';
 
 const reader = (page: Page): Locator => page.getByRole('region', { name: 'Полный текст программы' });
 const inspector = (page: Page): Locator => page.getByRole('complementary', { name: 'Связь цитаты и практики' });
@@ -123,17 +120,21 @@ async function saveUnlinkedQuotation(page: Page, fragmentNumber: number, comment
   await expect(page.getByRole('status').filter({ hasText: 'Цитата сохранена в разделе «Моя работа».' })).toBeVisible();
 }
 
-async function downloadArchive(page: Page, testInfo: TestInfo, name: string) {
-  const pending = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Сохранить архив работы', exact: true }).click();
-  const download = await pending;
-  expect(await download.failure()).toBeNull();
-  const path = testInfo.outputPath(name);
-  await download.saveAs(path);
-  const archive = unzipSync(new Uint8Array(readFileSync(path)));
-  expect(archive['workspace.json']).toBeDefined();
-  const json = strFromU8(archive['workspace.json']!);
-  return { path, json, exported: JSON.parse(json) };
+async function guestSnapshot(page: Page): Promise<WorkspaceSnapshot> {
+  // Read the real committed store; user interactions above are the only writes.
+  return page.evaluate(async () => new Promise<WorkspaceSnapshot>((resolve, reject) => {
+    const opening = indexedDB.open('demography-workshop-local-v1');
+    opening.onerror = () => reject(opening.error);
+    opening.onsuccess = () => {
+      const database = opening.result;
+      const transaction = database.transaction('workspaces', 'readonly');
+      const request = transaction.objectStore('workspaces').get('local-workspace');
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => request.result ? resolve(request.result) : reject(new Error('Committed guest workspace is missing.'));
+      transaction.oncomplete = () => database.close();
+      transaction.onabort = () => { database.close(); reject(transaction.error); };
+    };
+  }));
 }
 
 test('Mordovia loads and full-document search reaches a page that was not rendered', async ({ page }, testInfo) => {
@@ -166,55 +167,36 @@ test('practice → citation → selected block → field review survives a real 
   await saveScreenshot(page, testInfo, 'desktop-review-after-reload.png');
 });
 
-test('the real ZIP download contains the saved quotation and excludes the entered local profile', async ({ page }, testInfo) => {
-  await reader(page).getByRole('button', { name: 'Выбрать фрагмент 1', exact: true }).click();
-  await reader(page).getByRole('button', { name: 'Сохранить цитату без карточки', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Сохранить цитату', exact: true });
-  await expect(dialog).toBeVisible();
-  await dialog.getByRole('textbox', { name: 'Комментарий к фрагменту', exact: true }).fill('Контрольная цитата для переноса рабочей тетради.');
-  await dialog.getByRole('button', { name: 'Сохранить', exact: true }).click();
-  await expect(dialog).toBeHidden();
+test('guest quotations autosave with exact sources and have no archive or duplicate profile controls', async ({ page }, testInfo) => {
+  await saveUnlinkedQuotation(page, 1, 'Контрольная цитата для проверки автоматического сохранения.');
   await navigation(page).getByRole('button', { name: 'Моя работа', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Сохранённые цитаты 1', exact: true })).toBeVisible();
-  await page.getByRole('textbox', { name: 'ФИО', exact: true }).fill(PROFILE_NAME);
-  await page.getByRole('textbox', { name: 'Email', exact: true }).fill(PROFILE_EMAIL);
-  await page.getByRole('button', { name: 'Сохранить сведения', exact: true }).click();
-  await expect(page.getByRole('status').filter({ hasText: 'Сведения сохранены на этом устройстве.' })).toBeVisible();
-
-  const pendingDownload = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Сохранить архив работы', exact: true }).click();
-  const download = await pendingDownload;
-  expect(download.suggestedFilename()).toMatch(/^demography-workspace-\d{4}-\d{2}-\d{2}\.zip$/);
-  expect(await download.failure()).toBeNull();
-  const archivePath = testInfo.outputPath('downloaded-workspace.zip');
-  await download.saveAs(archivePath);
-  const archive = unzipSync(new Uint8Array(readFileSync(archivePath)));
-  expect(Object.keys(archive).sort()).toEqual(['README.txt', 'workspace.json']);
-  const json = strFromU8(archive['workspace.json']!);
-  const exported = JSON.parse(json);
-  expect(exported.format).toBe('demography-workshop.workspace');
-  expect(exported.schemaVersion).toBe(1);
-  expect(exported.workspace.annotations).toHaveLength(1);
-  expect(exported.workspace.annotations[0].note).toBe('Контрольная цитата для переноса рабочей тетради.');
-  expect(exported.workspace.annotations[0].anchor.documentId).toBe('regional-respublika-mordoviia');
-  expect(exported.workspace.annotations[0].anchor.versionId).toMatch(/^regional-respublika-mordoviia@layout-canonical-v2-/);
-  expect(exported.workspace.annotations[0].anchor.spans[0].exact).toContain('Постановление Правительства Республики Мордовия');
-  expect(exported.workspace.sourceReferences).toHaveLength(1);
-  expect(exported.workspace.sourceReferences[0].sha256).toMatch(/^[a-f0-9]{64}$/);
-  expect(exported.workspace.profile).toBeNull();
-  expect(json).not.toContain(PROFILE_NAME);
-  expect(json).not.toContain(PROFILE_EMAIL);
-  await testInfo.attach('downloaded-workspace.zip', { path: archivePath, contentType: 'application/zip' });
+  await expect(page.getByRole('button', { name: /Сохранить архив|Импортировать работу/u })).toHaveCount(0);
+  await expect(page.getByRole('textbox', { name: 'ФИО', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('textbox', { name: 'Email', exact: true })).toHaveCount(0);
+  const saved = await guestSnapshot(page);
+  expect(saved.state.annotations).toHaveLength(1);
+  expect(saved.state.annotations[0].note).toBe('Контрольная цитата для проверки автоматического сохранения.');
+  expect(saved.state.annotations[0].anchor.documentId).toBe('regional-respublika-mordoviia');
+  expect(saved.state.annotations[0].anchor.versionId).toMatch(/^regional-respublika-mordoviia@layout-canonical-v2-/);
+  expect(saved.state.annotations[0].anchor.spans[0].exact).toContain('Постановление Правительства Республики Мордовия');
+  expect(saved.state.sourceReferences).toHaveLength(1);
+  expect(saved.state.sourceReferences[0].sha256).toMatch(/^[a-f0-9]{64}$/);
+  expect(saved.state.profile).toBeNull();
+  await page.reload();
+  await navigation(page).getByRole('button', { name: 'Моя работа', exact: true }).click();
+  await expect(page.getByText('Контрольная цитата для проверки автоматического сохранения.', { exact: true })).toBeVisible();
+  expect((await guestSnapshot(page)).state.annotations[0].anchor).toEqual(saved.state.annotations[0].anchor);
+  await saveScreenshot(page, testInfo, 'guest-quotation-autosaved.png');
 });
 
-test('a downloaded archive imports in a clean context and downgrades verification while preserving citations', async ({ page, browser }, testInfo) => {
+test('a separate browser starts with its own empty guest notebook and cannot import another guest archive', async ({ page, browser }, testInfo) => {
   await createVerifiedRecipientLink(page);
-  const original = await downloadArchive(page, testInfo, 'original-verified-workspace.zip');
-  expect(original.exported.workspace.linkDecisions).toHaveLength(1);
-  expect(original.exported.workspace.linkDecisions[0].status).toBe('verified');
-  expect(original.exported.workspace.linkDecisions[0].fieldEvidence[0].reviewStatus).toBe('verified');
-
-  const receiver = await browser.newContext({ baseURL: new URL('/', page.url()).origin, viewport: { width: 1440, height: 1000 }, locale: 'ru-RU', acceptDownloads: true, reducedMotion: 'reduce' });
+  const original = await guestSnapshot(page);
+  expect(original.state.linkDecisions).toHaveLength(1);
+  expect(original.state.linkDecisions[0].status).toBe('verified');
+  expect(original.state.linkDecisions[0].fieldEvidence[0]).toMatchObject({ kind: 'fragment', reviewStatus: 'verified' });
+  const receiver = await browser.newContext({ baseURL: new URL('/', page.url()).origin, viewport: { width: 1440, height: 1000 }, locale: 'ru-RU', reducedMotion: 'reduce' });
   try {
     const second = await receiver.newPage();
     attachDiagnostics(second);
@@ -222,37 +204,15 @@ test('a downloaded archive imports in a clean context and downgrades verificatio
     await expect(second.getByRole('heading', { level: 1, name: 'Документы и практики' })).toBeVisible();
     await navigation(second).getByRole('button', { name: 'Моя работа', exact: true }).click();
     await expect(second.getByRole('heading', { name: 'Сохранённые цитаты 0', exact: true })).toBeVisible();
-
-    const pendingChooser = second.waitForEvent('filechooser');
-    await second.getByRole('button', { name: 'Импортировать работу', exact: true }).click();
-    const chooser = await pendingChooser;
-    await chooser.setFiles(original.path);
-    const dialog = second.getByRole('dialog', { name: 'Добавить работу из архива', exact: true });
-    await expect(dialog).toBeVisible();
-    await expect(dialog.getByRole('row', { name: 'Цитаты 1', exact: true })).toBeVisible();
-    await expect(dialog.getByRole('row', { name: 'Решения по связям 1', exact: true })).toBeVisible();
-    await dialog.getByRole('button', { name: 'Добавить к моей работе', exact: true }).click();
-    await expect(dialog).toBeHidden();
-    await expect(second.getByRole('heading', { name: 'Сохранённые цитаты 1', exact: true })).toBeVisible();
-    await expect(second.getByText('Импорт · проверить', { exact: true })).toBeVisible();
-    await expect(second.getByText('Поля проверены', { exact: true })).toHaveCount(0);
-    await second.getByRole('button', { name: PRACTICE_TITLE, exact: true }).click();
-    await expect(reader(second).getByRole('textbox', { name: 'Номер страницы' })).toHaveValue('59');
-    await expect(inspector(second).getByText('Проверено по цитате', { exact: true })).toHaveCount(0);
-    await expect(reader(second).getByRole('link', { name: 'Оригинал', exact: true })).toHaveAttribute('href', /regional-respublika-mordoviia\.pdf#page=59$/);
-
-    const imported = await downloadArchive(second, testInfo, 'received-candidate-workspace.zip');
-    expect(imported.exported.workspace.annotations[0].anchor).toEqual(original.exported.workspace.annotations[0].anchor);
-    expect(imported.exported.workspace.sourceReferences).toEqual(original.exported.workspace.sourceReferences);
-    expect(imported.exported.workspace.linkDecisions[0].status).toBe('candidate');
-    expect(imported.exported.workspace.linkDecisions[0].origin).toBe('imported');
-    expect(imported.exported.workspace.linkDecisions[0].fieldEvidence[0].reviewStatus).toBe('candidate');
-    expect(imported.exported.workspace.linkDecisions[0].fieldEvidence[0].reviewedValue).toBe(original.exported.workspace.linkDecisions[0].fieldEvidence[0].reviewedValue);
-    await expect(second.locator('vite-error-overlay')).toHaveCount(0);
-    await saveScreenshot(second, testInfo, 'archive-import-review-required.png');
-  } finally {
-    await receiver.close();
-  }
+    await expect(second.getByRole('button', { name: /Сохранить архив|Импортировать работу/u })).toHaveCount(0);
+    await expect(second.getByRole('textbox', { name: 'ФИО', exact: true })).toHaveCount(0);
+    await expect(second.locator('input[type="file"]')).toHaveCount(0);
+    await saveScreenshot(second, testInfo, 'separate-guest-notebook.png');
+    await page.reload();
+    await navigation(page).getByRole('button', { name: 'Моя работа', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Сохранённые цитаты 1', exact: true })).toBeVisible();
+    expect((await guestSnapshot(page)).state.linkDecisions).toEqual(original.state.linkDecisions);
+  } finally { await receiver.close(); }
 });
 
 test('two real tabs receive each other’s saved quotations without reloading and retain both in IndexedDB', async ({ page, context }) => {
@@ -378,50 +338,35 @@ test.describe('mobile Chromium viewport 390 × 844', () => {
   });
 });
 
-test('a controlled IndexedDB quota failure leaves an honest error state and never persists the entered profile', async ({ page }, testInfo) => {
-  await navigation(page).getByRole('button', { name: 'Моя работа', exact: true }).click();
-  const name = page.getByRole('textbox', { name: 'ФИО', exact: true });
-  const email = page.getByRole('textbox', { name: 'Email', exact: true });
+test('a controlled IndexedDB quota failure retains the quotation draft and never claims it was saved', async ({ page }, testInfo) => {
+  await saveUnlinkedQuotation(page, 1, 'Ранее сохранённая цитата');
+  const saved = await guestSnapshot(page);
+  await reader(page).getByRole('button', { name: 'Выбрать фрагмент 2', exact: true }).click();
+  await reader(page).getByRole('button', { name: 'Сохранить цитату без карточки', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Сохранить цитату', exact: true });
+  const comment = dialog.getByRole('textbox', { name: 'Комментарий к фрагменту', exact: true });
+  const save = dialog.getByRole('button', { name: 'Сохранить', exact: true });
+  const unsaved = 'Цитата после отказа хранилища — должна остаться только в форме';
+  await comment.fill(unsaved);
   const footer = page.getByRole('contentinfo');
-  const save = page.getByRole('button', { name: 'Сохранить сведения', exact: true });
-  const unsavedName = 'Профиль после отказа хранилища';
-  const unsavedEmail = 'unsaved-profile@example.invalid';
-  await expect(name).toHaveValue('');
-  await expect(email).toHaveValue('');
-  await expect(footer.getByText('Работа сохраняется на этом устройстве', { exact: true })).toBeVisible();
-  await name.fill(unsavedName);
-  await email.fill(unsavedEmail);
-  await expect(save).toBeEnabled();
-
-  // Deliberate negative-path fault injection into a PUBLIC browser API, only after
-  // normal bootstrap has durably created the workspace. No state or response is faked.
-  // Keeping the original property descriptor also restores native method attributes.
+  await expect(footer.getByText('Заметки в этом браузере · войдите для сохранения в профиле', { exact: true })).toBeVisible();
+  // Fault injection targets the actual public IndexedDB API after a successful committed note.
   const fault = await page.evaluateHandle(() => {
     const prototype = IDBObjectStore.prototype;
     const original = Object.getOwnPropertyDescriptor(prototype, 'put');
     if (!original || typeof original.value !== 'function') throw new Error('Native IndexedDB put is unavailable.');
     let attempts = 0;
-    Object.defineProperty(prototype, 'put', {
-      ...original,
-      value: function controlledQuotaFailure() {
-        attempts += 1;
-        throw new DOMException('Intentional E2E quota failure after bootstrap.', 'QuotaExceededError');
-      },
-    });
-    return {
-      attempts: () => attempts,
-      restore: () => { Object.defineProperty(prototype, 'put', original); },
-    };
+    Object.defineProperty(prototype, 'put', { ...original, value: function controlledQuotaFailure() {
+      attempts += 1;
+      throw new DOMException('Intentional E2E quota failure after bootstrap.', 'QuotaExceededError');
+    } });
+    return { attempts: () => attempts, restore: () => { Object.defineProperty(prototype, 'put', original); } };
   });
-
   try {
     await save.click();
-    await expect.poll(() => fault.evaluate(state => state.attempts()), { message: 'Saving must actually reach the failing IndexedDB API.' }).toBeGreaterThan(0);
+    await expect.poll(() => fault.evaluate(state => state.attempts()), { message: 'Saving must reach the failing IndexedDB API.' }).toBeGreaterThan(0);
     await expect(page.getByRole('alert').filter({ hasText: 'Не удалось сохранить рабочую тетрадь в этом браузере.' }).first()).toBeVisible();
-    await expect(footer.getByText('Изменения не сохранены — проверьте сообщение', { exact: true })).toBeVisible();
-    await expect(footer.getByText('Работа сохраняется на этом устройстве', { exact: true })).toHaveCount(0);
-
-    // The indicator is decorative, so its concrete styling is a diagnostic selector.
+    await expect(footer.getByText('Сохранение не подтверждено — проверьте сообщение', { exact: true })).toBeVisible();
     const indicator = footer.locator('.save-dot');
     const errorColor = await page.evaluate(() => {
       const token = getComputedStyle(document.documentElement).getPropertyValue('--red').trim();
@@ -431,23 +376,17 @@ test('a controlled IndexedDB quota failure leaves an honest error state and neve
     });
     await expect(indicator).toHaveClass(/\berror\b/);
     await expect(indicator).toHaveCSS('background-color', errorColor);
-    await expect(name).toHaveValue(unsavedName);
-    await expect(email).toHaveValue(unsavedEmail);
+    await expect(dialog).toBeVisible();
+    await expect(comment).toHaveValue(unsaved);
     await expect(save).toBeEnabled();
-    await expect(page.getByRole('status').filter({ hasText: 'Сведения сохранены на этом устройстве.' })).toHaveCount(0);
+    expect((await guestSnapshot(page)).state.annotations).toEqual(saved.state.annotations);
     await saveScreenshot(page, testInfo, 'indexeddb-quota-failure-visible.png');
-  } finally {
-    await fault.evaluate(state => state.restore());
-    await fault.dispose();
-  }
-
-  // A fresh document now uses the restored native API and the previously committed DB.
+  } finally { await fault.evaluate(state => state.restore()); await fault.dispose(); }
   await page.reload();
-  await expect(page.getByRole('heading', { level: 1, name: 'Документы и практики' })).toBeVisible();
   await navigation(page).getByRole('button', { name: 'Моя работа', exact: true }).click();
-  await expect(page.getByRole('textbox', { name: 'ФИО', exact: true })).toHaveValue('');
-  await expect(page.getByRole('textbox', { name: 'Email', exact: true })).toHaveValue('');
-  await expect(page.getByRole('contentinfo').getByText('Работа сохраняется на этом устройстве', { exact: true })).toBeVisible();
-  await expect(page.getByRole('contentinfo').getByText('Изменения не сохранены — проверьте сообщение', { exact: true })).toHaveCount(0);
-  await expect(page.getByRole('status').filter({ hasText: 'Сведения сохранены на этом устройстве.' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Сохранённые цитаты 1', exact: true })).toBeVisible();
+  await expect(page.getByText('Ранее сохранённая цитата', { exact: true })).toBeVisible();
+  await expect(page.getByText(unsaved, { exact: true })).toHaveCount(0);
+  expect((await guestSnapshot(page)).state.annotations).toEqual(saved.state.annotations);
+  await expect(footer.getByText('Сохранение не подтверждено — проверьте сообщение', { exact: true })).toHaveCount(0);
 });

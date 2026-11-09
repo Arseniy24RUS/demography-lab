@@ -1,6 +1,5 @@
-import { useState } from 'react';
-import { ArrowUpRight, FileText, Upload, Download, Save, PenLine, Link2 } from 'lucide-react';
-import type { WorkspaceState, LocalProfile, CustomPracticeCard } from '@/storage';
+import { ArrowUpRight, FileText, CheckCircle2, LogIn, PenLine, Link2 } from 'lucide-react';
+import type { WorkspaceState, CustomPracticeCard } from '@/storage';
 import type { PracticeVariant, TextAnchor } from '@domain/index';
 import { anchorQuote } from '@/lib/workspace-domain';
 
@@ -10,23 +9,25 @@ export function MyWorkView({
   onOpen,
   onOpenCard,
   onEdit,
-  onProfile,
-  onExport,
-  onImport,
-  busy,
+  saving,
+  savedTo,
+  signedIn,
+  legacyCount,
+  onAdoptLegacy,
+  onOpenSession,
 }: {
   state: WorkspaceState;
   variants: PracticeVariant[];
   onOpen: (a: TextAnchor) => void;
   onOpenCard: (id: string) => void;
   onEdit: (c: CustomPracticeCard) => void;
-  onProfile: (p: LocalProfile) => Promise<void>;
-  onExport: () => void;
-  onImport: () => void;
-  busy: boolean;
+  saving: boolean;
+  savedTo: 'device' | 'cloud' | 'offline';
+  signedIn: boolean;
+  legacyCount: number;
+  onAdoptLegacy: () => void;
+  onOpenSession: () => void;
 }) {
-  const [name, setName] = useState(state.profile?.displayName ?? '');
-  const [email, setEmail] = useState(state.profile?.email ?? '');
   return (
     <main id="main-content" className="content-page">
       <div className="work-layout">
@@ -127,70 +128,46 @@ export function MyWorkView({
         </div>
         <aside>
           <section className="panel profile-panel">
-            <h2>Автор заметок</h2>
-            <p className="form-hint" style={{ marginBottom: 16 }}>
-              Необязательно. Сведения хранятся на этом устройстве. Архив работы по умолчанию не
-              содержит имя и email.
+            <h2><CheckCircle2 size={19} aria-hidden="true" /> Сохранение работы</h2>
+            <p className="form-hint">
+              {signedIn
+                ? savedTo === 'offline'
+                  ? 'Цитаты, карточки и проверки сохраняются в вашем профиле на Mac преподавателя. Дорожные карты и результаты обсуждения сохраняются там же.'
+                  : 'Цитаты, карточки и проверки сохраняются в вашем профиле на платформе. Дорожные карты и результаты обсуждения сохраняются там же.'
+                : 'Сейчас заметки доступны в этом браузере. Войдите по email, чтобы сохранять работу в своём профиле и возвращаться к ней с других устройств.'}
             </p>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                onProfile({
-                  displayName: name.trim(),
-                  ...(email.trim() ? { email: email.trim() } : {}),
-                });
-              }}
-            >
-              <div className="profile-fields">
-                <div className="form-field">
-                  <label htmlFor="profile-name">ФИО</label>
-                  <input
-                    id="profile-name"
-                    className="input"
-                    value={name}
-                    maxLength={180}
-                    onChange={(e) => setName(e.target.value)}
-                    autoComplete="name"
-                  />
-                </div>
-                <div className="form-field">
-                  <label htmlFor="profile-email">Email</label>
-                  <input
-                    id="profile-email"
-                    className="input"
-                    type="email"
-                    value={email}
-                    maxLength={254}
-                    onChange={(e) => setEmail(e.target.value)}
-                    autoComplete="email"
-                  />
-                </div>
-              </div>
-              <button
-                type="submit"
-                className="button button-secondary block"
-                disabled={!name.trim() || busy}
-              >
-                <Save size={15} />
-                Сохранить сведения
+            {signedIn ? (
+              <p className="form-hint" style={{ marginTop: 14 }}>
+                Чтобы изменить имя, нажмите «Изменить ФИО» рядом со своим профилем в шапке.
+              </p>
+            ) : (
+              <button className="button button-primary block" onClick={onOpenSession}
+                style={{ marginTop: 16 }}>
+                <LogIn size={16} /> Войти по email
               </button>
-            </form>
+            )}
             <div className="divider" />
-            <h2>Перенос работы</h2>
+            <h2>Готовая дорожная карта</h2>
             <p className="form-hint" style={{ marginBottom: 14 }}>
-              Сохраните цитаты, карточки и решения в ZIP. На другом устройстве архив можно добавить
-              к текущей тетради. Импортированные проверки потребуют подтверждения.
+              В занятии откройте дорожную карту своей территории. В разделе «Проверка и экспорт»
+              можно зафиксировать версию и скачать документ в DOCX или PDF.
             </p>
-            <div className="inspector-actions">
-              <button className="button button-primary block" onClick={onExport}>
-                <Download size={15} />
-                Сохранить архив
-              </button>
-              <button className="button button-secondary block" onClick={onImport}>
-                <Upload size={15} />
-                Импортировать работу
-              </button>
-            </div>
+            <button className="button button-secondary block" onClick={onOpenSession}>
+              <ArrowUpRight size={16} /> Открыть занятие
+            </button>
+            {signedIn && legacyCount > 0 ? (
+              <>
+                <div className="divider" />
+                <h2>Ранее начатые заметки</h2>
+                <p className="form-hint" style={{ marginBottom: 14 }}>
+                  На этом устройстве найдены записи, созданные до входа: {legacyCount}.
+                  Если это ваша работа, добавьте её в свой профиль. Совпадающие записи останутся
+                  без изменений; прежние проверки будут отмечены для повторного сопоставления.
+                </p>
+                <button className="button button-secondary block" disabled={saving}
+                  onClick={onAdoptLegacy}>Добавить прежние заметки</button>
+              </>
+            ) : null}
           </section>
         </aside>
       </div>

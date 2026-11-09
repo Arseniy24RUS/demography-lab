@@ -116,7 +116,9 @@ export interface SessionAreaState {
   availableSessions?: AvailableSession[];
 }
 export interface SessionAreaActions {
-  identify(input: { email: string; fullName: string }): Promise<void>;
+  identify(input: { email: string; fullName?: string }): Promise<
+    { status: 'signed-in' } | { status: 'profile-required'; email: string }
+  >;
   joinOpenSession(id: string): Promise<void>;
   localHost?(fullName?: string): Promise<void>;
   localServerStatus?(): Promise<{
@@ -126,7 +128,7 @@ export interface SessionAreaActions {
   }>;
   localBackup?(): Promise<void>;
   signOut(): Promise<void>;
-  saveProfile(fullName: string): Promise<void>;
+  saveProfile(fullName: string, expectedRevision?: number): Promise<void>;
   createSession(input: {
     title: string;
     scope: SessionScope;

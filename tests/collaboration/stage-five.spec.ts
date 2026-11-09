@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
+import type { RoadmapVersion } from '../../packages/roadmaps/types';
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { unzipSync, strFromU8 } from 'fflate';
@@ -67,7 +68,12 @@ async function saveDialog(page: Page) {
   await expect(dialog).toBeHidden();
 }
 
-async function downloadVersion(page: Page, format: 'JSON' | 'DOCX' | 'PDF') {
+async function downloadVersion(page: Page, format: 'DOCX' | 'PDF') {
+  const material = page.waitForResponse(response => response.ok() && (
+    response.url().endsWith('/dw_roadmap_version') ||
+    (response.url().endsWith('/dw_entry_rpc') && response.request().postDataJSON()?.p_method === 'dw_roadmap_version')
+  ));
+  await expect(page.locator('.rm-version').first().getByRole('button', { name: /^(JSON|ZIP)$/u })).toHaveCount(0);
   const pending = page.waitForEvent('download');
   await page.locator('.rm-version').first().getByRole('button', { name: format, exact: true }).click();
   const download = await pending;
@@ -76,7 +82,8 @@ async function downloadVersion(page: Page, format: 'JSON' | 'DOCX' | 'PDF') {
   expect(path).toBeTruthy();
   const bytes = await readFile(path!);
   expect(bytes.length).toBeGreaterThan(500);
-  return { bytes, filename: download.suggestedFilename() };
+  const version = await (await material).json() as RoadmapVersion;
+  return { bytes, filename: download.suggestedFilename(), version };
 }
 
 test('public source maps preserve missing values and known anomalies on desktop and touch width', async ({ page, browser }, info) => {
@@ -226,36 +233,35 @@ test('desktop and touch accounts share one map, capture a fact, plan an activity
     await freeze.getByRole('button', { name: 'Зафиксировать версию', exact: true }).click();
     await expect(freeze).toBeHidden();
     await expect(page.locator('.rm-version').getByRole('heading', { name: 'Первая командная версия', exact: true })).toBeVisible();
-    const exported = await downloadVersion(page, 'JSON');
-    expect(exported.filename).toMatch(/\.json$/u);
-    const json = JSON.parse(exported.bytes.toString('utf8'));
-    expect(createHash('sha256').update(json.canonicalJson).digest('hex')).toBe(json.contentHash.value);
+    const word = await downloadVersion(page, 'DOCX');
+    const json = word.version;
+    expect(createHash('sha256').update(json.canonicalJson).digest('hex')).toBe(json.sha256);
     expect(JSON.parse(json.canonicalJson)).toEqual(json.snapshot);
     expect(json.snapshot.territory.key).toBe('rudn-mun-72196-894');
     expect(json.snapshot.teamNames).toEqual(expect.arrayContaining([HOST_NAME, ALICE_NAME]));
-    expect(json.snapshot.items.find((item: { kind: string }) => item.kind === 'fact').data.value).toBe(253);
-    expect(json.snapshot.items.find((item: { kind: string }) => item.kind === 'activity').data.startDate).toBe('2027-01-18');
-    expect(json.snapshot.items.find((item: { kind: string }) => item.kind === 'cost').data.quantity).toBe('0.333');
+    expect(json.snapshot.items.find((item) => item.kind === 'fact')).toMatchObject({ data: { value: 253 } });
+    expect(json.snapshot.items.find((item) => item.kind === 'activity')).toMatchObject({ data: { startDate: '2027-01-18' } });
+    expect(json.snapshot.items.find((item) => item.kind === 'cost')).toMatchObject({ data: { quantity: '0.333' } });
     expect(json.snapshot.budget.needCashKopecks).toBe(1000);
     expect(json.snapshot.budget.confirmedKopecks).toBe(400);
     expect(json.snapshot.budget.confirmedGapKopecks).toBe(600);
     expect(json.snapshot.series[0].provenanceStatus).toBe('incomplete_primary');
-    const word = await downloadVersion(page, 'DOCX');
     expect(word.filename).toMatch(/\.docx$/u);
     const zip = unzipSync(new Uint8Array(word.bytes));
     expect(strFromU8(zip['word/document.xml']!)).toContain('Ардатовский');
     const pdf = await downloadVersion(page, 'PDF');
     expect(pdf.filename).toMatch(/\.pdf$/u);
     expect(pdf.bytes.subarray(0, 5).toString()).toBe('%PDF-');
+    expect(pdf.version.canonicalJson).toBe(json.canonicalJson);
     await capture(page, info, 'stage5-immutable-version-desktop.png');
     await tab(page, 'Мероприятия');
     await page.locator('.rm-activity-card').getByRole('button', { name: 'Изменить', exact: true }).click();
     await page.getByRole('dialog').getByLabel('Название мероприятия', { exact: true }).fill('Изменение после фиксации версии');
     await saveDialog(page);
     await tab(page, 'Проверка и экспорт');
-    const repeated = JSON.parse((await downloadVersion(page, 'JSON')).bytes.toString('utf8'));
+    const repeated = (await downloadVersion(page, 'DOCX')).version;
     expect(repeated.canonicalJson).toBe(json.canonicalJson);
-    expect(repeated.contentHash).toEqual(json.contentHash);
+    expect(repeated.sha256).toBe(json.sha256);
     const projectorRequests: string[] = [];
     const projectorPayloads: Array<Promise<unknown>> = [];
     page.context().once('page', opened => {

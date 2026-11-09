@@ -6,7 +6,7 @@ const ACCESS_SECONDS=3600;
 const REFRESH_SECONDS=7*24*3600;
 const TOKEN=/^[A-Za-z0-9_-]{43,128}$/;
 const EMAIL=/^[^\s@\u0000-\u001f\u007f]+@[^\s@\u0000-\u001f\u007f]+\.[^\s@\u0000-\u001f\u007f]+$/u;
-// The workshop owner explicitly uses the same two-field entry as every participant.
+// The workshop owner explicitly uses the same email-first entry as every participant.
 // This is declared identification, not proof of mailbox ownership.
 export const TEACHER_EMAIL='omnistat@yandex.ru';
 // One local authority for email provenance, disabled actors and role eligibility.
@@ -76,7 +76,7 @@ function fields(input,allowed) {
 }
 
 /** Preserve the declared email's UUID; otherwise reuse the existing local cabinet. */
-async function teacherAccount(tx,email,fullName) {
+async function resolveTeacherAccount(tx,email) {
   const oldHost=(await tx.query(`select u.*,a.kind,actor.disabled_at,f.revoked_at
     from offline.accounts a join auth.users u on u.id=a.user_id
     join private.dw_actors actor on actor.id=u.id
@@ -101,9 +101,15 @@ async function teacherAccount(tx,email,fullName) {
     if(row.disabled_at!==null || row.revoked_at!=null || row.raw_app_meta_data?.offline!==true
         || row.email_confirmed_at!==null || row.is_anonymous!==false)
       throw new HttpError(403,'TEACHER_IDENTITY_UNAVAILABLE');
-    const kind=oldHost && oldHost.id!==row.id?'teacher':'host';
-    await tx.query('update offline.accounts set kind=$2,recovery_hash=null where user_id=$1',[row.id,kind]);
-  } else {
+  }
+  return {row,kind:oldHost && oldHost.id!==row?.id?'teacher':'host',
+    oldHostId:oldHost?.disabled_at===null && oldHost.revoked_at==null?oldHost?.id:null};
+}
+
+async function completeTeacherAccount(tx,email,fullName,resolved) {
+  let row=resolved.row;
+  if(row)await tx.query('update offline.accounts set kind=$2,recovery_hash=null where user_id=$1',[row.id,resolved.kind]);
+  else {
     row=(await tx.query(`insert into auth.users(id,email,raw_user_meta_data,raw_app_meta_data)
       values($1,$2,$3::jsonb,'{"offline":true,"provider":"offline","email_verified":false}'::jsonb) returning *`,
       [randomUUID(),email,JSON.stringify({full_name:fullName,claimed_email:email,email_verified:false})])).rows[0];
@@ -113,7 +119,7 @@ async function teacherAccount(tx,email,fullName) {
   // A pre-existing email pointer always wins; no history or author/voter identity is rewritten.
   await tx.query(`insert into offline.email_identities(normalized_email,user_id) values($1,$2)
     on conflict(normalized_email) do update set last_identified_at=now()`,[email,row.id]);
-  return {row,oldHostId:oldHost?.disabled_at===null && oldHost.revoked_at==null?oldHost?.id:null};
+  return row;
 }
 
 async function inheritLocalCabinet(tx,userId,oldHostId) {
@@ -129,22 +135,18 @@ async function inheritLocalCabinet(tx,userId,oldHostId) {
 }
 export async function identify(runtime,input) {
   fields(input,['email','fullName']);
-  if(typeof input.email!=='string' || input.email.length>512 || typeof input.fullName!=='string'
-      || input.fullName.length>512) throw new HttpError(400,'INVALID_INPUT');
+  if(typeof input.email!=='string' || input.email.length>512)throw new HttpError(400,'INVALID_INPUT');
   const email=normalizeEmail(input.email);
-  const fullName=input.fullName.normalize('NFC').trim().replace(/\s+/gu,' ');
-  if(email.length>254 || !EMAIL.test(email) || !fullName || fullName.length>200
-      || /[\u0000-\u001f\u007f]/u.test(fullName))
-    throw new HttpError(400,'INVALID_INPUT');
+  if(email.length>254 || !EMAIL.test(email))throw new HttpError(400,'INVALID_INPUT');
   return runtime.db.transaction(async tx=>{
     await tx.query('select pg_advisory_xact_lock(hashtextextended($1,0))',['offline-email:'+email]);
     const isTeacher=email===TEACHER_EMAIL;
-    const teacher=isTeacher?await teacherAccount(tx,email,fullName):null;
+    const teacher=isTeacher?await resolveTeacherAccount(tx,email):null;
     let row=isTeacher?teacher.row:(await tx.query(`select u.*,a.kind,(${ACCOUNT_SAFE}) as participant_safe
       from offline.email_identities e join offline.accounts a on a.user_id=e.user_id
       join auth.users u on u.id=e.user_id where e.normalized_email=$1`,[email])).rows[0];
     if(!isTeacher && row && (row.kind!=='participant'||!row.participant_safe))throw new HttpError(403,'PARTICIPANT_IDENTITY_UNAVAILABLE');
-    if(!row) {
+    if(!row && !isTeacher) {
       // Before 0.8 devices with the same claimed email could have separate accounts.
       // Select the earliest eligible identity without moving/deleting any historical work.
       // Keep exactly one canonicalizer: PostgreSQL lower and JS Unicode lower differ for e.g. İ/Σ.
@@ -154,18 +156,34 @@ export async function identify(runtime,input) {
         order by a.created_at,u.created_at,u.id`)).rows;
       const legacy=candidates.find(candidate=>typeof candidate.email==='string'&&normalizeEmail(candidate.email)===email);
       if(legacy)row=(await tx.query('select * from auth.users where id=$1',[legacy.id])).rows[0];
+    }
+    const profile=row?(await tx.query('select full_name,revision from public.dw_profiles where user_id=$1',[row.id])).rows[0]:null;
+    const hasSavedName=typeof profile?.full_name==='string' && profile.full_name.trim().length>0;
+    let fullName=hasSavedName?profile.full_name:null;
+    if(!hasSavedName) {
+      // A first email lookup is read-only: there is no abandoned actor or transport session.
+      if(input.fullName===undefined || input.fullName===null)return {profileRequired:true,email};
+      if(typeof input.fullName!=='string' || input.fullName.length>512)throw new HttpError(400,'INVALID_INPUT');
+      fullName=input.fullName.normalize('NFC').trim().replace(/\s+/gu,' ');
+      if(!fullName || fullName.length>200 || /[\u0000-\u001f\u007f]/u.test(fullName))
+        throw new HttpError(400,'INVALID_INPUT');
+    }
+    // A known name is owned by dw_save_profile. Login never overwrites it, even if an older
+    // client sends an empty, stale or otherwise invalid fullName alongside the email.
+    if(teacher)row=await completeTeacherAccount(tx,email,fullName,teacher);
+    else {
       if(!row) {
         row=(await tx.query(`insert into auth.users(id,email,raw_user_meta_data,raw_app_meta_data)
           values($1,$2,$3::jsonb,'{"offline":true,"provider":"offline","email_verified":false}'::jsonb) returning *`,
           [randomUUID(),email,JSON.stringify({full_name:fullName,claimed_email:email,email_verified:false})])).rows[0];
         await tx.query("insert into offline.accounts(user_id,kind) values($1,'participant')",[row.id]);
       }
-      await tx.query('insert into offline.email_identities(normalized_email,user_id) values($1,$2)',[email,row.id]);
+      await tx.query(`insert into offline.email_identities(normalized_email,user_id) values($1,$2)
+        on conflict(normalized_email) do nothing`,[email,row.id]);
     }
     await tx.query("select set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true)",
       [row.id,JSON.stringify({sub:row.id,role:'authenticated',app_metadata:{offline:true,provider:'offline'}})]);
-    const profile=(await tx.query('select full_name,revision from public.dw_profiles where user_id=$1',[row.id])).rows[0];
-    if(!profile || profile.full_name!==fullName) {
+    if(!hasSavedName) {
       // Reuse the normal revision/event path so account attribution and session cursors stay coherent.
       await tx.query('select private.dw_save_profile($1,$2,$3)',[randomUUID(),profile?.revision??0,fullName]);
     }

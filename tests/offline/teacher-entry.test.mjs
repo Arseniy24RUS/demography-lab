@@ -83,11 +83,12 @@ it('promotes the pre-existing reserved-email participant without replacing its U
     assert.equal(entered.session.user.id,userId);
     const identity=await runtime.enqueue(()=>authenticate(runtime,entered.session.access_token));
     const boot=await call(runtime,identity,'dw_bootstrap');
-    assert.equal(boot.canCreateSession,true);assert.equal(boot.profile.revision,2);
+    assert.equal(boot.canCreateSession,true);assert.equal(boot.profile.revision,1);
+    assert.equal(boot.profile.fullName,'Прежний профиль');
     assert.equal((await runtime.db.query('select count(*)::int as n from offline.accounts')).rows[0].n,1);
     await runtime.db.query('update private.facilitators set revoked_at=now() where user_id=$1',[userId]);
     await assert.rejects(runtime.enqueue(()=>identify(runtime,{email:TEACHER_EMAIL,fullName:'Не записывать'})),{code:'TEACHER_IDENTITY_UNAVAILABLE'});
-    assert.equal((await runtime.db.query('select full_name from public.dw_profiles where user_id=$1',[userId])).rows[0].full_name,'Преподаватель');
+    assert.equal((await runtime.db.query('select full_name from public.dw_profiles where user_id=$1',[userId])).rows[0].full_name,'Прежний профиль');
     await runtime.db.query('update private.facilitators set revoked_at=null where user_id=$1',[userId]);
     await runtime.db.query('update private.dw_actors set disabled_at=now() where id=$1',[userId]);
     await assert.rejects(runtime.enqueue(()=>identify(runtime,{email:TEACHER_EMAIL,fullName:'Не записывать'})),{code:'TEACHER_IDENTITY_UNAVAILABLE'});
