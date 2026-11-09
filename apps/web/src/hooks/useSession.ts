@@ -232,29 +232,16 @@ export function useSession(options: {
           } else if (!options.projectorMode && changed) {
             const result = await api.snapshot(sessionId);
             if (active) applySnapshot(result);
-            if (result.session.role === 'host') {
-              const invite = await api.invitation(sessionId);
-              if (active) setState((s) => ({ ...s, invitation: invite }));
-            } else if (active) setState((s) => ({ ...s, invitation: null }));
           }
           if (active) {
-            // A new session may already arrive in a mutation response; its private invitation
-            // still needs one fetch. Idle reconciliation then transfers only the cursor.
-            if (
-              !options.projectorMode &&
-              current.current.snapshot?.session.role === 'host' &&
-              !current.current.invitation
-            ) {
-              const invitation = await api.invitation(sessionId);
-              if (active) setState((s) => ({ ...s, invitation }));
-            }
-            if (active)
-              setState((s) => ({
-                ...s,
-                connection: live ? 'live' : 'polling',
-                lastSyncedAt: new Date().toISOString(),
-                error: lastReadError && s.error === lastReadError ? null : s.error,
-              }));
+            // Shared workspaces use the same link for everyone and have no legacy
+            // invitation row. Synchronization depends only on cursor/snapshot reads.
+            setState((s) => ({
+              ...s,
+              connection: live ? 'live' : 'polling',
+              lastSyncedAt: new Date().toISOString(),
+              error: lastReadError && s.error === lastReadError ? null : s.error,
+            }));
             reconcileAt = Date.now();
             lastReadError = null;
           }

@@ -20,7 +20,7 @@ const browser = await chromium.launch({ headless: true,
   ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}),
   args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu', `--host-resolver-rules=MAP ${host} 127.0.0.1`],
 });
-const errors = [], externalRequests = [], failedResponses = [], steps = [];
+const errors = [], externalRequests = [], failedResponses = [], invitationRequests = [], steps = [];
 const report = {
   version: JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8')).version,
   environment: 'Linux Chromium; compiled application and production offline PGlite; LAN host mapped to loopback; no physical Wi-Fi or macOS claim',
@@ -29,6 +29,7 @@ const report = {
 let lastPage;
 const NAME_A = 'Первый участник мастерской';
 const NAME_B = 'Второй участник мастерской';
+const NAME_TEACHER = 'Преподаватель общей мастерской';
 const PRACTICE = 'Компенсация родительской платы за детский сад';
 const FAMILY = 'Доступный уход за детьми';
 const navigation = page => page.getByRole('navigation', { name: 'Основная навигация' });
@@ -41,6 +42,9 @@ function watch(page) {
   page.setDefaultTimeout(15000);
   page.on('pageerror', error => errors.push(error.message));
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+  page.on('request', request => {
+    if (new URL(request.url()).pathname === '/rest/v1/rpc/dw_invitation') invitationRequests.push(request.url());
+  });
   page.on('response', response => {
     if (response.status() >= 400) failedResponses.push({ path: new URL(response.url()).pathname, status: response.status() });
   });
@@ -84,7 +88,7 @@ async function cleanInterface(page) {
   await expect(page.getByRole('heading', { name: 'Ваши занятия', exact: true })).toHaveCount(0);
   await expect(page.locator('vite-error-overlay')).toHaveCount(0);
 }
-async function enter(page, email, name, fresh = true) {
+async function enter(page, email, name, fresh = true, role = 'participant') {
   await page.goto(url);
   await expect(page).toHaveTitle('Демографическая мастерская — документы и практики');
   const form = page.locator('.session-access-main form');
@@ -101,7 +105,7 @@ async function enter(page, email, name, fresh = true) {
   const response = await entering;
   expect(response.status(), await response.text()).toBe(200);
   const snapshot = await response.json();
-  expect(snapshot.session.role).toBe('participant');
+  expect(snapshot.session.role).toBe(role);
   await expect(page.locator('.header-account .account-name')).toHaveText(name);
   await expect(scenes(page).getByRole('button', { name: 'Опрос', exact: true })).toHaveAttribute('aria-current', 'page');
   await expect(page.getByRole('heading', { name: 'Что мешает родительству?', exact: true })).toBeVisible();
@@ -264,6 +268,37 @@ try {
     await cleanInterface(b.page);
     await screenshot(b.page, 'shared-survey-first-320.png');
   });
+  const teacher = await participant();
+  await stage('Teacher enters the existing common board and synchronizes without obsolete invitations', teacher.page, async () => {
+    expect(await enter(teacher.page, 'omnistat@yandex.ru', NAME_TEACHER, true, 'host')).toBe(sessionId);
+    await expect(teacher.page.locator('.header-account').getByText('Преподаватель', { exact: true })).toBeVisible();
+    // Observe two normal reconciliation polls so the unchanged-cursor host path runs as well.
+    for (let poll = 0; poll < 2; poll += 1) {
+      const response = await rpc(teacher.page, 'dw_session_cursor');
+      expect(response.status(), await response.text()).toBe(200);
+    }
+    await expect(teacher.page.getByRole('alert')).toHaveCount(0);
+    await expect(teacher.page.locator('[data-tone="error"]')).toHaveCount(0);
+    expect(invitationRequests).toEqual([]);
+    await screenshot(teacher.page, 'shared-teacher-first-survey.png');
+    await scene(teacher.page, 'Практики');
+    const publication = teacher.page.getByRole('article', { name: PRACTICE, exact: true });
+    await expect(publication).toBeVisible();
+    // A profile edit emits a session change and exercises the changed-cursor host path.
+    const updatedAuthor = `${NAME_A} — обновлено преподавателю`;
+    await a.page.locator('.header-account .account-name').click();
+    const profile = a.page.getByRole('dialog', { name: 'Профиль', exact: true });
+    await profile.getByLabel('Фамилия, имя, отчество', { exact: true }).fill(updatedAuthor);
+    await profile.getByRole('button', { name: 'Сохранить', exact: true }).click();
+    await expect(profile).toBeHidden();
+    await expect(publication).toContainText(updatedAuthor);
+    await expect(teacher.page.getByRole('alert')).toHaveCount(0);
+    await expect(teacher.page.locator('[data-tone="error"]')).toHaveCount(0);
+    expect(invitationRequests).toEqual([]);
+    await cleanInterface(teacher.page);
+    await noOverflow(teacher.page, 1440);
+    await screenshot(teacher.page, 'shared-teacher-live-board.png');
+  });
   expect(externalRequests).toEqual([]);
   expect(failedResponses).toEqual([]);
   expect(errors).toEqual([]);
@@ -278,7 +313,7 @@ try {
   }
   throw error;
 } finally {
-  report.externalRequests = externalRequests; report.browserErrors = errors; report.failedResponses = failedResponses;
+  report.externalRequests = externalRequests; report.browserErrors = errors; report.failedResponses = failedResponses; report.invitationRequests = invitationRequests;
   await writeFile(join(evidence, 'report.json'), JSON.stringify(report, null, 2));
   await browser.close();
   await server.stop();

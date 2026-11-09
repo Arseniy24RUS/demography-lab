@@ -72,6 +72,28 @@ describe('independent survey origin and capability boundaries', () => {
       assertSurveyOrigin(deployment, 'https://survey.example.org/survey.html'),
     ).toThrow();
   });
+  it.each(['/survey.html', '/workshop/survey.html'])(
+    'accepts only the exact clean-URL alias of configured %s on the separate origin', (path) => {
+      const configured = { ...deployment, url: `https://survey.example.org${path}` };
+      const link = new URL(surveyLink(configured, id, invite));
+      expect(() => assertSurveyOrigin(configured, link.href)).not.toThrow();
+      link.pathname = path.slice(0, -5);
+      expect(() => assertSurveyOrigin(configured, link.href)).not.toThrow();
+      expect(readSurveyInvitation(link.hash)).toEqual({ surveyId: id, invitationToken: invite });
+    },
+  );
+  it.each([
+    'https://class.example.org/workshop/survey',
+    'https://other.example.org/workshop/survey',
+    'https://survey.example.org:444/workshop/survey',
+    'https://survey.example.org/survey',
+    'https://survey.example.org/other/survey',
+    'https://survey.example.org/workshop/survey/',
+    'https://survey.example.org/workshop/survey-copy',
+    'https://survey.example.org/workshop/survey.html/extra',
+  ])('rejects a different origin or unrelated clean path %s', (url) => {
+    expect(() => assertSurveyOrigin(deployment, url)).toThrow();
+  });
   it.each([
     ['https://class.example.org/survey.html', 'https://class.example.org'],
     ['http://survey.example.org/survey.html', deployment.classroomOrigin],

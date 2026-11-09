@@ -73,10 +73,14 @@ export function surveyLink(deployment: SurveyDeployment, surveyId: string, token
 export function assertSurveyOrigin(deployment: SurveyDeployment, currentUrl: string) {
   const current = new URL(currentUrl),
     expected = new URL(deployment.url);
+  // Some static hosts canonicalize /survey.html to /survey. Permit only that
+  // exact alias at the configured origin, preserving any deployment subdirectory.
+  const expectedPath = current.pathname === expected.pathname ||
+    (expected.pathname.endsWith('/survey.html') && current.pathname === expected.pathname.slice(0, -5));
   if (
     current.origin !== expected.origin ||
     current.origin === deployment.classroomOrigin ||
-    current.pathname !== expected.pathname
+    !expectedPath
   )
     throw new Error(
       'Откройте опрос по отдельной ссылке преподавателя. На адресе учебной платформы сбор личных ответов отключён.',

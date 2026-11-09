@@ -761,7 +761,7 @@ export function App() {
                   ? 'Работа сохраняется в вашем профиле'
                   : 'Заметки в этом браузере · войдите для сохранения в профиле'}
         </span>
-        <span className="footer-version">Версия 0.9.0</span>
+        <span className="footer-version">Версия 0.9.1</span>
       </footer>
       {dialog === 'source' ? (
         <SourceDetails entry={entry} doc={doc} onClose={() => setDialog(null)} />
