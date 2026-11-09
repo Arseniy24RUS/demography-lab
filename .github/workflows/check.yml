@@ -55,3 +55,8 @@ jobs:
 
       - name: Check standalone release server
         run: node --test tests/server.test.mjs
+
+      - name: Check persistent offline classroom and Mac launchers
+        run: |
+          npm run test:offline
+          npm run test:macos

@@ -1,5 +1,5 @@
 import { Info, LogOut, RefreshCw, X } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { WorkshopView } from '../workshop/workshop-ui';
 import type {
   SessionAreaActions,
@@ -11,6 +11,9 @@ import { SessionLobby } from './SessionLobby';
 import { SessionConnection } from './SessionConnection';
 import { ActiveSession } from './ActiveSession';
 import { phaseLabels } from './session-ui';
+import { OfflineSeminarPanel } from './OfflineSeminarPanel';
+import { readLocalReceipt, downloadLocalReceipt } from '../../lib/offline-api';
+import { Modal } from '../Modal';
 
 export function SessionArea({
   state,
@@ -28,6 +31,9 @@ export function SessionArea({
   renderRoadmaps?: () => ReactNode;
 }) {
   const ready = state.auth.status === 'signed-in' && state.bootstrap?.profile;
+  const [confirmExit, setConfirmExit] = useState(false);
+  const [keySaved, setKeySaved] = useState(false);
+  const receipt = state.offline ? readLocalReceipt(state.offline.instanceId) : null;
   return (
     <main id="main-content" className="session-page">
       <header className="session-heading">
@@ -49,7 +55,10 @@ export function SessionArea({
               <button
                 className="button button-quiet"
                 disabled={state.busy !== null}
-                onClick={() => void actions.signOut().catch(() => undefined)}
+                onClick={() => {
+                  if (receipt) { setKeySaved(false); setConfirmExit(true); }
+                  else void actions.signOut().catch(() => undefined);
+                }}
               >
                 <LogOut size={15} />
                 Выйти
@@ -58,6 +67,7 @@ export function SessionArea({
           ) : null}
         </div>
       </header>
+      {state.offline && ready ? <OfflineSeminarPanel state={state} actions={actions} /> : null}
       {state.testEnvironment ? (
         <p className="session-message" data-tone="warning">
           Испытательный режим. Учебные аккаунты и данные находятся на локальном проверочном сервере.
@@ -123,6 +133,17 @@ export function SessionArea({
       ) : (
         <SessionLobby state={state} actions={actions} regions={regions} />
       )}
+      {confirmExit && receipt ? <Modal title="Сохраните доступ к своей работе" onClose={() => setConfirmExit(false)}>
+        <p>При выходе личный ключ будет удалён из этого браузера. Скачайте квитанцию: с ней вы сможете вернуться к своей учётной записи на этом Mac или другом устройстве аудитории.</p>
+        <button className="button button-secondary" onClick={() => downloadLocalReceipt(receipt)}>Скачать квитанцию доступа</button>
+        <label className="session-field" style={{ display: 'flex', gap: '.6rem', alignItems: 'center', marginTop: '1.2rem' }}>
+          <input type="checkbox" checked={keySaved} onChange={(event) => setKeySaved(event.target.checked)} />
+          Я сохранил личный ключ доступа
+        </label>
+        <button className="button button-primary" disabled={!keySaved || Boolean(state.busy)} onClick={() => {
+          void actions.signOut().then(() => setConfirmExit(false)).catch(() => undefined);
+        }}>Выйти и удалить ключ из браузера</button>
+      </Modal> : null}
     </main>
   );
 }

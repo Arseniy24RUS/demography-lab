@@ -1,3 +1,4 @@
+import { sha256Hex } from '../../../../packages/security/crypto.mjs';
 import type {
   TerritoryDataIndex,
   TerritoryRegistry,
@@ -33,10 +34,7 @@ async function checkedJson<T>(
       if (bytes.length > 12 * 1024 * 1024)
         throw new Error('Файл территориальных данных превышает допустимый размер.');
       if (sha256) {
-        const digest = Array.from(
-          new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)),
-          (b) => b.toString(16).padStart(2, '0'),
-        ).join('');
+        const digest = await sha256Hex(bytes);
         if (digest !== sha256)
           throw new Error(
             'Контрольная сумма территориального набора не совпала. Обновите комплект данных целиком.',

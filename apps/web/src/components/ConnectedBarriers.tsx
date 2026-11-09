@@ -18,6 +18,7 @@ import type {
   SessionAreaState,
 } from '../../../../packages/collaboration/types';
 import '../barriers.css';
+import { useOfflineShareUrl } from '../hooks/useOfflineShareUrl';
 
 export function ConnectedBarriers({
   state,
@@ -34,6 +35,7 @@ export function ConnectedBarriers({
 }) {
   const [invitationUrl, setInvitationUrl] = useState<string | null>(null),
     [invitationError, setInvitationError] = useState<string | null>(null);
+  const sharedInvitationUrl = useOfflineShareUrl(invitationUrl);
   const current = state.snapshot?.session,
     userId = state.auth.userId;
   const key =
@@ -169,7 +171,7 @@ export function ConnectedBarriers({
       error={barriers.error}
       onRefresh={barriers.refresh}
       onOpenSource={sessionActions.openSource}
-      surveyInvitationUrl={invitationUrl}
+      surveyInvitationUrl={sharedInvitationUrl}
       surveyInvitationError={invitationError}
     />
   );

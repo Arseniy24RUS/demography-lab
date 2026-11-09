@@ -1,0 +1,33 @@
+{
+  "checkedAt": "2026-11-09T10:10:00.604Z",
+  "status": "pass",
+  "engine": "PGlite",
+  "scope": "Recreated partial cloud DDL then applied the exact pending transaction, including privilege assertions",
+  "functions": [
+    {
+      "nspname": "private",
+      "proname": "dw_delete_family",
+      "anon_execute": false,
+      "authenticated_execute": true
+    },
+    {
+      "nspname": "private",
+      "proname": "dw_save_family",
+      "anon_execute": false,
+      "authenticated_execute": true
+    },
+    {
+      "nspname": "public",
+      "proname": "dw_delete_family",
+      "anon_execute": false,
+      "authenticated_execute": true
+    },
+    {
+      "nspname": "public",
+      "proname": "dw_save_family",
+      "anon_execute": false,
+      "authenticated_execute": true
+    }
+  ],
+  "cloudApplied": false
+}

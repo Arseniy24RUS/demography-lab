@@ -1,3 +1,4 @@
+import { sha256Hex } from '../security/crypto.mjs';
 import { parseRoadmapVersion } from '../roadmaps/schema';
 import type {
   FrozenRoadmapData,
@@ -156,11 +157,7 @@ export function formatDate(value: string | null): string {
   return /^\d{4}-\d{2}-\d{2}$/u.test(value) ? value.split('-').reverse().join('.') : value;
 }
 export async function sha256Bytes(bytes: Uint8Array): Promise<string> {
-  if (!globalThis.crypto?.subtle)
-    throw new Error('Проверка контрольной суммы требует HTTPS или localhost с Web Crypto.');
-  const data = new Uint8Array(bytes).buffer;
-  const digest = new Uint8Array(await globalThis.crypto.subtle.digest('SHA-256', data));
-  return [...digest].map((v) => v.toString(16).padStart(2, '0')).join('');
+  return sha256Hex(bytes);
 }
 export const sha256Text = (text: string) => sha256Bytes(new TextEncoder().encode(text));
 

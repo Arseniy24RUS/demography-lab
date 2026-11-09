@@ -1,3 +1,4 @@
+import { isLocalNetworkHost } from './local-network';
 /** The public questionnaire runs on a separate origin from the authenticated classroom. */
 export interface SurveyDeployment {
   url: string;
@@ -7,9 +8,10 @@ export interface SurveyDeploymentResult {
   deployment: SurveyDeployment | null;
   error: string | null;
 }
-const allowedUrl = (url: URL) =>
+const allowedUrl = (url: URL, localHost?: string) =>
   (url.protocol === 'https:' ||
-    (url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname))) &&
+    (url.protocol === 'http:' && (['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) ||
+      (url.hostname === localHost && isLocalNetworkHost(url.hostname))))) &&
   !url.username &&
   !url.password &&
   !url.search &&
@@ -17,6 +19,7 @@ const allowedUrl = (url: URL) =>
 export function validateSurveyDeployment(
   urlValue: unknown,
   classroomValue: unknown,
+  options?: { offline: boolean; host: string },
 ): SurveyDeploymentResult {
   if (!urlValue && !classroomValue) return { deployment: null, error: null };
   try {
@@ -24,15 +27,18 @@ export function validateSurveyDeployment(
       throw new Error('Укажите отдельный адрес формы опроса и адрес учебной платформы.');
     const url = new URL(urlValue),
       classroom = new URL(classroomValue);
+    const localHost = options?.offline ? options.host : undefined;
     if (
-      !allowedUrl(url) ||
+      !allowedUrl(url, localHost) ||
       !url.pathname.endsWith('/survey.html') ||
-      !allowedUrl(classroom) ||
+      !allowedUrl(classroom, localHost) ||
       classroom.pathname !== '/'
     )
       throw new Error(
         'Для опроса нужен HTTPS-адрес survey.html, для платформы — HTTPS-origin без пути. Локально разрешён HTTP на loopback.',
       );
+    if (options?.offline && (url.hostname !== localHost || classroom.hostname !== localHost))
+      throw new Error('Локальная анкета и учебная платформа должны работать на одном Mac и разных портах.');
     if (url.origin === classroom.origin)
       throw new Error(
         'Форма опроса должна работать на отдельном origin, без хранилища учебной учётной записи.',

@@ -1,4 +1,5 @@
 import { validateSurveyDeployment, type SurveyDeployment } from './survey-deployment';
+import { isLocalNetworkHost } from './local-network';
 
 export interface CloudConfig {
   url: string;
@@ -8,6 +9,10 @@ export interface CloudConfig {
   pollInterval: number;
   survey?: SurveyDeployment | null;
   surveyError?: string | null;
+  /** A local classroom server is an explicitly configured, separate authority. */
+  offline?: boolean;
+  offlineInstanceId?: string;
+  offlineAuthUrl?: string;
 }
 export interface CloudConfiguration {
   config: CloudConfig | null;
@@ -17,6 +22,7 @@ export interface CloudConfiguration {
 export function validateCloudConfiguration(
   input: unknown,
   testEnvironment = false,
+  currentOrigin = typeof location === 'undefined' ? null : location.origin,
 ): CloudConfiguration {
   if (!input || typeof input !== 'object' || Array.isArray(input))
     return { config: null, error: 'Некорректный файл подключения.' };
@@ -28,9 +34,16 @@ export function validateCloudConfiguration(
     if (typeof row.supabaseUrl !== 'string' || typeof row.supabasePublishableKey !== 'string')
       throw new Error('Укажите адрес Supabase и публичный ключ.');
     const url = new URL(row.supabaseUrl);
+    const offline = row.offline === true;
+    if (offline && (
+      !currentOrigin || url.origin !== currentOrigin || !isLocalNetworkHost(url.hostname) ||
+      typeof row.offlineInstanceId !== 'string' ||
+      !/^[a-f\d]{8}-(?:[a-f\d]{4}-){3}[a-f\d]{12}$/iu.test(row.offlineInstanceId) ||
+      (row.offlineAuthUrl !== undefined && row.offlineAuthUrl !== url.origin)
+    )) throw new Error('Локальный сервер должен иметь тот же адрес, что и приложение, и идентификатор экземпляра.');
     const loopback = ['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname);
     if (
-      (url.protocol !== 'https:' && !(loopback && url.protocol === 'http:')) ||
+      (url.protocol !== 'https:' && !((loopback || offline) && url.protocol === 'http:')) ||
       url.username ||
       url.password ||
       url.search ||
@@ -53,16 +66,19 @@ export function validateCloudConfiguration(
     }
     if (key.length < 20 || key.length > 4000)
       throw new Error('Некорректная длина публичного ключа.');
-    const survey = validateSurveyDeployment(row.surveyUrl, row.classroomOrigin);
+    const survey = validateSurveyDeployment(row.surveyUrl, row.classroomOrigin,
+      offline ? { offline: true, host: url.hostname } : undefined);
     return {
       config: {
         url: url.origin,
         publishableKey: key,
-        realtime: row.realtime !== false,
+        realtime: !offline && row.realtime !== false,
         testEnvironment,
-        pollInterval: testEnvironment ? 1000 : 8000,
+        pollInterval: testEnvironment ? 1000 : offline ? 2000 : 8000,
         survey: survey.deployment,
         surveyError: survey.error,
+        ...(offline ? { offline, offlineInstanceId: row.offlineInstanceId as string,
+          offlineAuthUrl: url.origin } : {}),
       },
       error: null,
     };
@@ -82,6 +98,22 @@ export function loadCloudConfiguration(): Promise<CloudConfiguration> {
     const testEnvironment =
       env.VITE_WORKSHOP_TEST_MODE === 'true' &&
       ['127.0.0.1', 'localhost'].includes(location.hostname);
+    // The same compiled application is distributed for HTTPS and local classrooms.
+    // A local server is its own authority even if the build contained cloud env vars.
+    // An invalid explicit local configuration must fail closed, never contact cloud.
+    let runtime: unknown = null;
+    let runtimeError: string | null = null;
+    try {
+      const response = await fetch(`${env.BASE_URL}workshop-config.json`, { cache: 'no-store' });
+      if (response.status !== 404) {
+        if (!response.ok) throw new Error(`Ошибка загрузки настроек (${response.status}).`);
+        runtime = await response.json();
+      }
+    } catch (e) {
+      runtimeError = e instanceof Error ? e.message : 'Не удалось загрузить настройки подключения.';
+    }
+    if (runtime && typeof runtime === 'object' && 'offline' in runtime && runtime.offline === true)
+      return validateCloudConfiguration(runtime);
     if (env.VITE_SUPABASE_URL || env.VITE_SUPABASE_PUBLISHABLE_KEY)
       return validateCloudConfiguration(
         {
@@ -94,17 +126,8 @@ export function loadCloudConfiguration(): Promise<CloudConfiguration> {
         },
         testEnvironment,
       );
-    try {
-      const response = await fetch(`${env.BASE_URL}workshop-config.json`, { cache: 'no-store' });
-      if (response.status === 404) return { config: null, error: null };
-      if (!response.ok) throw new Error(`Ошибка загрузки настроек (${response.status}).`);
-      return validateCloudConfiguration(await response.json());
-    } catch (e) {
-      return {
-        config: null,
-        error: e instanceof Error ? e.message : 'Не удалось загрузить настройки подключения.',
-      };
-    }
+    if (runtimeError) return { config: null, error: runtimeError };
+    return runtime === null ? { config: null, error: null } : validateCloudConfiguration(runtime);
   })();
   return cached;
 }

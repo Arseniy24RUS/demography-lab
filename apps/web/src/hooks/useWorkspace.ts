@@ -1,10 +1,11 @@
+import { randomUuid } from '../../../../packages/security/crypto.mjs';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createEmptyWorkspace, openWorkspaceStore } from '@/storage';
 import type { WorkspaceSnapshot, WorkspaceState, WorkspaceStore } from '@/storage';
 
 const WORKSPACE_ID = 'local-workspace';
 export function newId(prefix: string) {
-  return `${prefix}-${crypto.randomUUID()}`;
+  return `${prefix}-${randomUuid()}`;
 }
 export function useWorkspace() {
   const [snapshot, setSnapshot] = useState<WorkspaceSnapshot | null>(null);

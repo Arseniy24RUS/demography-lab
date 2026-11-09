@@ -1,0 +1,338 @@
+{
+  "schemaVersion": 1,
+  "projectId": "alyrowehwzypgtrqnvdi",
+  "checkedAt": "2026-11-09T10:14:23.695Z",
+  "status": "partial-stage3-confirmation-required",
+  "appliedMigrationCount": 42,
+  "migrations": [
+    {
+      "version": "20261109011031",
+      "name": "stage2_collaborative_sessions",
+      "statement_count": 1,
+      "stored_sql_sha256": "a70f4eeec6700bfd259a18e922d0a307340709437252a6c22bf19faee326369d"
+    },
+    {
+      "version": "20261109094140",
+      "name": "stage3_regions_families_voting_part01",
+      "statement_count": 1,
+      "stored_sql_sha256": "1a13d1dafb9dbb179f8ac6b7b998eef462f60d5ea7dd27a25dbf9328ebeb6579"
+    },
+    {
+      "version": "20261109094233",
+      "name": "stage3_regions_families_voting_part02",
+      "statement_count": 1,
+      "stored_sql_sha256": "5177984cf3a2200815a380413dd41b77cce4f9b9afa2a2b3ec3e8e7b1629eeb4"
+    },
+    {
+      "version": "20261109094240",
+      "name": "stage3_regions_families_voting_part03",
+      "statement_count": 1,
+      "stored_sql_sha256": "079f944343395b6ac7bee93651a128550b66fbc3b9ff68bbd1c4a4c23f63c99a"
+    },
+    {
+      "version": "20261109094246",
+      "name": "stage3_regions_families_voting_part04",
+      "statement_count": 1,
+      "stored_sql_sha256": "4e8aa6c353098a97ed3d8c465b1a4e5501046840aad6e27f374c408e579ec92b"
+    },
+    {
+      "version": "20261109095644",
+      "name": "stage3_regions_families_voting_part06",
+      "statement_count": 1,
+      "stored_sql_sha256": "6b66bc97bd194e2ad2677190268fcafc2913cc72fb39f68b2198531fe7ba7ec8"
+    },
+    {
+      "version": "20261109095708",
+      "name": "stage3_regions_families_voting_part07",
+      "statement_count": 1,
+      "stored_sql_sha256": "95493721262d0d3cdaf925745060d848773061366e424425713e67714c1b6137"
+    },
+    {
+      "version": "20261109095718",
+      "name": "stage4_barriers_evidence_surveys_part01",
+      "statement_count": 1,
+      "stored_sql_sha256": "f05cb11420f380ed94266db92c8383647723d161312cb4ca7b0f5d9fbac65a2c"
+    },
+    {
+      "version": "20261109095731",
+      "name": "stage4_barriers_evidence_surveys_part02",
+      "statement_count": 1,
+      "stored_sql_sha256": "6178756f47e3ec8dbe834a77a0f946753263e1da3e22c4f46453fab5cd05ef12"
+    },
+    {
+      "version": "20261109095750",
+      "name": "stage4_barriers_evidence_surveys_part03",
+      "statement_count": 1,
+      "stored_sql_sha256": "a796a6a45b448d43dbf589d192a8746860985aa908d8ec91d9930a80b41f700d"
+    },
+    {
+      "version": "20261109095756",
+      "name": "stage4_barriers_evidence_surveys_part04",
+      "statement_count": 1,
+      "stored_sql_sha256": "71c765ee053f4c65cb62441e669ff3583dfd415dc314744f602a5765b3378871"
+    },
+    {
+      "version": "20261109095802",
+      "name": "stage4_barriers_evidence_surveys_part05",
+      "statement_count": 1,
+      "stored_sql_sha256": "c44675a963943aac9e48e00590d917b635633d33959cb7d3c17fa7a595ce9d59"
+    },
+    {
+      "version": "20261109095809",
+      "name": "stage4_barriers_evidence_surveys_part06",
+      "statement_count": 1,
+      "stored_sql_sha256": "b88ee45de7e5ec35a26e7212a75128bc344686810c805dfe9dee65539d55c551"
+    },
+    {
+      "version": "20261109095823",
+      "name": "stage4_barriers_evidence_surveys_part07",
+      "statement_count": 1,
+      "stored_sql_sha256": "a6a3aa2c8da8f23731531f63b676815f9dced15b0f979ef2735bbdb18d15ec5d"
+    },
+    {
+      "version": "20261109095831",
+      "name": "stage4_barriers_evidence_surveys_part08",
+      "statement_count": 1,
+      "stored_sql_sha256": "4a3f1e2699eb0199d29bab92cae76ee503e1873a5a6dd24321ffdf84788ea9b9"
+    },
+    {
+      "version": "20261109095839",
+      "name": "stage4_barriers_evidence_surveys_part09",
+      "statement_count": 1,
+      "stored_sql_sha256": "383872c9214deaa50359383d89b0456beb1c4c7bb8cc90898a6d19aa9d5c54bf"
+    },
+    {
+      "version": "20261109095853",
+      "name": "stage4_barriers_evidence_surveys_part10",
+      "statement_count": 1,
+      "stored_sql_sha256": "294ed83cb67b2b8e76e4f88e002a1f7bdce2f1b5997250802c1b87cf532246ad"
+    },
+    {
+      "version": "20261109095939",
+      "name": "stage5_territorial_roadmaps_part01",
+      "statement_count": 1,
+      "stored_sql_sha256": "2d8df9aa799360f8c1b0a2906847877253a330c0166eb985314bbee4a019a67b"
+    },
+    {
+      "version": "20261109095954",
+      "name": "stage5_territorial_roadmaps_part02",
+      "statement_count": 1,
+      "stored_sql_sha256": "8d1d180ab0b4c9bf7c19e073dbdc7603ec8d9c36d44f06daacd198437394c56c"
+    },
+    {
+      "version": "20261109100012",
+      "name": "stage5_territorial_roadmaps_part03",
+      "statement_count": 1,
+      "stored_sql_sha256": "a030afc2cda2a78a950e300f8ed635b630373f168e49301aeee5384669f7197b"
+    },
+    {
+      "version": "20261109100020",
+      "name": "stage5_territorial_roadmaps_part04",
+      "statement_count": 1,
+      "stored_sql_sha256": "719c58e6cc185e2a56d41443b9a8b6dfc716057745a52cda15d52b50baf79dcc"
+    },
+    {
+      "version": "20261109100027",
+      "name": "stage5_territorial_roadmaps_part05",
+      "statement_count": 1,
+      "stored_sql_sha256": "c3fff581a3f9adcc51b780266ab7ac666d4de0403119f96d71761e468891bda8"
+    },
+    {
+      "version": "20261109100034",
+      "name": "stage5_territorial_roadmaps_part06",
+      "statement_count": 1,
+      "stored_sql_sha256": "be93505572f2329f8333bada04e5e69fd4746cbcef4c22a32affb5854bc944bd"
+    },
+    {
+      "version": "20261109100047",
+      "name": "stage5_territorial_roadmaps_part07",
+      "statement_count": 1,
+      "stored_sql_sha256": "8bd18641d6c28cf3813482c9a9bcfa3fcc19a77be7ea0ff2777dd78af0c2bc39"
+    },
+    {
+      "version": "20261109100054",
+      "name": "stage5_territorial_roadmaps_part08",
+      "statement_count": 1,
+      "stored_sql_sha256": "9d6409e37ec26b953a008600b36660311ffe11fe521897f205a54fc9dd863332"
+    },
+    {
+      "version": "20261109100107",
+      "name": "stage5_territorial_roadmaps_part09",
+      "statement_count": 1,
+      "stored_sql_sha256": "ded91e1a4fde2b5241efa4ca63a75e7d14fbb3179e92903a33cba6f0f935f6cf"
+    },
+    {
+      "version": "20261109100118",
+      "name": "stage5_territorial_roadmaps_part10",
+      "statement_count": 1,
+      "stored_sql_sha256": "cf0c1622b19ebe95a71875b4db7294199b188b898dcfd92c763a295f775d0b6a"
+    },
+    {
+      "version": "20261109100126",
+      "name": "stage5_territorial_roadmaps_part11",
+      "statement_count": 1,
+      "stored_sql_sha256": "5cfb215817314d6fe3b5559b5da24130883fab367da67bd760bbd5e17c8e6b46"
+    },
+    {
+      "version": "20261109100136",
+      "name": "stage6_team_statistics_part01",
+      "statement_count": 1,
+      "stored_sql_sha256": "a1d55c34cf581d501901789cb76b82720245ca3ace13855a132027e268eebde6"
+    },
+    {
+      "version": "20261109100143",
+      "name": "stage6_team_statistics_part02",
+      "statement_count": 1,
+      "stored_sql_sha256": "19f98e83a76a2ecc0eaf557b6e4ab395e6b216e57509a7ec7cbc846e46d19aa7"
+    },
+    {
+      "version": "20261109100150",
+      "name": "stage6_team_statistics_part03",
+      "statement_count": 1,
+      "stored_sql_sha256": "97fdc8e1772620ca6dd07580e9aa2bbbca01a051fc6effad6b7ef0ab684e19ec"
+    },
+    {
+      "version": "20261109100200",
+      "name": "stage6_team_statistics_part04",
+      "statement_count": 1,
+      "stored_sql_sha256": "2bdccf7664bcac94cde74afb62e790c259ced4443b6dcf6101e12feb7d80e18e"
+    },
+    {
+      "version": "20261109100206",
+      "name": "stage6_team_statistics_part05",
+      "statement_count": 1,
+      "stored_sql_sha256": "89266557aaa3ef0805fe74e42fd96d89cedf9d19245c9f0aaf325ba532a74010"
+    },
+    {
+      "version": "20261109100212",
+      "name": "stage6_team_statistics_part06",
+      "statement_count": 1,
+      "stored_sql_sha256": "6e21db3987acbb125ce6d727262b3018b1665291888e684cc4bbf0c1a6baefc2"
+    },
+    {
+      "version": "20261109100226",
+      "name": "stage6_team_statistics_part07",
+      "statement_count": 1,
+      "stored_sql_sha256": "c0e976b0c7ad34356fde46c127540c26df0f719e19ee87e4fdfa69318a7aaf23"
+    },
+    {
+      "version": "20261109100233",
+      "name": "stage6_team_statistics_part08",
+      "statement_count": 1,
+      "stored_sql_sha256": "b7c38029718a81951223c4a6015aa03a551f30a8b38a7bd699ed714a29570a8f"
+    },
+    {
+      "version": "20261109100240",
+      "name": "stage6_team_statistics_part09",
+      "statement_count": 1,
+      "stored_sql_sha256": "93077539f566cd82f1a9bf334a93d53943e3bc51d5aa685fc443aeed5c633e68"
+    },
+    {
+      "version": "20261109100343",
+      "name": "stage3_private_function_access_guard",
+      "statement_count": 1,
+      "stored_sql_sha256": "87fef5109a5a7b3280a06ea5bf83e28e830f9f3cb8ed4dea483a124b9a44ce27"
+    },
+    {
+      "version": "20261109100359",
+      "name": "stage4_barriers_evidence_surveys_part11_without_anon_schema",
+      "statement_count": 1,
+      "stored_sql_sha256": "1a9d583a472cfac2b2e9afcc51a7412959c9aa259785a737a267625706344d53"
+    },
+    {
+      "version": "20261109100411",
+      "name": "stage4_barriers_evidence_surveys_part12",
+      "statement_count": 1,
+      "stored_sql_sha256": "f6468686848c1cd0ab60af108bc002315bf558357c0c11dfa4ffe18ce5449f63"
+    },
+    {
+      "version": "20261109100535",
+      "name": "stage4_survey_schema_usage_guarded",
+      "statement_count": 1,
+      "stored_sql_sha256": "bed854c2a95034bf77388c4b683e5f6546cc964b1ecf47a1ceb07c7c682e159a"
+    },
+    {
+      "version": "20261109101215",
+      "name": "stage3_incomplete_read_api_guard",
+      "statement_count": 1,
+      "stored_sql_sha256": "e3bd8561162e8649751f6b281b33c7200dc0b6b3d883241036ecee387ae6aa0b"
+    }
+  ],
+  "expectedApplicationFunctionNames": 204,
+  "missingFunctions": [
+    {
+      "schema_name": "private",
+      "function_name": "dw_delete_family"
+    },
+    {
+      "schema_name": "private",
+      "function_name": "dw_save_family"
+    },
+    {
+      "schema_name": "public",
+      "function_name": "dw_cast_vote"
+    },
+    {
+      "schema_name": "public",
+      "function_name": "dw_cast_vote_updates"
+    },
+    {
+      "schema_name": "public",
+      "function_name": "dw_close_voting_round"
+    },
+    {
+      "schema_name": "public",
+      "function_name": "dw_delete_family"
+    },
+    {
+      "schema_name": "public",
+      "function_name": "dw_open_voting_round"
+    },
+    {
+      "schema_name": "public",
+      "function_name": "dw_region_work"
+    },
+    {
+      "schema_name": "public",
+      "function_name": "dw_save_family"
+    },
+    {
+      "schema_name": "public",
+      "function_name": "dw_workshop_projector_updates"
+    },
+    {
+      "schema_name": "public",
+      "function_name": "dw_workshop_updates"
+    }
+  ],
+  "pendingSql": "scripts/deploy/pending-stage3-completion.sql",
+  "pendingSqlSha256": "92bface76daefecdecf8624ccd4f8bc9a5f1f2616f59c0d39e62b6febfb1ca7e",
+  "validation": {
+    "sourceDigests": [
+      {
+        "checked": 80,
+        "passed": 80,
+        "mismatched": 0
+      }
+    ],
+    "rlsFailures": [],
+    "functionSecurityFailures": [],
+    "publicExecutionLeaks": [],
+    "anonymousPublicRpc": [
+      {
+        "proname": "dw_survey_own_response"
+      },
+      {
+        "proname": "dw_survey_public_manifest"
+      },
+      {
+        "proname": "dw_survey_save_response"
+      },
+      {
+        "proname": "dw_survey_withdraw_response"
+      }
+    ],
+    "tablePrivilegeLeaks": [],
+    "privateRealtimeLeaks": []
+  }
+}

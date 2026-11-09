@@ -5,6 +5,7 @@ import type {
   SessionAreaState,
 } from '../../../../../packages/collaboration/types';
 import { messageFromError } from './session-ui';
+import { OfflineAuthPanel } from './OfflineAuthPanel';
 
 export function SessionAuthPanel({
   state,
@@ -50,6 +51,9 @@ export function SessionAuthPanel({
     </p>
   ) : null;
 
+  if (state.offline && !checking && state.auth.status !== 'signed-in')
+    return <OfflineAuthPanel state={state} actions={actions} />;
+
   return (
     <section className="session-access" aria-label="Вход в совместную работу">
       <div className="session-access-main">
@@ -78,8 +82,8 @@ export function SessionAuthPanel({
           <>
             <h2>Представьтесь участникам</h2>
             <p>
-              Адрес подтверждён. Укажите имя, которым будут подписаны ваши публикации на общей
-              доске.
+              {state.offline ? 'Укажите имя, которым будут подписаны ваши публикации на общей доске.' :
+                'Адрес подтверждён. Укажите имя, которым будут подписаны ваши публикации на общей доске.'}
             </p>
             <form
               onSubmit={(event) => {

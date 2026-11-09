@@ -1,6 +1,6 @@
 {
   "name": "demography-workshop",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "description": "Демографическая мастерская — документы, практики, барьеры и совместное проектирование",
   "scripts": {
@@ -21,7 +21,14 @@
     "check:survey-bundle": "node scripts/check-survey-bundle.mjs",
     "test:e2e:roadmaps": "playwright test --config playwright.stage-five.config.ts",
     "seed:roadmaps:check": "node scripts/seed-roadmaps.mjs --check",
-    "test:e2e:statistics": "playwright test --config playwright.stage-six.config.ts"
+    "test:e2e:statistics": "playwright test --config playwright.stage-six.config.ts",
+    "offline:prepare": "node scripts/offline/server.mjs --prepare",
+    "offline:start": "node scripts/offline/server.mjs",
+    "offline:backup": "node scripts/offline/server.mjs --backup",
+    "offline:originals": "node scripts/cache-originals.mjs",
+    "test:offline": "node --test --test-concurrency=1 tests/offline/*.test.mjs",
+    "test:macos": "node --test tests/macos/*.test.mjs",
+    "test:e2e:offline": "node tests/offline/browser.e2e.mjs"
   },
   "keywords": [],
   "author": "Арсений Михайлович Ситковский",
@@ -31,6 +38,8 @@
     "node": ">=22.12"
   },
   "dependencies": {
+    "@electric-sql/pglite": "0.5.15",
+    "@noble/hashes": "2.4.0",
     "@pdf-lib/fontkit": "1.1.1",
     "@supabase/supabase-js": "2.119.0",
     "docx": "9.15.3",
@@ -43,7 +52,6 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "0.5.15",
     "@playwright/test": "1.62.1",
     "@testing-library/react": "16.3.3",
     "@testing-library/user-event": "14.6.8",

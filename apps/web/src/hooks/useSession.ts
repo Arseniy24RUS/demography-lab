@@ -1,3 +1,4 @@
+import { randomUuid } from '../../../../packages/security/crypto.mjs';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import type {
@@ -8,6 +9,9 @@ import type {
 } from '../../../../packages/collaboration/types';
 import type { TextAnchor } from '@domain/index';
 import { loadCloudConfiguration } from '../lib/cloud-config';
+import { isLoopbackHost } from '../lib/local-network';
+import { localLogin, localRecovery, localHost, offlineRequest, forgetLocalReceipt,
+  type LocalServerStatus } from '../lib/offline-api';
 import type { SessionApi } from '../lib/session-api';
 
 let sharedApiPromise: Promise<SessionApi> | null = null;
@@ -85,6 +89,10 @@ export function useSession(options: {
           ...s,
           configured: true,
           testEnvironment: config.testEnvironment,
+          ...(config.offline ? { offline: {
+            instanceId: config.offlineInstanceId!, url: config.url,
+            hostAvailable: isLoopbackHost(location.hostname),
+          } } : {}),
           connection: 'connecting',
         }));
         const applyAuth = (session: Session | null) => {
@@ -126,7 +134,8 @@ export function useSession(options: {
           if (authError)
             setState((s) => ({
               ...s,
-              error: 'Не удалось восстановить вход. Запросите новый код.',
+              error: config.offline ? 'Не удалось восстановить вход. Используйте личный ключ доступа.' :
+                'Не удалось восстановить вход. Запросите новый код.',
             }));
           applyAuth(data.session);
         }
@@ -195,7 +204,7 @@ export function useSession(options: {
         rerun = true;
         return pending;
       }
-      if (!navigator.onLine) {
+      if (!api?.config.offline && !navigator.onLine) {
         setState((s) => ({ ...s, connection: 'offline' }));
         return Promise.resolve();
       }
@@ -260,7 +269,7 @@ export function useSession(options: {
             } else
               setState((s) => ({
                 ...s,
-                connection: navigator.onLine ? 'error' : 'offline',
+                connection: (api?.config.offline || navigator.onLine) ? 'error' : 'offline',
                 error: errorText(e),
               }));
           }
@@ -278,7 +287,7 @@ export function useSession(options: {
     setState((s) => ({ ...s, connection: 'connecting' }));
     const channel = api.config.realtime
       ? api.client
-          .channel(`dw-session-${sessionId}-${crypto.randomUUID()}`)
+          .channel(`dw-session-${sessionId}-${randomUuid()}`)
           .on(
             'postgres_changes',
             {
@@ -302,7 +311,7 @@ export function useSession(options: {
               setState((s) => ({ ...s, connection: 'live' }));
               void sync();
             } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED')
-              setState((s) => ({ ...s, connection: navigator.onLine ? 'polling' : 'offline' }));
+              setState((s) => ({ ...s, connection: (api?.config.offline || navigator.onLine) ? 'polling' : 'offline' }));
           })
       : null;
     void sync();
@@ -313,7 +322,7 @@ export function useSession(options: {
     const focus = () => {
       if (document.visibilityState === 'visible') void sync();
     };
-    const offline = () => setState((s) => ({ ...s, connection: 'offline' }));
+    const offline = () => { if (api.config.offline) void sync(); else setState((s) => ({ ...s, connection: 'offline' })); };
     window.addEventListener('online', focus);
     window.addEventListener('offline', offline);
     window.addEventListener('focus', focus);
@@ -354,7 +363,7 @@ export function useSession(options: {
     }
   };
   const requireApi = () => {
-    if (!api) throw new Error('Supabase ещё не подключён.');
+    if (!api) throw new Error('Сервер совместной работы ещё не подключён.');
     return api;
   };
   const requireSession = () => {
@@ -372,10 +381,50 @@ export function useSession(options: {
       `${location.pathname}#session=${encodeURIComponent(snapshot.session.id)}`,
     );
   };
+  const acceptLocalSession = async (session: Session) => {
+    if (!session?.access_token || !session?.refresh_token)
+      throw new Error('Сервер не вернул данные для входа. Повторите попытку.');
+    const { error } = await requireApi().client.auth.setSession({
+      access_token: session.access_token, refresh_token: session.refresh_token,
+    });
+    if (error) throw new Error('Не удалось сохранить вход. Используйте личный ключ доступа.');
+    pendingEmail.current = null;
+    setState((s) => ({ ...s, notice: 'Вы подключены к локальному семинару. Результаты сохраняются на Mac преподавателя.' }));
+  };
+  const localHostToken = async () => {
+    const a = requireApi();
+    if (!a.config.offline || !isLoopbackHost(location.hostname))
+      throw new Error('Откройте кабинет преподавателя непосредственно на Mac.');
+    const { data } = await a.client.auth.getSession();
+    if (!data.session) throw new Error('Сначала войдите как преподаватель.');
+    return data.session.access_token;
+  };
   const actions: SessionAreaActions = {
+    localRegister: (input) => run('Подключаем к локальному семинару', async () => {
+      const { session } = await localLogin(requireApi().config, input);
+      await acceptLocalSession(session);
+    }),
+    localRecover: (recoverySecret) => run('Восстанавливаем доступ', async () => {
+      const { session } = await localRecovery(requireApi().config, recoverySecret);
+      await acceptLocalSession(session);
+    }),
+    localHost: () => run('Открываем кабинет преподавателя', async () => {
+      const { session } = await localHost(requireApi().config);
+      await acceptLocalSession(session);
+    }),
+    localServerStatus: async () => {
+      const token = await localHostToken();
+      return offlineRequest<LocalServerStatus>(requireApi().config, '/offline/admin/status', undefined, token);
+    },
+    localBackup: () => run('Сохраняем резервную копию', async () => {
+      const token = await localHostToken();
+      await offlineRequest(requireApi().config, '/offline/admin/backup', {}, token);
+      setState((s) => ({ ...s, notice: 'Резервная копия сохранена на Mac.' }));
+    }),
     sendCode: (email) =>
       run('Отправляем код', async () => {
         const a = requireApi();
+        if (a.config.offline) throw new Error('В локальном режиме используйте код аудитории или личный ключ.');
         const clean = email.trim().toLowerCase();
         if (!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/u.test(clean) || clean.length > 254)
           throw new Error('Введите корректный email.');
@@ -441,6 +490,7 @@ export function useSession(options: {
       run('Завершаем сеанс', async () => {
         const { error } = await requireApi().client.auth.signOut({ scope: 'local' });
         if (error) throw new Error('Не удалось завершить вход. Повторите действие.');
+        if (api?.config.offlineInstanceId) forgetLocalReceipt(api.config.offlineInstanceId);
         pendingEmail.current = null;
         selected.current = null;
         setSessionId(null);

@@ -15,7 +15,7 @@ import {
 import { codePointLength, createAnchor } from '@domain/index';
 import type { TextAnchor, SearchHit } from '@domain/index';
 import type { CorpusDocument, CorpusEntry } from '@/lib/corpus';
-import { safeExternalUrl } from '@/lib/corpus';
+import { useOriginalDocumentUrl } from '@/hooks/useOriginalDocumentUrl';
 import { anchorForBlocks, anchorFromDomSelection } from '@/lib/selection';
 import { useDocumentSearch } from '@/hooks/useDocumentSearch';
 import { HighlightedText } from './HighlightedText';
@@ -142,7 +142,7 @@ export function DocumentReader({
       30,
     );
   }
-  const original = safeExternalUrl(entry.source.pdfUrl ?? entry.source.sourceUrl);
+  const original = useOriginalDocumentUrl(entry);
   return (
     <section className="panel reader-panel" aria-label="Полный текст программы">
       <header className="reader-top">

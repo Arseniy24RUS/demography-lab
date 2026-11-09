@@ -1,3 +1,4 @@
+import { sha256Hex } from '../../../../packages/security/crypto.mjs';
 import {
   parseRoadmapsIndex,
   parseRoadmapSnapshot,
@@ -202,9 +203,7 @@ export class RoadmapsApi {
     if (result.roadmapId !== roadmapId || result.id !== versionId)
       throw new Error('Получена другая редакция дорожной карты.');
     const bytes = new TextEncoder().encode(result.canonicalJson);
-    const digest = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), (b) =>
-      b.toString(16).padStart(2, '0'),
-    ).join('');
+    const digest = await sha256Hex(bytes);
     if (digest !== result.sha256)
       throw new Error('Контрольная сумма редакции не совпала. Выгрузка остановлена.');
     return result;

@@ -1,3 +1,4 @@
+import { randomUuid } from '../../../../../packages/security/crypto.mjs';
 import { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { Modal } from '../Modal';
@@ -662,7 +663,7 @@ export function RoadmapItemEditor({
               className="button button-secondary"
               disabled={disabled || objectives.length >= 30}
               onClick={() =>
-                put('objectives', [...objectives, { id: crypto.randomUUID(), title: '' }])
+                put('objectives', [...objectives, { id: randomUuid(), title: '' }])
               }
             >
               <Plus size={16} />

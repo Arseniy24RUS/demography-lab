@@ -17,3 +17,12 @@ __pycache__/
 
 # Personal workspace references are not application data.
 /docs/space-target.json
+
+# Prepared distributables and personal classroom databases are never repository contents.
+/runtime/
+/macos/prepared-build.json
+/macos/bundle.json
+/public/data/originals/
+/offline-data/
+/deliverables/
+*.partial-*

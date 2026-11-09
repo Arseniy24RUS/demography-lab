@@ -1,3 +1,4 @@
+import { randomUuid } from '../../../../../packages/security/crypto.mjs';
 import { useEffect, useId, useState } from 'react';
 import {
   Check,
@@ -400,7 +401,7 @@ export function ParticipantSurvey(props: ParticipantSurveyProps) {
                             setDraft((old) => ({
                               ...old,
                               priorityChange: value.trim() ? value : null,
-                              priorityConditionId: value.trim() ? crypto.randomUUID() : null,
+                              priorityConditionId: value.trim() ? randomUuid() : null,
                               conditionalChange: null,
                             }));
                             setDirty(true);

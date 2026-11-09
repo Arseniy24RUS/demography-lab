@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "verifiedAt": "2026-11-09T10:16:34.661Z",
+  "projectId": "alyrowehwzypgtrqnvdi",
+  "sourceCommit": "ce65b09d4e800061948e9037e71f15410be42d90",
+  "sourceHashes": {
+    "corpusIndex": "86c6bf55df05a03931246cc4a092f31b66fd0a3d73d24e53de4923e626f0fd95",
+    "territoryIndex": "02eaef7003e77fe059a94a6a6f9dd8edeff841e0d697f77579a91ce30c9148fa"
+  },
+  "canonicalCounts": {
+    "sealedDocuments": 80,
+    "partialDocuments": 0,
+    "blocks": 52390,
+    "wrongDocumentBlockCounts": 0,
+    "territories": 2471,
+    "series": 12053,
+    "invalidSeriesFingerprints": 0,
+    "datasetSealed": true
+  },
+  "datasetId": "territories-v1-rudn-08c68f1fe1c8-spd-59b778760c9e",
+  "campaigns": {
+    "corpus": {
+      "startedAt": "2026-11-09T10:05:12.890Z",
+      "finishedAt": "2026-11-09T10:10:21.598Z",
+      "documentsProcessed": 80,
+      "ok": true
+    },
+    "territories": {
+      "startedAt": "2026-11-09T10:05:12.897Z",
+      "finishedAt": "2026-11-09T10:12:23.857Z",
+      "regionPacksProcessed": 89,
+      "ok": true
+    }
+  },
+  "anonymousRest": {
+    "checkedAt": "2026-11-09T10:09:58.038Z",
+    "authenticated": false,
+    "results": [
+      {
+        "rpc": "dw_bootstrap",
+        "httpStatus": 401,
+        "result": {
+          "code": "42501",
+          "details": null,
+          "hint": null,
+          "message": "permission denied for function dw_bootstrap"
+        }
+      },
+      {
+        "rpc": "dw_survey_public_manifest",
+        "httpStatus": 400,
+        "result": {
+          "code": "P0001",
+          "details": null,
+          "hint": null,
+          "message": "SURVEY_INVITATION_INVALID"
+        }
+      },
+      {
+        "rpc": "dw_roadmap_statistics_series",
+        "httpStatus": 401,
+        "result": {
+          "code": "42501",
+          "details": null,
+          "hint": null,
+          "message": "permission denied for function dw_roadmap_statistics_series"
+        }
+      }
+    ]
+  },
+  "retirement": {
+    "checkedAt": "2026-11-09T10:14:59.223Z",
+    "functionVersion": 4,
+    "endpoint": "https://alyrowehwzypgtrqnvdi.supabase.co/functions/v1/dw-owner-seed",
+    "results": [
+      {
+        "credential": "none",
+        "httpStatus": 404,
+        "body": "Not found"
+      },
+      {
+        "credential": "retired-operator",
+        "httpStatus": 404,
+        "body": "Not found"
+      }
+    ],
+    "sourceScan": {
+      "files": [
+        "build-edge-owner-seed.mjs",
+        "edge-owner-seed-disabled.ts",
+        "edge-owner-seed.ts",
+        "invoke-owner-seed.mjs",
+        "run-owner-seed.mjs"
+      ],
+      "rawCredentialFound": false,
+      "schemaDdlFound": false,
+      "userDataTableFound": false
+    },
+    "privateCredentialRemoved": true,
+    "artifactSha256": "5863f9416e4bcb42b556964a472404efa45ed5e6ad0c40115737d5deb2f6f7fb"
+  },
+  "notVerifiedByThisReport": [
+    "SMTP delivery or actual participant OTP login",
+    "authenticated browser workflows in the online project",
+    "Realtime subscriptions",
+    "completeness of all application schema migrations"
+  ]
+}

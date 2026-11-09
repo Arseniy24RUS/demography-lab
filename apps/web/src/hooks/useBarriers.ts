@@ -1,3 +1,4 @@
+import { randomUuid } from '../../../../packages/security/crypto.mjs';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { BarriersProjection, BarriersSnapshot } from '../../../../packages/barriers/types';
 import type { BarrierActions } from '../components/barriers/barriers-ui';
@@ -92,7 +93,7 @@ export function useBarriers(options: {
         again = true;
         return pending;
       }
-      if (!navigator.onLine) {
+      if (!api?.config.offline && !navigator.onLine) {
         setError('Связь прервана. На экране последние полученные данные.');
         return Promise.resolve();
       }
@@ -153,7 +154,7 @@ export function useBarriers(options: {
     setLoading(known.current < 0);
     const channel = api.config.realtime
       ? api.client
-          .channel(`dw-barriers-${sessionId}-${crypto.randomUUID()}`)
+          .channel(`dw-barriers-${sessionId}-${randomUuid()}`)
           .on(
             'postgres_changes',
             {
@@ -202,7 +203,7 @@ export function useBarriers(options: {
     if (!client || !sessionId || !userId || projector)
       throw new Error('Откройте занятие в режиме участника.');
     if (mutationLock.current) throw new Error('Дождитесь сохранения предыдущего действия.');
-    if (!navigator.onLine)
+    if (!api?.config.offline && !navigator.onLine)
       throw new Error('Связь прервана. Дождитесь подключения перед отправкой.');
     const capturedIdentity = identity;
     mutationLock.current = true;

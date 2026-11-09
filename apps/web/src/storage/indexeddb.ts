@@ -1,3 +1,4 @@
+import { sha256Hex } from '../../../../packages/security/crypto.mjs';
 import { WorkspaceError } from './errors';
 import type {
   CommitRequest,
@@ -55,14 +56,8 @@ function canonicalJson(value: unknown): string {
 }
 
 async function fingerprint(request: CommitRequest): Promise<string> {
-  if (!globalThis.crypto?.subtle)
-    throw new WorkspaceError(
-      'STORAGE_UNAVAILABLE',
-      'Браузер не предоставляет Web Crypto. Откройте приложение по HTTPS или localhost.',
-    );
   const bytes = new TextEncoder().encode(canonicalJson(request));
-  const digest = await crypto.subtle.digest('SHA-256', bytes);
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+  return sha256Hex(bytes);
 }
 
 function toSnapshot(record: StoredWorkspace): WorkspaceSnapshot {

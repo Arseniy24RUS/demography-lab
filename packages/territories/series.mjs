@@ -1,4 +1,5 @@
-/** Shared by the dependency-free Node seed and browser. Identity is independent of object key order. */
+import { sha256Hex } from '../security/crypto.mjs';
+/** Shared by the Node seed and browser. Identity is independent of object key order. */
 export function canonicalSeriesText(series) {
   return JSON.stringify([
     'canonical-municipal-series-1', series.id, series.territoryKey, series.metricId, series.title,
@@ -11,8 +12,7 @@ export function canonicalSeriesText(series) {
 }
 
 export async function canonicalSeriesFingerprint(series) {
-  const hash = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(canonicalSeriesText(series)));
-  return [...new Uint8Array(hash)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+  return sha256Hex(new TextEncoder().encode(canonicalSeriesText(series)));
 }
 
 export async function verifyCanonicalSeriesFingerprint(series) {

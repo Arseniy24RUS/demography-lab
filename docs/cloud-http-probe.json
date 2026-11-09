@@ -1,0 +1,77 @@
+{
+  "checkedAt": "2026-11-09T10:13:13.792Z",
+  "mode": "read-only-public-api",
+  "passed": 10,
+  "total": 10,
+  "results": [
+    {
+      "name": "public-configuration",
+      "status": "pass",
+      "projectOrigin": "https://alyrowehwzypgtrqnvdi.supabase.co",
+      "survey": "configured-separate-origin"
+    },
+    {
+      "name": "auth-public-settings",
+      "status": "pass",
+      "email": true,
+      "emailConfirmation": true,
+      "anonymousAuth": false,
+      "signup": true
+    },
+    {
+      "name": "anonymous-gate:dw_bootstrap",
+      "status": "pass",
+      "httpStatus": 401,
+      "code": "42501"
+    },
+    {
+      "name": "anonymous-gate:dw_workshop_cursor",
+      "status": "pass",
+      "httpStatus": 401,
+      "code": "42501"
+    },
+    {
+      "name": "anonymous-gate:dw_barriers_cursor",
+      "status": "pass",
+      "httpStatus": 401,
+      "code": "42501"
+    },
+    {
+      "name": "anonymous-gate:dw_roadmaps_index",
+      "status": "pass",
+      "httpStatus": 401,
+      "code": "42501"
+    },
+    {
+      "name": "anonymous-gate:dw_roadmap_statistics_history",
+      "status": "pass",
+      "httpStatus": 401,
+      "code": "42501"
+    },
+    {
+      "name": "closed-schema:private",
+      "status": "pass",
+      "httpStatus": 406,
+      "code": "PGRST106"
+    },
+    {
+      "name": "closed-schema:research",
+      "status": "pass",
+      "httpStatus": 406,
+      "code": "PGRST106"
+    },
+    {
+      "name": "survey-invalid-invitation",
+      "status": "pass",
+      "httpStatus": 400,
+      "code": "SURVEY_INVITATION_INVALID"
+    }
+  ],
+  "notVerified": [
+    "SMTP delivery and rate limits",
+    "hosted OTP templates and Auth URL settings",
+    "teacher assignment after verified login",
+    "authenticated multi-device Realtime",
+    "browser access to classroom and separate survey origin"
+  ]
+}

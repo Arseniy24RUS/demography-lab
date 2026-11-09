@@ -1,0 +1,45 @@
+{
+  "browser": "138.0.7204.0",
+  "environment": "Linux; HTTP LAN origin mapped to loopback; no Wi-Fi hardware certification",
+  "steps": [
+    {
+      "name": "Local teacher bootstrap, real profile and complete database",
+      "milliseconds": 1375
+    },
+    {
+      "name": "Create seminar and show reachable LAN invitation",
+      "milliseconds": 658
+    },
+    {
+      "name": "Touch participant enters over insecure HTTP with external network blocked",
+      "milliseconds": 1312
+    },
+    {
+      "name": "Shared territory, HTTP SHA checks and manual statistics correction",
+      "milliseconds": 2844
+    },
+    {
+      "name": "Frozen DOCX/PDF/JSON export with fonts entirely from local server",
+      "milliseconds": 1152
+    },
+    {
+      "name": "Local PDF source preserves its edition and serves bytes without an external host",
+      "milliseconds": 81
+    },
+    {
+      "name": "Independent anonymous LAN form uses native fetch without account credentials",
+      "milliseconds": 1150
+    },
+    {
+      "name": "Consistent backup, real server restart and restored account",
+      "milliseconds": 6962
+    },
+    {
+      "name": "Recovery on a fresh device returns the same published work",
+      "milliseconds": 1052
+    }
+  ],
+  "result": "passed",
+  "externalRequests": [],
+  "browserErrors": []
+}

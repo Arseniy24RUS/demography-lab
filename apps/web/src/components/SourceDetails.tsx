@@ -1,6 +1,7 @@
 import { ExternalLink } from 'lucide-react';
 import type { CorpusDocument, CorpusEntry } from '@/lib/corpus';
 import { safeExternalUrl } from '@/lib/corpus';
+import { useOriginalDocumentUrl } from '@/hooks/useOriginalDocumentUrl';
 import { Modal } from './Modal';
 export function SourceDetails({
   entry,
@@ -11,7 +12,7 @@ export function SourceDetails({
   doc?: CorpusDocument;
   onClose: () => void;
 }) {
-  const original = safeExternalUrl(entry.source.pdfUrl ?? entry.source.sourceUrl),
+  const original = useOriginalDocumentUrl(entry),
     official = safeExternalUrl(entry.source.officialUrl);
   return (
     <Modal

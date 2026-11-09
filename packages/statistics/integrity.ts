@@ -1,3 +1,4 @@
+import { sha256Hex } from '../security/crypto.mjs';
 import type { TeamStatisticalSeries } from './types';
 
 function ordered(value: unknown): unknown {
@@ -22,11 +23,8 @@ export async function verifyTeamStatisticalSeries(series: TeamStatisticalSeries)
   }
   if (JSON.stringify(ordered(parsed)) !== JSON.stringify(ordered(material)))
     throw new Error('Статистический ряд не соответствует каноническому материалу своей редакции.');
-  if (!globalThis.crypto?.subtle)
-    throw new Error('Проверка статистической редакции требует HTTPS или localhost с Web Crypto.');
   const bytes = new TextEncoder().encode(canonicalJson);
-  const digest = new Uint8Array(await globalThis.crypto.subtle.digest('SHA-256', bytes));
-  const hash = [...digest].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+  const hash = await sha256Hex(bytes);
   if (hash !== fingerprint)
     throw new Error(
       'Контрольная сумма статистической редакции не совпадает. Загрузите данные повторно.',

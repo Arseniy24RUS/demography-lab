@@ -2190,29 +2190,31 @@ svg {
     gap: 20px;
   }
 }
-/* Five primary destinations occupy one real row, including at 320 px. */
+/* Keep full Russian labels and usable touch targets on narrow screens. */
 @media (max-width: 540px) {
   .topnav {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     width: 100%;
     min-width: 0;
-    gap: 4px;
+    height: auto;
+    gap: 2px 12px;
     margin-inline: 0;
   }
   .topnav .nav-button {
     min-width: 0;
+    min-height: 44px;
     padding-inline: 0;
-    font-size: 11.5px;
+    font-size: 12.5px;
   }
 }
 @media (max-width: 360px) {
   .topnav {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 2px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2px 8px;
   }
   .topnav .nav-button {
-    font-size: 10.5px;
+    font-size: 12px;
   }
 }
 @media print {

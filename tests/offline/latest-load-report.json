@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-11-09T09:31:41.641Z",
+  "platform": "linux",
+  "arch": "x64",
+  "node": "v24.22.1",
+  "pglite": "0.5.15",
+  "participants": 50,
+  "canonical": {
+    "documents": 80,
+    "blocks": 52390,
+    "territories": 2471,
+    "series": 12053,
+    "corpusIndexSha256": "86c6bf55df05a03931246cc4a092f31b66fd0a3d73d24e53de4923e626f0fd95",
+    "territoryIndexSha256": "02eaef7003e77fe059a94a6a6f9dd8edeff841e0d697f77579a91ce30c9148fa",
+    "datasetId": "territories-v1-rudn-08c68f1fe1c8-spd-59b778760c9e",
+    "fixture": false
+  },
+  "setupMs": 11945.22,
+  "concurrentBatchMs": 1178.15,
+  "observedMaxQueueDepth": 1,
+  "groups": {
+    "host-auth": {
+      "requests": 1,
+      "p50Ms": 27.95,
+      "p95Ms": 27.95,
+      "maxMs": 27.95
+    },
+    "register": {
+      "requests": 50,
+      "p50Ms": 188.56,
+      "p95Ms": 315.49,
+      "maxMs": 327.46
+    },
+    "join": {
+      "requests": 50,
+      "p50Ms": 11.43,
+      "p95Ms": 18.43,
+      "maxMs": 22.47
+    },
+    "cursor": {
+      "requests": 500,
+      "p50Ms": 78.38,
+      "p95Ms": 97.23,
+      "maxMs": 97.68
+    },
+    "mutation": {
+      "requests": 50,
+      "p50Ms": 242.59,
+      "p95Ms": 407.12,
+      "maxMs": 422.73
+    },
+    "snapshot": {
+      "requests": 1,
+      "p50Ms": 7.72,
+      "p95Ms": 7.72,
+      "maxMs": 7.72
+    },
+    "backup": {
+      "requests": 1,
+      "p50Ms": 2451.64,
+      "p95Ms": 2451.64,
+      "maxMs": 2451.64
+    }
+  },
+  "backupBytes": 24984136,
+  "verified": {
+    "uniqueAccounts": 50,
+    "sessionMembers": 51,
+    "barriers": 50,
+    "allRequestsSucceeded": true
+  },
+  "scope": "Single Linux container, local HTTP loopback, production PGlite and complete corpus. Not Mac, Wi-Fi, battery or audience device validation."
+}

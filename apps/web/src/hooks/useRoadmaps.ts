@@ -1,3 +1,4 @@
+import { randomUuid } from '../../../../packages/security/crypto.mjs';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { SessionApi } from '../lib/session-api';
 import { RoadmapsApi } from '../lib/roadmaps-api';
@@ -146,7 +147,7 @@ export function useRoadmaps({
         repeat = true;
         return pending;
       }
-      if (!navigator.onLine) {
+      if (!api?.config.offline && !navigator.onLine) {
         setError('Связь прервана. Показана последняя полученная редакция.');
         return Promise.resolve();
       }
@@ -231,7 +232,7 @@ export function useRoadmaps({
     setLoading((!state.current.index && !projector) || (projector && state.current.cursor < 0));
     const channel = api.config.realtime
       ? api.client
-          .channel(`dw-roadmaps-${sessionId}-${crypto.randomUUID()}`)
+          .channel(`dw-roadmaps-${sessionId}-${randomUuid()}`)
           .on(
             'postgres_changes',
             {
@@ -281,7 +282,7 @@ export function useRoadmaps({
     if (!client || !sessionId || !userId || projector || !isCurrent(identity, client))
       throw new Error('Откройте дорожную карту в учебной сессии.');
     if (mutation.current) throw new Error('Дождитесь сохранения предыдущего действия.');
-    if (!navigator.onLine)
+    if (!api?.config.offline && !navigator.onLine)
       throw new Error('Дождитесь восстановления связи. Ваш текст остаётся в форме.');
     const token = identity;
     const command = Symbol('roadmap-mutation');

@@ -1,3 +1,4 @@
+import { randomUuid } from '../../../../packages/security/crypto.mjs';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import {
   parseBootstrap,
@@ -189,7 +190,7 @@ export class SessionApi {
     const key = `${name}:${String(args.p_session_id ?? 'profile')}:${String(args.p_local_key ?? args.p_submission_id ?? args.p_family_id ?? args.p_region_id ?? args.p_round_id ?? input.barrierId ?? input.linkId ?? input.solutionId ?? input.surveyId ?? input.itemId ?? input.basisId ?? input.versionId ?? input.territoryKey ?? input.roadmapId ?? '')}:${fingerprint}`;
     let receipt = this.receipts.get(key);
     if (!receipt || receipt.fingerprint !== fingerprint) {
-      receipt = { fingerprint, id: crypto.randomUUID() };
+      receipt = { fingerprint, id: randomUuid() };
       this.receipts.set(key, receipt);
     }
     const result = await this.rpc(name, { ...args, p_operation_id: receipt.id }, parse);

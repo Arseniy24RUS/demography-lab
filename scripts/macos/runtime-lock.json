@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "nodeVersion": "v24.22.2",
+  "darwinArm64Sha256": "aa9549349e47dffaa42dcf95d6e06ade8c4bdafc980979883b88767670df385a",
+  "darwinX64Sha256": "d5e336d588c45be0c37dbd52cc29895593009ca4997a77a1fd02815131ed0e52",
+  "nodeSource": "https://nodejs.org/dist/v24.22.2/SHASUMS256.txt",
+  "pgliteVersion": "0.5.15",
+  "nobleHashesVersion": "2.4.0"
+}

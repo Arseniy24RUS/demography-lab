@@ -10,6 +10,7 @@ import type {
 } from '../../../../../packages/collaboration/types';
 import { messageFromError, phaseLabels } from './session-ui';
 import { useResponsiveDisclosure } from './useResponsiveDisclosure';
+import { useOfflineShareUrl } from '../../hooks/useOfflineShareUrl';
 
 export function HostControls({
   session,
@@ -36,13 +37,14 @@ export function HostControls({
     if (compact) setControlsOpen(false);
   }, [compact, setControlsOpen]);
   const disabled = busy || working;
-  const inviteUrl = invitation
+  const originalInviteUrl = invitation
     ? (() => {
         const url = new URL(window.location.pathname, window.location.origin);
         url.searchParams.set('join', invitation.code);
         return url.toString();
       })()
     : '';
+  const inviteUrl = useOfflineShareUrl(originalInviteUrl, true) ?? '';
 
   async function perform(action: () => Promise<void>, onSuccess?: () => void) {
     setWorking(true);

@@ -1,3 +1,4 @@
+import { sha256Hex } from '../../../../packages/security/crypto.mjs';
 import { validSurveyId, validSurveySecret } from './survey-deployment';
 
 export function newSurveySecret(): string {
@@ -7,11 +8,7 @@ export function newSurveySecret(): string {
 }
 export async function invitationDigest(token: string): Promise<string> {
   if (!validSurveySecret(token)) throw new Error('Некорректный ключ приглашения.');
-  const hash = await crypto.subtle.digest(
-    'SHA-256',
-    new TextEncoder().encode('dw-survey-invite:' + token),
-  );
-  return Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, '0')).join('');
+  return sha256Hex(new TextEncoder().encode('dw-survey-invite:' + token));
 }
 export function responseStorageKey(apiUrl: string, surveyId: string) {
   return `dw-survey-response-v1:${new URL(apiUrl).origin}:${surveyId}`;

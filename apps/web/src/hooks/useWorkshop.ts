@@ -1,3 +1,4 @@
+import { randomUuid } from '../../../../packages/security/crypto.mjs';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { WorkshopProjection, WorkshopSnapshot } from '../../../../packages/workshop/types';
 import type { WorkshopActions } from '../components/workshop/workshop-ui';
@@ -54,7 +55,7 @@ export function useWorkshop(options: { api: SessionApi | null; sessionId: string
     const sync = (): Promise<void> => {
       if (!active) return Promise.resolve();
       if (pending) { again = true; return pending; }
-      if (!navigator.onLine) { setError('Связь прервана. На экране последние полученные данные.'); return Promise.resolve(); }
+      if (!api?.config.offline && !navigator.onLine) { setError('Связь прервана. На экране последние полученные данные.'); return Promise.resolve(); }
       pending = (async () => {
         try {
           if (known.current < 0 || await client.cursor(sessionId) !== known.current) {
@@ -85,7 +86,7 @@ export function useWorkshop(options: { api: SessionApi | null; sessionId: string
     };
     refreshRef.current = sync;
     setLoading(known.current < 0);
-    const channel = api.config.realtime ? api.client.channel(`dw-workshop-${sessionId}-${crypto.randomUUID()}`)
+    const channel = api.config.realtime ? api.client.channel(`dw-workshop-${sessionId}-${randomUuid()}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'dw_workshop_events', filter: `session_id=eq.${sessionId}` }, () => {
         if (!schedule) schedule = setTimeout(() => { schedule = undefined; void sync(); }, 150);
       }).subscribe((status) => { live = status === 'SUBSCRIBED'; if (live) void sync(); }) : null;
@@ -106,7 +107,7 @@ export function useWorkshop(options: { api: SessionApi | null; sessionId: string
   async function mutate(operation: (client: WorkshopApi, id: string) => Promise<WorkshopSnapshot>) {
     if (!client || !sessionId || !userId || projector) throw new Error('Откройте занятие в режиме участника.');
     if (mutationLock.current) throw new Error('Дождитесь сохранения предыдущего действия.');
-    if (!navigator.onLine) throw new Error('Связь прервана. Дождитесь подключения перед отправкой.');
+    if (!api?.config.offline && !navigator.onLine) throw new Error('Связь прервана. Дождитесь подключения перед отправкой.');
     const capturedIdentity = identity;
     mutationLock.current = true; setBusy(true); setError(null);
     try { apply(await operation(client, sessionId), capturedIdentity); }

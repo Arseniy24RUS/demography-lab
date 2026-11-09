@@ -180,8 +180,10 @@ async function main() {
 
   for (const schema of ['private', 'research']) {
     await check(`closed-schema:${schema}`, async () => {
-      const { status, data } = await request('/rest/v1/', {
-        headers: { 'Accept-Profile': schema },
+      // OpenAPI can require a secret key before PostgREST checks the schema.
+      // Probe a concrete read RPC with a publishable key instead.
+      const { status, data } = await request('/rest/v1/rpc/dw_bootstrap', {
+        body: {}, headers: { 'Content-Profile': schema },
       });
       requireResult(
         status === 406 && data.code === 'PGRST106',

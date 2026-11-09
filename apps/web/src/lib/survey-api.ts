@@ -1,3 +1,4 @@
+import { randomUuid } from '../../../../packages/security/crypto.mjs';
 import {
   parseSurveyOwnResponse,
   parseSurveyPublicManifest,
@@ -123,7 +124,7 @@ export class SurveyApi {
       key = `${name}:${String(args.p_survey_id)}`;
     let receipt = this.receipts.get(key);
     if (!receipt || receipt.fingerprint !== fingerprint) {
-      receipt = { fingerprint, id: crypto.randomUUID() };
+      receipt = { fingerprint, id: randomUuid() };
       this.receipts.set(key, receipt);
     }
     const result = await this.rpc(name, { ...args, p_operation_id: receipt.id }, parse);

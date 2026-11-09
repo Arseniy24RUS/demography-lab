@@ -96,6 +96,7 @@ export interface SessionAreaState {
   configured: boolean;
   configurationError: string | null;
   testEnvironment: boolean;
+  offline?: { instanceId: string; url: string; hostAvailable: boolean };
   auth: SessionAuthState;
   bootstrap: BootstrapResult | null;
   snapshot: SessionSnapshot | null;
@@ -108,6 +109,15 @@ export interface SessionAreaState {
   lastSyncedAt: string | null;
 }
 export interface SessionAreaActions {
+  localRegister?(input: { email: string; fullName: string; joinCode: string; recoverySecret: string }): Promise<void>;
+  localRecover?(recoverySecret: string): Promise<void>;
+  localHost?(): Promise<void>;
+  localServerStatus?(): Promise<{
+    instanceId: string; joinCode: string; port: number; surveyPort: number;
+    counts: Record<string, number>; lanHosts: string[]; queueDepth: number;
+    lastBackup: null | { createdAt: string; path: string; bytes: number };
+  }>;
+  localBackup?(): Promise<void>;
   sendCode(email: string): Promise<void>;
   verifyCode(token: string): Promise<void>;
   changeEmail(): void;
