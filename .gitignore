@@ -1,0 +1,19 @@
+node_modules/
+dist/
+.cache/
+.vite/
+coverage/
+.env
+.env.*
+!.env.example
+test-results/
+playwright-report/
+*.log
+*.tsbuildinfo
+.DS_Store
+__pycache__/
+*.pyc
+.venv/
+
+# Personal workspace references are not application data.
+/docs/space-target.json
