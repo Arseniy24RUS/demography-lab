@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: read
-  actions: read
   pages: write
   id-token: write
 
@@ -24,7 +23,7 @@ jobs:
         with:
           node-version: '24'
           cache: npm
-      - run: node --test tests/deployment/pages-order.test.mjs
+      - run: node --test tests/deployment/pages-source.test.mjs
       - run: npm ci --no-audit --no-fund
       - run: npm run build
       - run: npm run check:survey-bundle
@@ -48,12 +47,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Wait for legacy Pages publication
-        timeout-minutes: 6
+      - name: Verify Pages workflow source
+        timeout-minutes: 1
         env:
           GH_TOKEN: ${{ github.token }}
-        # GITHUB_REPOSITORY and GITHUB_SHA are supplied by GitHub Actions.
-        run: node scripts/wait-for-legacy-pages.mjs
+        # GITHUB_REPOSITORY is supplied by GitHub Actions.
+        run: node scripts/assert-pages-source.mjs
       - name: Publish compiled application
         id: deployment
         uses: actions/deploy-pages@v4

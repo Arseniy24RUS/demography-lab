@@ -89,7 +89,7 @@ Email является заявленным идентификатором, вл
 
 Публичные HTTP-проверки границ доступа прошли 12/12 пунктов. Настоящая прикладная HTTPS-репетиция через PostgREST прошла 25 утверждений и 23 запроса в итоговом проходе; Supabase Auth API не использовался. Подтверждены вход двух участников, стабильный UUID, выбор занятия и присоединение, публикация канонической цитаты, семейство, слепой раунд, независимые голоса, выход и возврат к прежнему голосу. Первоначальный проход с созданием этих объектов также сохранён в отчёте; ошибка парсера проверочного клиента исправлена и отдельно обозначена.
 
-Доказательства и границы проверки: [cloud-deployment.md](cloud-deployment.md), [cloud-migration-manifest.json](../scripts/deploy/cloud-migration-manifest.json) и [stage8-http-validation.json](../scripts/deploy/stage8-http-validation.json). Проверка интерфейса на опубликованном GitHub Pages фиксируется отдельно после завершения CI.
+Доказательства и границы проверки: [cloud-deployment.md](cloud-deployment.md), [cloud-migration-manifest.json](../scripts/deploy/cloud-migration-manifest.json) и [stage8-http-validation.json](../scripts/deploy/stage8-http-validation.json). Публичный UI GitHub Pages пока не принят: legacy-source продолжает выдавать исходный entrypoint. Требуется один административный выбор Settings → Pages → Source → GitHub Actions; подробности и фактическая браузерная диагностика приведены в облачном протоколе. Это не ограничивает автономный комплект или подтверждённый API Supabase.
 
 ## Граница перед очным занятием
 
