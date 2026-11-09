@@ -1,7 +1,8 @@
--- Demography Workshop 0.6: owner-side, read-only deployment verification.
--- Run after all five migrations. No email, names, answer content, keys or tokens are returned.
--- Every statement is independent and SELECT-only. A missing-object error means migration is incomplete.
--- Supabase API exposed schemas and hosted Auth/SMTP configuration need separate platform checks.
+-- Demography Workshop 0.8: owner-side, read-only deployment verification.
+-- Run after the six shipped migrations (Stages 2-6 and 8), or their reconciled cloud parts.
+-- No email, names, answer content, keys or tokens are returned. Every statement is SELECT-only.
+-- A missing-object error means migration is incomplete. No administrative issuer is invoked.
+-- Declared email does not use SMTP; actual HTTP login and API exposure need separate checks.
 
 -- 1. Runtime context; no credentials.
 select current_database() as database_name, current_user as sql_role,
@@ -143,13 +144,32 @@ cross join lateral aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a
 where (n.nspname in ('private','research') or (n.nspname='public' and p.proname like 'dw\_%' escape '\'))
  and a.grantee=0 and a.privilege_type='EXECUTE';
 
--- 11. Anon public RPC access. Exactly the four independent survey endpoints.
--- Authenticated role also has EXECUTE on these wrappers; their body explicitly
--- rejects a non-anon JWT with SURVEY_ANON_ONLY.
-select p.proname
-from pg_proc p join pg_namespace n on n.oid=p.pronamespace
-where n.nspname='public' and p.proname like 'dw\_%' escape '\'
- and has_function_privilege('anon',p.oid,'EXECUTE') order by p.proname;
+-- 11. Exact anonymous surface: four entry RPCs plus four independent survey RPCs,
+-- each with its public wrapper and private handler; authenticated also has EXECUTE.
+-- Expected zero rows. Survey handlers keep their independent SURVEY_ANON_ONLY guard.
+with methods(function_name,argument_types) as (values
+ ('dw_identify','text, text'),('dw_entry_session','text'),('dw_entry_logout','text'),
+ ('dw_entry_rpc','text, text, jsonb'),
+ ('dw_survey_public_manifest','uuid, text'),('dw_survey_own_response','uuid, text'),
+ ('dw_survey_save_response','uuid, uuid, text, text, jsonb'),
+ ('dw_survey_withdraw_response','uuid, uuid, text, bigint')
+), expected as (
+ select schema_name,function_name,argument_types from methods cross join (values ('public'),('private')) n(schema_name)
+), actual as (
+ select n.nspname as schema_name,p.proname as function_name,oidvectortypes(p.proargtypes) as argument_types,
+   has_function_privilege('anon',p.oid,'EXECUTE') as anon_execute,
+   has_function_privilege('authenticated',p.oid,'EXECUTE') as authenticated_execute
+ from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+ where n.nspname in ('public','private') and p.proname like 'dw\_%' escape '\'
+)
+select 'missing_or_incorrect_entry_grant' as problem,e.schema_name,e.function_name,e.argument_types
+from expected e left join actual a using(schema_name,function_name,argument_types)
+where not coalesce(a.anon_execute and a.authenticated_execute,false)
+union all
+select 'unexpected_anonymous_execute',a.schema_name,a.function_name,a.argument_types
+from actual a where a.anon_execute and not exists(select 1 from expected e
+ where e.schema_name=a.schema_name and e.function_name=a.function_name and e.argument_types=a.argument_types)
+order by problem,schema_name,function_name;
 
 -- 12. Direct table write/read leaks. Expected zero rows.
 select n.nspname,c.relname,r.rolname
@@ -170,9 +190,309 @@ from expected e order by e.tablename;
 select pubname,schemaname,tablename from pg_publication_tables
 where pubname='supabase_realtime' and schemaname in ('private','research');
 
--- 15. Permission provisioning summary only; initial zero is expected until the
--- owner completes verified email login and an operator grants facilitator access.
-select count(*) filter(where f.revoked_at is null) as enabled_facilitators,
- count(*) filter(where f.revoked_at is null and u.email_confirmed_at is not null
-   and u.is_anonymous=false and u.email is not null and u.email<>'') as verified_facilitators
-from private.facilitators f join auth.users u on u.id=f.user_id;
+-- 15. Provisioning counts only. No Auth mailbox confirmation is fabricated or required
+-- for declared participants / protected operator actors; no personal identity is returned.
+select count(*) filter(where f.revoked_at is null and a.disabled_at is null) as enabled_facilitators,
+ count(*) filter(where f.revoked_at is null and a.disabled_at is null and a.kind='operator') as operator_facilitators,
+ count(*) filter(where f.revoked_at is null and a.disabled_at is null and a.kind='auth') as legacy_auth_facilitators,
+ count(*) filter(where f.revoked_at is null and a.disabled_at is null and a.kind='declared') as declared_facilitators
+from private.facilitators f join private.dw_actors a on a.id=f.user_id;
+
+-- 16. Exact application signatures compiled from the six shipped migrations.
+-- Expected 226 signatures and zero missing, unexpected or overloaded definitions.
+-- Catalog comparison only: none of these functions is invoked by this check.
+with expected(schema_name,function_name,argument_types) as (values
+ ('private','dw_actor_eligible','uuid'),
+ ('private','dw_available_sessions',''),
+ ('private','dw_ballot_period_guard',''),
+ ('private','dw_barrier_evidence','uuid, uuid'),
+ ('private','dw_barrier_evidence_immutable',''),
+ ('private','dw_barrier_family_material','uuid, uuid'),
+ ('private','dw_barrier_family_options','uuid'),
+ ('private','dw_barrier_session_created',''),
+ ('private','dw_barrier_touch','uuid, text'),
+ ('private','dw_barrier_vote','uuid, uuid, jsonb'),
+ ('private','dw_barrier_workshop_bridge',''),
+ ('private','dw_barrier_write_guard','uuid, boolean'),
+ ('private','dw_barriers_cursor','uuid'),
+ ('private','dw_barriers_json','uuid, boolean'),
+ ('private','dw_barriers_projector_snapshot','uuid'),
+ ('private','dw_barriers_snapshot','uuid'),
+ ('private','dw_begin_operation','uuid, text, jsonb'),
+ ('private','dw_bootstrap',''),
+ ('private','dw_can_read_profile','uuid'),
+ ('private','dw_capture_roadmap_basis','uuid, uuid, jsonb'),
+ ('private','dw_capture_roadmap_fact','uuid, uuid, jsonb'),
+ ('private','dw_cast_vote','uuid, uuid, uuid, uuid, integer, bigint'),
+ ('private','dw_cast_vote_updates','uuid, uuid, uuid, uuid, integer, bigint, uuid'),
+ ('private','dw_close_voting_round','uuid, uuid, uuid, bigint'),
+ ('private','dw_compact_workshop','jsonb, uuid'),
+ ('private','dw_configure_roadmaps','uuid, uuid, jsonb'),
+ ('private','dw_create_session','uuid, text, text, text'),
+ ('private','dw_delete_family','uuid, uuid, uuid, bigint'),
+ ('private','dw_entry_current_actor',''),
+ ('private','dw_entry_dto','private.dw_entry_sessions, text'),
+ ('private','dw_entry_hash','text'),
+ ('private','dw_entry_logout','text'),
+ ('private','dw_entry_mint','uuid, boolean'),
+ ('private','dw_entry_rpc','text, text, jsonb'),
+ ('private','dw_entry_session','text'),
+ ('private','dw_entry_token','text'),
+ ('private','dw_event','uuid, uuid, text, uuid, bigint'),
+ ('private','dw_fail','text'),
+ ('private','dw_family_list','uuid'),
+ ('private','dw_finish_operation','uuid, text, jsonb, jsonb'),
+ ('private','dw_freeze_roadmap','uuid, uuid, jsonb'),
+ ('private','dw_id','jsonb'),
+ ('private','dw_identify','text, text'),
+ ('private','dw_invitation','uuid'),
+ ('private','dw_is_verified',''),
+ ('private','dw_issue_operator_session','text, uuid'),
+ ('private','dw_join_open_session','uuid, uuid'),
+ ('private','dw_join_roadmap','uuid, uuid, jsonb'),
+ ('private','dw_join_session','uuid, text'),
+ ('private','dw_keys','jsonb, text[]'),
+ ('private','dw_manage_survey','uuid, uuid, jsonb'),
+ ('private','dw_member_role','uuid'),
+ ('private','dw_moderate_submission','uuid, uuid, uuid, bigint, text'),
+ ('private','dw_normalize_email','text'),
+ ('private','dw_open_voting_round','uuid, uuid, text, text, bigint, jsonb'),
+ ('private','dw_projector_snapshot','uuid'),
+ ('private','dw_publish_submission','uuid, uuid, text, bigint, jsonb'),
+ ('private','dw_record_family_history','uuid, uuid'),
+ ('private','dw_region_work','uuid, uuid, text, text, bigint, text'),
+ ('private','dw_register_auth_actor',''),
+ ('private','dw_review_roadmap','uuid, uuid, jsonb'),
+ ('private','dw_revoke_member','uuid, uuid, uuid, bigint'),
+ ('private','dw_roadmap_barrier_ground','uuid, uuid'),
+ ('private','dw_roadmap_bases_json','uuid, uuid'),
+ ('private','dw_roadmap_budget','uuid'),
+ ('private','dw_roadmap_cost','jsonb'),
+ ('private','dw_roadmap_dataset_immutable',''),
+ ('private','dw_roadmap_ground','uuid, text, uuid'),
+ ('private','dw_roadmap_items_json','uuid, boolean'),
+ ('private','dw_roadmap_link_stale','uuid, uuid'),
+ ('private','dw_roadmap_material_immutable',''),
+ ('private','dw_roadmap_read_guard','uuid'),
+ ('private','dw_roadmap_rooms_json','uuid'),
+ ('private','dw_roadmap_series_json','uuid'),
+ ('private','dw_roadmap_session_created',''),
+ ('private','dw_roadmap_snapshot','uuid, uuid'),
+ ('private','dw_roadmap_source_bridge',''),
+ ('private','dw_roadmap_statistics_history','uuid, jsonb'),
+ ('private','dw_roadmap_statistics_restore','uuid, uuid, jsonb'),
+ ('private','dw_roadmap_statistics_save','uuid, uuid, jsonb'),
+ ('private','dw_roadmap_statistics_series','uuid, jsonb'),
+ ('private','dw_roadmap_touch','uuid, uuid, text, boolean'),
+ ('private','dw_roadmap_validate_room','uuid'),
+ ('private','dw_roadmap_version','uuid, uuid, uuid'),
+ ('private','dw_roadmap_versions_json','uuid'),
+ ('private','dw_roadmap_write_guard','uuid, uuid, boolean'),
+ ('private','dw_roadmaps_cursor','uuid'),
+ ('private','dw_roadmaps_index','uuid'),
+ ('private','dw_roadmaps_projector_snapshot','uuid, uuid'),
+ ('private','dw_rotate_invitation','uuid, uuid, bigint'),
+ ('private','dw_round_json','uuid, boolean'),
+ ('private','dw_round_material_immutable',''),
+ ('private','dw_round_metadata_immutable',''),
+ ('private','dw_round_source_guard',''),
+ ('private','dw_round_summary','uuid'),
+ ('private','dw_s4_digest','text, text'),
+ ('private','dw_s4_integer','jsonb, bigint'),
+ ('private','dw_s4_required','jsonb, text[]'),
+ ('private','dw_s4_text','jsonb, integer, integer'),
+ ('private','dw_s4_uuid','jsonb'),
+ ('private','dw_s5_date','jsonb'),
+ ('private','dw_s5_dates','jsonb'),
+ ('private','dw_s5_domain','numeric, text'),
+ ('private','dw_s5_ids','jsonb, integer'),
+ ('private','dw_s5_item_limit','text'),
+ ('private','dw_s5_number','jsonb'),
+ ('private','dw_s5_series_array','jsonb'),
+ ('private','dw_s5_validate_data','text, jsonb'),
+ ('private','dw_s5_year','jsonb'),
+ ('private','dw_s6_base_series','uuid, text'),
+ ('private','dw_s6_definition','text'),
+ ('private','dw_s6_heads_json','uuid'),
+ ('private','dw_s6_immutable',''),
+ ('private','dw_s6_metric','text'),
+ ('private','dw_s6_required_text','jsonb, integer'),
+ ('private','dw_s6_resolve_series','uuid, text, text'),
+ ('private','dw_s6_value','text, jsonb'),
+ ('private','dw_s8_trim','text'),
+ ('private','dw_save_barrier','uuid, uuid, jsonb'),
+ ('private','dw_save_barrier_link','uuid, uuid, jsonb'),
+ ('private','dw_save_family','uuid, uuid, uuid, bigint, text, text, text, uuid[]'),
+ ('private','dw_save_profile','uuid, bigint, text'),
+ ('private','dw_save_roadmap_item','uuid, uuid, jsonb'),
+ ('private','dw_save_solution','uuid, uuid, jsonb'),
+ ('private','dw_save_survey','uuid, uuid, jsonb'),
+ ('private','dw_session_cursor','uuid'),
+ ('private','dw_session_json','uuid'),
+ ('private','dw_set_member_role','uuid, uuid, uuid, bigint, text'),
+ ('private','dw_snapshot','uuid'),
+ ('private','dw_source_immutable',''),
+ ('private','dw_survey_anon_guard',''),
+ ('private','dw_survey_blank_answers',''),
+ ('private','dw_survey_check_secret','text'),
+ ('private','dw_survey_export_missing','jsonb'),
+ ('private','dw_survey_host_state','uuid, uuid'),
+ ('private','dw_survey_invitation_state','uuid, uuid'),
+ ('private','dw_survey_manifest_json','uuid'),
+ ('private','dw_survey_own_json','uuid, text'),
+ ('private','dw_survey_own_response','uuid, text'),
+ ('private','dw_survey_public_manifest','uuid, text'),
+ ('private','dw_survey_research_export','uuid, uuid'),
+ ('private','dw_survey_save_response','uuid, uuid, text, text, jsonb'),
+ ('private','dw_survey_summary_json','uuid'),
+ ('private','dw_survey_validate_answers','jsonb'),
+ ('private','dw_survey_withdraw_response','uuid, uuid, text, bigint'),
+ ('private','dw_text','jsonb, integer, integer'),
+ ('private','dw_update_session','uuid, uuid, bigint, jsonb'),
+ ('private','dw_validate_bundle','jsonb'),
+ ('private','dw_verified_uid',''),
+ ('private','dw_workshop_cursor','uuid'),
+ ('private','dw_workshop_member_changed',''),
+ ('private','dw_workshop_profile_changed',''),
+ ('private','dw_workshop_projector_snapshot','uuid'),
+ ('private','dw_workshop_projector_updates','uuid, uuid'),
+ ('private','dw_workshop_round_snapshot','uuid, uuid'),
+ ('private','dw_workshop_session_changed',''),
+ ('private','dw_workshop_snapshot','uuid'),
+ ('private','dw_workshop_source_changed',''),
+ ('private','dw_workshop_touch','uuid, text, boolean'),
+ ('private','dw_workshop_updates','uuid, uuid'),
+ ('public','dw_available_sessions',''),
+ ('public','dw_barrier_evidence','uuid, uuid'),
+ ('public','dw_barrier_vote','uuid, uuid, jsonb'),
+ ('public','dw_barriers_cursor','uuid'),
+ ('public','dw_barriers_projector_snapshot','uuid'),
+ ('public','dw_barriers_snapshot','uuid'),
+ ('public','dw_bootstrap',''),
+ ('public','dw_capture_roadmap_basis','uuid, uuid, jsonb'),
+ ('public','dw_capture_roadmap_fact','uuid, uuid, jsonb'),
+ ('public','dw_cast_vote','uuid, uuid, uuid, uuid, integer, bigint'),
+ ('public','dw_cast_vote_updates','uuid, uuid, uuid, uuid, integer, bigint, uuid'),
+ ('public','dw_close_voting_round','uuid, uuid, uuid, bigint'),
+ ('public','dw_configure_roadmaps','uuid, uuid, jsonb'),
+ ('public','dw_create_session','uuid, text, text, text'),
+ ('public','dw_delete_family','uuid, uuid, uuid, bigint'),
+ ('public','dw_entry_logout','text'),
+ ('public','dw_entry_rpc','text, text, jsonb'),
+ ('public','dw_entry_session','text'),
+ ('public','dw_freeze_roadmap','uuid, uuid, jsonb'),
+ ('public','dw_identify','text, text'),
+ ('public','dw_invitation','uuid'),
+ ('public','dw_join_open_session','uuid, uuid'),
+ ('public','dw_join_roadmap','uuid, uuid, jsonb'),
+ ('public','dw_join_session','uuid, text'),
+ ('public','dw_manage_survey','uuid, uuid, jsonb'),
+ ('public','dw_moderate_submission','uuid, uuid, uuid, bigint, text'),
+ ('public','dw_open_voting_round','uuid, uuid, text, text, bigint, jsonb'),
+ ('public','dw_projector_snapshot','uuid'),
+ ('public','dw_publish_submission','uuid, uuid, text, bigint, jsonb'),
+ ('public','dw_region_work','uuid, uuid, text, text, bigint, text'),
+ ('public','dw_review_roadmap','uuid, uuid, jsonb'),
+ ('public','dw_revoke_member','uuid, uuid, uuid, bigint'),
+ ('public','dw_roadmap_snapshot','uuid, uuid'),
+ ('public','dw_roadmap_statistics_history','uuid, jsonb'),
+ ('public','dw_roadmap_statistics_restore','uuid, uuid, jsonb'),
+ ('public','dw_roadmap_statistics_save','uuid, uuid, jsonb'),
+ ('public','dw_roadmap_statistics_series','uuid, jsonb'),
+ ('public','dw_roadmap_version','uuid, uuid, uuid'),
+ ('public','dw_roadmaps_cursor','uuid'),
+ ('public','dw_roadmaps_index','uuid'),
+ ('public','dw_roadmaps_projector_snapshot','uuid, uuid'),
+ ('public','dw_rotate_invitation','uuid, uuid, bigint'),
+ ('public','dw_save_barrier','uuid, uuid, jsonb'),
+ ('public','dw_save_barrier_link','uuid, uuid, jsonb'),
+ ('public','dw_save_family','uuid, uuid, uuid, bigint, text, text, text, uuid[]'),
+ ('public','dw_save_profile','uuid, bigint, text'),
+ ('public','dw_save_roadmap_item','uuid, uuid, jsonb'),
+ ('public','dw_save_solution','uuid, uuid, jsonb'),
+ ('public','dw_save_survey','uuid, uuid, jsonb'),
+ ('public','dw_session_cursor','uuid'),
+ ('public','dw_session_snapshot','uuid'),
+ ('public','dw_set_member_role','uuid, uuid, uuid, bigint, text'),
+ ('public','dw_survey_host_state','uuid, uuid'),
+ ('public','dw_survey_invitation_state','uuid, uuid'),
+ ('public','dw_survey_own_response','uuid, text'),
+ ('public','dw_survey_public_manifest','uuid, text'),
+ ('public','dw_survey_research_export','uuid, uuid'),
+ ('public','dw_survey_save_response','uuid, uuid, text, text, jsonb'),
+ ('public','dw_survey_withdraw_response','uuid, uuid, text, bigint'),
+ ('public','dw_update_session','uuid, uuid, bigint, jsonb'),
+ ('public','dw_workshop_cursor','uuid'),
+ ('public','dw_workshop_projector_snapshot','uuid'),
+ ('public','dw_workshop_projector_updates','uuid, uuid'),
+ ('public','dw_workshop_round_snapshot','uuid, uuid'),
+ ('public','dw_workshop_snapshot','uuid'),
+ ('public','dw_workshop_updates','uuid, uuid')
+), actual as (
+ select n.nspname as schema_name,p.proname as function_name,oidvectortypes(p.proargtypes) as argument_types
+ from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+ where n.nspname in ('public','private') and p.proname like 'dw\_%' escape '\'
+)
+select 'missing_signature' as problem,e.schema_name,e.function_name,e.argument_types
+from expected e where not exists(select 1 from actual a where a.schema_name=e.schema_name
+ and a.function_name=e.function_name and a.argument_types=e.argument_types)
+union all
+select 'unexpected_signature',a.schema_name,a.function_name,a.argument_types
+from actual a where not exists(select 1 from expected e where e.schema_name=a.schema_name
+ and e.function_name=a.function_name and e.argument_types=a.argument_types)
+order by problem,schema_name,function_name,argument_types;
+
+-- 17. Three identity tables must exist with RLS and no client table privileges.
+-- Expected zero rows; these checks do not read any identity or token values.
+with expected(table_name) as (values ('dw_actors'),('dw_declared_identities'),('dw_entry_sessions'))
+select e.table_name from expected e
+left join pg_namespace n on n.nspname='private'
+left join pg_class c on c.relnamespace=n.oid and c.relname=e.table_name and c.relkind='r'
+where c.oid is null or not c.relrowsecurity
+ or has_table_privilege('anon',c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE')
+ or has_table_privilege('authenticated',c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE');
+
+-- 18. Internal identity helpers and the owner-only operator issuer are never client RPCs.
+-- Expected zero rows. The issuer is inspected through pg_proc; it is not executed.
+with expected(signature) as (values
+ ('private.dw_issue_operator_session(text,uuid)'),('private.dw_register_auth_actor()'),
+ ('private.dw_s8_trim(text)'),('private.dw_normalize_email(text)'),('private.dw_entry_hash(text)'),
+ ('private.dw_entry_token(text)'),('private.dw_entry_current_actor()'),('private.dw_actor_eligible(uuid)'),
+ ('private.dw_entry_dto(private.dw_entry_sessions,text)'),('private.dw_entry_mint(uuid,boolean)')
+)
+select signature from expected where to_regprocedure(signature) is null
+ or has_function_privilege('anon',to_regprocedure(signature),'EXECUTE')
+ or has_function_privilege('authenticated',to_regprocedure(signature),'EXECUTE');
+
+-- 19. Six historical references and two new references point to the actor registry.
+-- Original delete actions remain CASCADE=c or NO ACTION=a; expected zero rows.
+with expected(schema_name,table_name,column_name,delete_action) as (values
+ ('private','facilitators','user_id','c'),('public','dw_profiles','user_id','c'),
+ ('public','dw_sessions','owner_id','a'),('private','join_attempts','user_id','c'),
+ ('private','command_receipts','actor_id','a'),('private','audit_events','actor_id','a'),
+ ('private','dw_declared_identities','actor_id','a'),('private','dw_entry_sessions','actor_id','a')
+)
+select e.* from expected e where not exists(
+ select 1 from pg_constraint fk join pg_class t on t.oid=fk.conrelid
+ join pg_namespace n on n.oid=t.relnamespace
+ join pg_attribute a on a.attrelid=t.oid and a.attnum=fk.conkey[1]
+ where fk.contype='f' and cardinality(fk.conkey)=1 and fk.confrelid='private.dw_actors'::regclass
+ and n.nspname=e.schema_name and t.relname=e.table_name and a.attname=e.column_name
+ and fk.confdeltype::text=e.delete_action);
+
+-- 20. Future Auth rows receive an actor through the enabled insert trigger.
+-- Expected registered_trigger=true; catalog inspection only, no Auth insertion.
+select exists(select 1 from pg_trigger t join pg_proc p on p.oid=t.tgfoid
+ join pg_namespace n on n.oid=p.pronamespace
+ where t.tgrelid='auth.users'::regclass and t.tgname='dw_register_auth_actor'
+ and not t.tgisinternal and t.tgenabled in ('O','A') and (t.tgtype::integer & 4)=4
+ and n.nspname='private' and p.proname='dw_register_auth_actor') as registered_trigger;
+
+-- 21. Invoker wrappers require only USAGE on private, never CREATE.
+-- Expected zero rows. Research remains a closed schema, accessed by guarded definers.
+with expected(role_name,schema_name,usage_allowed) as (values
+ ('anon','private',true),('authenticated','private',true),
+ ('anon','research',false),('authenticated','research',false)
+)
+select * from expected where has_schema_privilege(role_name,schema_name,'USAGE') is distinct from usage_allowed
+ or has_schema_privilege(role_name,schema_name,'CREATE');

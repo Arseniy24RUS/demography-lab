@@ -5,6 +5,7 @@ export const SURVEY_RPCS = new Set([
 ]);
 const NAMES = [
   'dw_bootstrap', 'dw_save_profile', 'dw_create_session', 'dw_join_session',
+  'dw_available_sessions', 'dw_join_open_session',
   'dw_session_snapshot', 'dw_session_cursor', 'dw_projector_snapshot', 'dw_update_session',
   'dw_publish_submission', 'dw_moderate_submission', 'dw_invitation', 'dw_rotate_invitation',
   'dw_set_member_role', 'dw_revoke_member',

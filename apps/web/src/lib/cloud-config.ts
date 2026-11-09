@@ -13,6 +13,7 @@ export interface CloudConfig {
   offline?: boolean;
   offlineInstanceId?: string;
   offlineAuthUrl?: string;
+  identification?: 'declared-email';
 }
 export interface CloudConfiguration {
   config: CloudConfig | null;
@@ -72,11 +73,12 @@ export function validateCloudConfiguration(
       config: {
         url: url.origin,
         publishableKey: key,
-        realtime: !offline && row.realtime !== false,
+        realtime: !offline && row.identification !== 'declared-email' && row.realtime !== false,
         testEnvironment,
-        pollInterval: testEnvironment ? 1000 : offline ? 2000 : 8000,
+        pollInterval: testEnvironment ? 1000 : offline || row.identification === 'declared-email' ? 2000 : 8000,
         survey: survey.deployment,
         surveyError: survey.error,
+        ...(row.identification === 'declared-email' ? { identification: 'declared-email' as const } : {}),
         ...(offline ? { offline, offlineInstanceId: row.offlineInstanceId as string,
           offlineAuthUrl: url.origin } : {}),
       },
@@ -123,6 +125,7 @@ export function loadCloudConfiguration(): Promise<CloudConfiguration> {
           realtime: env.VITE_WORKSHOP_REALTIME !== 'false',
           surveyUrl: env.VITE_WORKSHOP_SURVEY_URL,
           classroomOrigin: env.VITE_WORKSHOP_CLASSROOM_ORIGIN,
+          identification: 'declared-email',
         },
         testEnvironment,
       );

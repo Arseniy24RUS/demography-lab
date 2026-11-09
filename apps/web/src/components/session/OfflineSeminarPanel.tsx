@@ -1,8 +1,8 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Download, HardDrive, RefreshCw, ShieldCheck, Wifi } from 'lucide-react';
+import { HardDrive, RefreshCw, ShieldCheck, Wifi } from 'lucide-react';
 import type { SessionAreaActions, SessionAreaState } from '../../../../../packages/collaboration/types';
-import { downloadLocalReceipt, readLocalReceipt, type LocalServerStatus } from '../../lib/offline-api';
+import { type LocalServerStatus } from '../../lib/offline-api';
 import { isLocalNetworkHost, isLoopbackHost } from '../../lib/local-network';
 import { Modal } from '../Modal';
 import { messageFromError } from './session-ui';
@@ -43,9 +43,8 @@ export function OfflineSeminarPanel({ state, actions }: { state: SessionAreaStat
     if (selectedHost && status) selectLocalShareAddress(local.instanceId, { host: selectedHost, joinCode: status.joinCode });
   }, [selectedHost, status?.joinCode, local.instanceId]);
   const link = selectedHost && status ? new URL(`http://${selectedHost}:${status.port}/`) : null;
-  if (link && status) link.hash = new URLSearchParams({ sessions: '1', network: status.joinCode,
-    ...(state.invitation ? { join: state.invitation.code } : {}) }).toString();
-  const receipt = readLocalReceipt(local.instanceId);
+  if (link && status) link.hash = new URLSearchParams(state.snapshot
+    ? { session: state.snapshot.session.id } : { sessions: '1' }).toString();
   async function refresh(backup = false) {
     const expected = identityRef.current;
     setWorking(true); setError('');
@@ -62,7 +61,6 @@ export function OfflineSeminarPanel({ state, actions }: { state: SessionAreaStat
         <HardDrive size={20} aria-hidden="true" />
         <div><strong>Семинар в локальной сети</strong>
           <p>Общая работа сохраняется на Mac преподавателя. Интернет для занятия не требуется.</p></div>
-        {receipt ? <button className="button button-secondary" onClick={() => downloadLocalReceipt(receipt)}><Download size={16} /> Сохранить ключ доступа</button> : null}
       </div>
       {canOperate ? <details className="offline-operator" open={!state.snapshot}>
         <summary>Подключение аудитории и резервная копия</summary>
@@ -76,9 +74,9 @@ export function OfflineSeminarPanel({ state, actions }: { state: SessionAreaStat
                 : 'Первая резервная копия ещё не создана.'}</p>
               {status.lastBackup ? <p className="offline-backup-path">{status.lastBackup.path}</p> : null}
             </div>
-            <div><span className="offline-eyebrow">Код локальной сети</span>
-              <strong className="offline-network-code">{status.joinCode}</strong>
-              <p className="session-hint">Этот код даёт вход участника. Преподавательские права с ним не выдаются.</p></div>
+            <div><span className="offline-eyebrow">Вход участников</span>
+              <strong>Только email и ФИО</strong>
+              <p className="session-hint">Покажите QR-код платформы. После входа участник продолжит свою работу.</p></div>
           </div>
           <div className="session-action-row">
             <button className="button button-primary" disabled={!link || working} onClick={() => setShowConnection(true)}><Wifi size={17} /> Показать подключение на экране</button>
@@ -112,7 +110,7 @@ export function OfflineSeminarPanel({ state, actions }: { state: SessionAreaStat
           <section><h3>2. Мастерская</h3>
             <QRCodeSVG value={link.href} size={220} level="M" marginSize={4} title="Открыть демографическую мастерскую" />
             <a href={link.href} target="_blank" rel="noreferrer">{link.origin}</a>
-            <p className="session-hint">Код локальной сети: <strong>{status.joinCode}</strong>{state.invitation ? ` · Код занятия: ${state.invitation.code}` : ''}</p>
+            <p className="session-hint">Откройте мастерскую и укажите email и ФИО.</p>
           </section>
         </div>
       </Modal> : null}

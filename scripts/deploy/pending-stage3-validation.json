@@ -1,8 +1,8 @@
 {
-  "checkedAt": "2026-11-09T10:10:00.604Z",
+  "checkedAt": "2026-11-09T11:16:25.443Z",
   "status": "pass",
   "engine": "PGlite",
-  "scope": "Recreated partial cloud DDL then applied the exact pending transaction, including privilege assertions",
+  "scope": "Reconstructed the recorded partial cloud schema and applied the exact pending transaction before and after Stage 8, including guarded anonymous entry privilege assertions.",
   "functions": [
     {
       "nspname": "private",
@@ -29,5 +29,7 @@
       "authenticated_execute": true
     }
   ],
-  "cloudApplied": false
+  "cloudApplied": false,
+  "pendingSqlSha256": "418d23a95d234822323bcdcdf0742966ddfea81c1249e6048580e4e5ef2dc708",
+  "compatibilityReport": "scripts/deploy/stage8-compatibility-validation.json"
 }

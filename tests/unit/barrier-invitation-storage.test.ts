@@ -70,7 +70,7 @@ const state: SessionAreaState = {
   configured: true,
   configurationError: null,
   testEnvironment: true,
-  auth: { status: 'signed-in', email: 'host@example.test', userId, resendAvailableAt: 0 },
+  auth: { status: 'signed-in', email: 'host@example.test', userId },
   bootstrap: null,
   snapshot: { session, members: [], submissions: [], cursor: 0 },
   invitation: null,

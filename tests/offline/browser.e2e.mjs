@@ -7,7 +7,7 @@ import { openRuntime } from '../../scripts/offline/storage.mjs';
 import { startServer } from '../../scripts/offline/server.mjs';
 
 const directory = await mkdtemp(join(tmpdir(), 'demography-offline-browser-'));
-const evidence = resolve(process.env.PLAYWRIGHT_ARTIFACTS_DIR ?? join(tmpdir(), 'demography-offline-browser-evidence'));
+const evidence = resolve(process.env.PLAYWRIGHT_ARTIFACTS_DIR ?? join(tmpdir(), 'demography-offline-browser-stage-08-evidence'));
 await mkdir(evidence, { recursive: true });
 let runtime = await openRuntime({ dataDir: directory });
 let server = await startServer({ runtime, port: 8787, surveyPort: 8788, publicHost: '192.168.50.10', backupIntervalMs: 0 });
@@ -16,7 +16,8 @@ const browser = await chromium.launch({ headless: true,
   args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--host-resolver-rules=MAP 192.168.50.10 127.0.0.1'],
 });
 const failures = [], outsideRequests = [], steps = [];
-const report = { browser: browser.version(), environment: 'Linux; HTTP LAN origin mapped to loopback; no Wi-Fi hardware certification', steps, dataDirectory: directory };
+const report = { version: JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8')).version,
+  browser: browser.version(), environment: 'Linux; HTTP LAN origin mapped to loopback; no Wi-Fi hardware certification', steps, dataDirectory: directory };
 let lastPage;
 async function context(mobile = false) {
   const context = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1440, height: 1000 },
@@ -56,15 +57,53 @@ async function roadmap(page) {
 async function snapshot(page) {
   await page.screenshot({ path: join(evidence, `offline-${steps.length}.png`), fullPage: true });
 }
+async function identify(page, email, fullName) {
+  const form = page.locator('.session-access-main form');
+  await expect(form).toBeVisible();
+  await expect(form.locator('input')).toHaveCount(2);
+  await expect(form.locator('input[type="password"]')).toHaveCount(0);
+  await page.getByLabel('Email', { exact: true }).fill(email);
+  await page.getByLabel('Фамилия, имя, отчество', { exact: true }).fill(fullName);
+  const pending = page.waitForResponse(response => new URL(response.url()).pathname === '/offline/auth/identify'
+    && response.request().method() === 'POST');
+  await form.getByRole('button', { name: 'Войти', exact: true }).click();
+  const response = await pending;
+  expect(response.status()).toBe(200);
+  expect(Object.keys(response.request().postDataJSON()).sort()).toEqual(['email', 'fullName']);
+  const result = await response.json();
+  expect(Object.keys(result)).toEqual(['session']);
+  expect(result.session.user.email_confirmed_at).toBeNull();
+  await expect(page.locator('.session-profile-summary strong')).toHaveText(fullName);
+  await expect(page.getByRole('button', { name: 'Сохранить ключ доступа', exact: true })).toHaveCount(0);
+  return result.session.user.id;
+}
+async function statisticsEditor(page) {
+  await roadmap(page);
+  await page.getByRole('button', { name: 'Уточнить данные', exact: true }).click();
+  const editor = page.getByRole('dialog', { name: 'Уточнение статистики', exact: true });
+  await editor.getByLabel('Редактируемый показатель', { exact: true }).selectOption('births_total');
+  return editor;
+}
+async function statisticsHistory(page, editor) {
+  const pending = page.waitForResponse(response => new URL(response.url()).pathname === '/rest/v1/rpc/dw_roadmap_statistics_history'
+    && response.request().method() === 'POST');
+  await editor.getByRole('button', { name: 'История уточнений', exact: true }).click();
+  const response = await pending;
+  expect(response.status()).toBe(200);
+  const history = await response.json();
+  await expect(editor.locator('.rm-statistics-history article')).toHaveCount(history.entries.length);
+  return history;
+}
 const teacher = await context();
 const student = await context(true);
-let invitation, recovery, sessionUrl;
+const studentName = 'Слушатель автономной репетиции';
+let invitation, studentId, sessionUrl, sessionId, returning;
 try {
   await step('Local teacher bootstrap, real profile and complete database', teacher.page, async () => {
     await teacher.page.goto('http://127.0.0.1:8787/#sessions');
-    await teacher.page.getByRole('button', { name: 'Открыть кабинет преподавателя', exact: true }).click();
     await teacher.page.getByLabel('Фамилия, имя, отчество', { exact: true }).fill('Преподаватель локальной репетиции');
-    await teacher.page.getByRole('button', { name: 'Сохранить профиль', exact: true }).click();
+    await teacher.page.getByRole('button', { name: 'Кабинет преподавателя на этом Mac', exact: true }).click();
+    await expect(teacher.page.locator('.session-profile-summary strong')).toHaveText('Преподаватель локальной репетиции');
     await expect(teacher.page.getByText('80 документов · 2 471 территорий', { exact: false })).toBeVisible();
     await snapshot(teacher.page);
   });
@@ -76,30 +115,28 @@ try {
     await dialog.getByRole('button', { name: 'Создать занятие', exact: true }).click();
     await expect(dialog).toBeHidden();
     sessionUrl = teacher.page.url();
+    sessionId = new URLSearchParams(new URL(sessionUrl).hash.slice(1)).get('session');
+    expect(sessionId).toBeTruthy();
     await teacher.page.getByText('Подключение аудитории и резервная копия', { exact: true }).click();
     await teacher.page.getByRole('button', { name: 'Показать подключение на экране', exact: true }).click();
     const connect = teacher.page.getByRole('dialog', { name: 'Подключение к мастерской', exact: true });
     await connect.getByLabel('Адрес Mac в сети', { exact: true }).selectOption('192.168.50.10');
     invitation = await connect.getByRole('link').getAttribute('href');
     expect(new URL(invitation).hostname).toBe('192.168.50.10');
-    expect(new URLSearchParams(new URL(invitation).hash.slice(1)).get('join')).toBeTruthy();
+    const parameters = new URLSearchParams(new URL(invitation).hash.slice(1));
+    expect(parameters.get('session')).toBe(sessionId);
+    expect([...parameters.keys()]).toEqual(['session']);
     await snapshot(teacher.page);
     await connect.getByRole('button', { name: 'Закрыть окно', exact: true }).click();
   });
-  await step('Touch participant enters over insecure HTTP with external network blocked', student.page, async () => {
+  await step('Two-field touch entry automatically joins the linked seminar over HTTP LAN', student.page, async () => {
     await student.page.goto(invitation);
     expect(await student.page.evaluate(() => window.isSecureContext)).toBe(false);
     expect(await student.page.evaluate(() => typeof crypto.subtle)).toBe('undefined');
-    await expect(student.page.getByRole('button', { name: 'Открыть кабинет преподавателя', exact: true })).toHaveCount(0);
-    await student.page.getByLabel('Фамилия, имя, отчество', { exact: true }).fill('Слушатель автономной репетиции');
-    await student.page.getByLabel('Email', { exact: true }).fill('local-student@example.test');
-    await student.page.getByRole('button', { name: 'Войти в локальный семинар', exact: true }).click();
-    const receiptDownload = student.page.waitForEvent('download');
-    await student.page.getByRole('button', { name: 'Сохранить ключ доступа', exact: true }).click();
-    recovery = JSON.parse(await readFile(await (await receiptDownload).path(), 'utf8'));
-    expect(recovery.recoverySecret).toMatch(/^[a-f\d]{64}$/u);
-    await student.page.getByRole('button', { name: 'Присоединиться', exact: true }).click();
+    await expect(student.page.getByRole('button', { name: 'Кабинет преподавателя на этом Mac', exact: true })).toHaveCount(0);
+    studentId = await identify(student.page, 'local-student@example.test', studentName);
     await expect(student.page.getByRole('heading', { name: 'Автономная репетиция Мордовия', exact: true })).toBeVisible();
+    expect(new URLSearchParams(new URL(student.page.url()).hash.slice(1)).get('session')).toBe(sessionId);
     expect(await student.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
     await snapshot(student.page);
   });
@@ -228,15 +265,55 @@ try {
     await expect(editor.getByLabel('Значение за 2014 год', { exact: true })).toHaveValue('301');
     await editor.getByRole('button', { name: 'Закрыть', exact: true }).click();
   });
-  await step('Recovery on a fresh device returns the same published work', student.page, async () => {
-    const second = await context();
-    await second.page.goto('http://192.168.50.10:8787/#sessions');
-    await second.page.getByRole('button', { name: 'Восстановить доступ', exact: true }).click();
-    await second.page.getByLabel('Личный ключ доступа', { exact: true }).fill(recovery.recoverySecret);
-    await second.page.getByRole('button', { name: 'Восстановить доступ', exact: true }).last().click();
-    await expect(second.page.getByText('Слушатель автономной репетиции', { exact: true })).toBeVisible();
-    await expect(second.page.getByRole('heading', { name: 'Автономная репетиция Мордовия', exact: true })).toBeVisible();
-    await second.context.close();
+  await step('Logout and the same email on a fresh device resume the sole open seminar and preserved authorship', student.page, async () => {
+    await student.page.goto(invitation);
+    await expect(student.page.locator('.session-profile-summary strong')).toHaveText(studentName);
+    await student.page.getByRole('button', { name: 'Выйти', exact: true }).click();
+    await expect(student.page.getByRole('heading', { name: 'Войти в занятие', exact: true })).toBeVisible();
+    // A new browser has neither previous tokens nor a session ID in its address.
+    // It must find the same participant and enter the only open seminar itself.
+    returning = await context();
+    lastPage = returning.page;
+    await returning.page.goto('http://192.168.50.10:8787/#sessions');
+    expect(await identify(returning.page, 'LOCAL-STUDENT@EXAMPLE.TEST', studentName)).toBe(studentId);
+    await expect(returning.page.getByRole('heading', { name: 'Автономная репетиция Мордовия', exact: true })).toBeVisible();
+    expect(new URLSearchParams(new URL(returning.page.url()).hash.slice(1)).get('session')).toBe(sessionId);
+    const editor = await statisticsEditor(returning.page);
+    await expect(editor.getByLabel('Значение за 2014 год', { exact: true })).toHaveValue('301');
+    const history = await statisticsHistory(returning.page, editor);
+    expect(history.entries).toHaveLength(1);
+    expect(history.entries[0]).toMatchObject({ revision: 1, createdBy: studentId, createdByName: studentName });
+    await expect(editor.locator('.rm-statistics-history article').first()).toContainText(studentName);
+    await snapshot(returning.page);
+    await editor.getByRole('button', { name: 'Закрыть', exact: true }).click();
+  });
+  await step('A different email in the same browser receives a separate identity and never rewrites prior authorship', returning.page, async () => {
+    const page = returning.page;
+    const otherName = 'Другой слушатель автономной репетиции';
+    await page.getByRole('button', { name: 'Выйти', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Войти в занятие', exact: true })).toBeVisible();
+    const otherId = await identify(page, 'other-local-student@example.test', otherName);
+    expect(otherId).not.toBe(studentId);
+    await expect(page.getByRole('heading', { name: 'Автономная репетиция Мордовия', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Создать занятие', exact: true })).toHaveCount(0);
+    const editor = await statisticsEditor(page);
+    await expect(editor.getByLabel('Значение за 2014 год', { exact: true })).toHaveValue('301');
+    await editor.getByLabel('Значение за 2015 год', { exact: true }).fill('302');
+    await editor.getByLabel('Источник уточнения', { exact: true }).fill('Учебная сводка второго участника');
+    await editor.getByLabel('Дата источника', { exact: true }).fill('2026-10-02');
+    await editor.getByLabel('Основание изменения', { exact: true }).fill('Проверка независимого авторства после смены email в том же браузере.');
+    await editor.getByRole('button', { name: 'Проверить изменения', exact: true }).click();
+    await editor.getByRole('button', { name: 'Применить уточнения', exact: true }).click();
+    await expect(editor.getByRole('status')).toContainText('Уточнения сохранены для всей территориальной команды');
+    const history = await statisticsHistory(page, editor);
+    expect(history.entries).toHaveLength(2);
+    expect(history.entries.find(entry => entry.revision === 1)).toMatchObject({ createdBy: studentId, createdByName: studentName });
+    expect(history.entries.find(entry => entry.revision === 2)).toMatchObject({ createdBy: otherId, createdByName: otherName });
+    await expect(editor.locator('.rm-statistics-history')).toContainText(studentName);
+    await expect(editor.locator('.rm-statistics-history')).toContainText(otherName);
+    await snapshot(page);
+    await editor.getByRole('button', { name: 'Закрыть', exact: true }).click();
+    await returning.context.close();
   });
   expect(outsideRequests).toEqual([]);
   expect(failures).toEqual([]);

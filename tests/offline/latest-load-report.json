@@ -1,11 +1,13 @@
 {
   "schemaVersion": 1,
-  "createdAt": "2026-11-09T09:31:41.641Z",
+  "createdAt": "2026-11-09T11:06:14.693Z",
   "platform": "linux",
   "arch": "x64",
   "node": "v24.22.1",
   "pglite": "0.5.15",
   "participants": 50,
+  "identification": "email-and-full-name",
+  "joining": "open-session",
   "canonical": {
     "documents": 80,
     "blocks": 52390,
@@ -16,54 +18,54 @@
     "datasetId": "territories-v1-rudn-08c68f1fe1c8-spd-59b778760c9e",
     "fixture": false
   },
-  "setupMs": 11945.22,
-  "concurrentBatchMs": 1178.15,
+  "setupMs": 12577.19,
+  "concurrentBatchMs": 2311.33,
   "observedMaxQueueDepth": 1,
   "groups": {
     "host-auth": {
       "requests": 1,
-      "p50Ms": 27.95,
-      "p95Ms": 27.95,
-      "maxMs": 27.95
+      "p50Ms": 33.21,
+      "p95Ms": 33.21,
+      "maxMs": 33.21
     },
-    "register": {
+    "identify": {
       "requests": 50,
-      "p50Ms": 188.56,
-      "p95Ms": 315.49,
-      "maxMs": 327.46
+      "p50Ms": 309.93,
+      "p95Ms": 587.45,
+      "maxMs": 621.06
     },
     "join": {
       "requests": 50,
-      "p50Ms": 11.43,
-      "p95Ms": 18.43,
-      "maxMs": 22.47
+      "p50Ms": 23.59,
+      "p95Ms": 31.72,
+      "maxMs": 35.04
     },
     "cursor": {
       "requests": 500,
-      "p50Ms": 78.38,
-      "p95Ms": 97.23,
-      "maxMs": 97.68
+      "p50Ms": 175.78,
+      "p95Ms": 227.47,
+      "maxMs": 228.8
     },
     "mutation": {
       "requests": 50,
-      "p50Ms": 242.59,
-      "p95Ms": 407.12,
-      "maxMs": 422.73
+      "p50Ms": 431.06,
+      "p95Ms": 653.33,
+      "maxMs": 674.26
     },
     "snapshot": {
       "requests": 1,
-      "p50Ms": 7.72,
-      "p95Ms": 7.72,
-      "maxMs": 7.72
+      "p50Ms": 9.9,
+      "p95Ms": 9.9,
+      "maxMs": 9.9
     },
     "backup": {
       "requests": 1,
-      "p50Ms": 2451.64,
-      "p95Ms": 2451.64,
-      "maxMs": 2451.64
+      "p50Ms": 2457.36,
+      "p95Ms": 2457.36,
+      "maxMs": 2457.36
     }
   },
-  "backupBytes": 24984136,
+  "backupBytes": 25057954,
   "verified": {
     "uniqueAccounts": 50,
     "sessionMembers": 51,

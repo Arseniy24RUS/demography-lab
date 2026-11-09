@@ -1,6 +1,6 @@
 import { randomUuid } from '../../../../packages/security/crypto.mjs';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Session } from '@supabase/supabase-js';
+import type { WorkshopIdentitySession } from '../lib/declared-identity';
 import type {
   ProjectionSession,
   SessionAreaActions,
@@ -10,7 +10,7 @@ import type {
 import type { TextAnchor } from '@domain/index';
 import { loadCloudConfiguration } from '../lib/cloud-config';
 import { isLoopbackHost } from '../lib/local-network';
-import { localLogin, localRecovery, localHost, offlineRequest, forgetLocalReceipt,
+import { localHost, offlineRequest, forgetLocalReceipt,
   type LocalServerStatus } from '../lib/offline-api';
 import type { SessionApi } from '../lib/session-api';
 
@@ -25,7 +25,7 @@ const initialState = (): SessionAreaState => ({
   configured: false,
   configurationError: null,
   testEnvironment: false,
-  auth: { status: 'loading', email: null, userId: null, resendAvailableAt: 0 },
+  auth: { status: 'loading', email: null, userId: null },
   bootstrap: null,
   snapshot: null,
   invitation: null,
@@ -48,11 +48,10 @@ export function useSession(options: {
 }) {
   const [state, setState] = useState<SessionAreaState>(initialState);
   const [api, setApi] = useState<SessionApi | null>(null);
-  const [sessionId, setSessionId] = useState<string | null>(
-    options.initialSessionId && uuidPattern.test(options.initialSessionId)
-      ? options.initialSessionId
-      : null,
-  );
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [identityRevision, setIdentityRevision] = useState(0);
+  const identityToken = useRef<string | null>(null);
+  const enteredIdentity = useRef<string | null>(null);
   const [projection, setProjection] = useState<ProjectionSession | null>(null);
   const current = useRef(state);
   current.current = state;
@@ -62,7 +61,6 @@ export function useSession(options: {
   callbacks.current = options;
   const refreshing = useRef<() => Promise<void>>(async () => {});
   const runLock = useRef(false);
-  const pendingEmail = useRef<string | null>(null);
   const projectionCursor = useRef(-1);
 
   useEffect(() => {
@@ -95,21 +93,21 @@ export function useSession(options: {
           } } : {}),
           connection: 'connecting',
         }));
-        const applyAuth = (session: Session | null) => {
+        const applyAuth = (session: WorkshopIdentitySession | null) => {
           if (!active) return;
           const id = session?.user.id ?? null;
+          if (identityToken.current !== (session?.access_token ?? null)) {
+            identityToken.current = session?.access_token ?? null;
+            setIdentityRevision((value) => value + 1);
+          }
           setState((s) => {
             const changed = s.auth.userId !== id;
             return {
               ...s,
               auth: {
                 ...s.auth,
-                status: session
-                  ? 'signed-in'
-                  : pendingEmail.current
-                    ? 'awaiting-code'
-                    : 'signed-out',
-                email: session?.user.email ?? pendingEmail.current,
+                status: session ? 'signed-in' : 'signed-out',
+                email: session?.user.email ?? null,
                 userId: id,
               },
               ...(changed
@@ -123,21 +121,21 @@ export function useSession(options: {
             projectionCursor.current = -1;
           }
         };
-        const {
-          data: { subscription },
-        } = next.client.auth.onAuthStateChange((_event, session) => {
-          applyAuth(session);
-        });
-        unsubscribe = () => subscription.unsubscribe();
-        const { data, error: authError } = await next.client.auth.getSession();
-        if (active) {
-          if (authError)
-            setState((s) => ({
-              ...s,
-              error: config.offline ? 'Не удалось восстановить вход. Используйте личный ключ доступа.' :
-                'Не удалось восстановить вход. Запросите новый код.',
-            }));
-          applyAuth(data.session);
+        unsubscribe = next.onIdentityChange(applyAuth);
+        try {
+          const parameters = new URLSearchParams(location.hash.slice(1));
+          const hostAccess = parameters.get('hostAccess');
+          if (hostAccess) {
+            parameters.delete('hostAccess');
+            parameters.set('sessions', '1');
+            history.replaceState(null, '', `${location.pathname}#${parameters}`);
+            applyAuth(await next.acceptHostLink(hostAccess));
+          } else applyAuth(await next.identitySession());
+        } catch (cause) {
+          if (active) {
+            applyAuth(null);
+            setState((s) => ({ ...s, error: errorText(cause) }));
+          }
         }
       })
       .catch((e) => {
@@ -158,18 +156,39 @@ export function useSession(options: {
   useEffect(() => {
     if (!api || !state.auth.userId) return;
     let active = true;
-    void api
-      .bootstrap()
-      .then((bootstrap) => {
-        if (active) setState((s) => ({ ...s, bootstrap, error: null }));
+    const identity = state.auth.userId;
+    void Promise.all([api.bootstrap(), api.availableSessions()])
+      .then(async ([bootstrap, availableSessions]) => {
+        if (!active) return;
+        setState((s) => ({ ...s, bootstrap, availableSessions, error: null }));
+        if (!bootstrap.profile || enteredIdentity.current === identity) return;
+        enteredIdentity.current = identity;
+        const parameters = new URLSearchParams(location.hash.slice(1));
+        const requested = parameters.get('session') ?? options.initialSessionId;
+        const invitation = readJoin();
+        try {
+          if (requested && uuidPattern.test(requested)) {
+            const snapshot = bootstrap.sessions.some((item) => item.id === requested)
+              ? await api.snapshot(requested) : await api.joinOpenSession(requested);
+            if (active) enter(snapshot);
+          } else if (invitation) {
+            const snapshot = await api.joinSession(invitation);
+            if (active) enter(snapshot);
+          } else if (!bootstrap.canCreateSession && availableSessions.length === 1) {
+            const only = availableSessions[0];
+            const snapshot = bootstrap.sessions.some((item) => item.id === only.id)
+              ? await api.snapshot(only.id) : await api.joinOpenSession(only.id);
+            if (active) enter(snapshot);
+          }
+        } catch (cause) {
+          if (active) setState((s) => ({ ...s, error: errorText(cause) }));
+        }
       })
-      .catch((e) => {
-        if (active) setState((s) => ({ ...s, error: errorText(e), connection: 'error' }));
+      .catch((cause) => {
+        if (active) setState((s) => ({ ...s, error: errorText(cause), connection: 'error' }));
       });
-    return () => {
-      active = false;
-    };
-  }, [api, state.auth.userId]);
+    return () => { active = false; };
+  }, [api, state.auth.userId, identityRevision]);
 
   const applySnapshot = useCallback((snapshot: SessionSnapshot, force = false) => {
     if (!force && selected.current !== snapshot.session.id) return;
@@ -378,39 +397,37 @@ export function useSession(options: {
     history.replaceState(
       null,
       '',
-      `${location.pathname}#session=${encodeURIComponent(snapshot.session.id)}`,
+      `${location.pathname}#session=${encodeURIComponent(snapshot.session.id)}${options.projectorMode ? '&projector=1' : ''}`,
     );
-  };
-  const acceptLocalSession = async (session: Session) => {
-    if (!session?.access_token || !session?.refresh_token)
-      throw new Error('Сервер не вернул данные для входа. Повторите попытку.');
-    const { error } = await requireApi().client.auth.setSession({
-      access_token: session.access_token, refresh_token: session.refresh_token,
-    });
-    if (error) throw new Error('Не удалось сохранить вход. Используйте личный ключ доступа.');
-    pendingEmail.current = null;
-    setState((s) => ({ ...s, notice: 'Вы подключены к локальному семинару. Результаты сохраняются на Mac преподавателя.' }));
   };
   const localHostToken = async () => {
     const a = requireApi();
     if (!a.config.offline || !isLoopbackHost(location.hostname))
       throw new Error('Откройте кабинет преподавателя непосредственно на Mac.');
-    const { data } = await a.client.auth.getSession();
-    if (!data.session) throw new Error('Сначала войдите как преподаватель.');
-    return data.session.access_token;
+    const identity = await a.identitySession();
+    if (!identity) throw new Error('Сначала войдите как преподаватель.');
+    return identity.access_token;
   };
   const actions: SessionAreaActions = {
-    localRegister: (input) => run('Подключаем к локальному семинару', async () => {
-      const { session } = await localLogin(requireApi().config, input);
-      await acceptLocalSession(session);
+    identify: (input) => run('Открываем вашу работу', async () => {
+      await requireApi().identify(input);
+      setState((s) => ({ ...s, notice: null }));
     }),
-    localRecover: (recoverySecret) => run('Восстанавливаем доступ', async () => {
-      const { session } = await localRecovery(requireApi().config, recoverySecret);
-      await acceptLocalSession(session);
+    joinOpenSession: (id) => run('Открываем занятие', async () => {
+      if (!uuidPattern.test(id)) throw new Error('Некорректный адрес занятия.');
+      enter(await requireApi().joinOpenSession(id));
     }),
-    localHost: () => run('Открываем кабинет преподавателя', async () => {
-      const { session } = await localHost(requireApi().config);
-      await acceptLocalSession(session);
+    localHost: (fullName) => run('Открываем кабинет преподавателя', async () => {
+      const { session } = await localHost(requireApi().config, fullName);
+      await requireApi().acceptLocalSession(session);
+      if (fullName && fullName.trim().length >= 2 && fullName.trim().length <= 200) {
+        const bootstrap = await requireApi().bootstrap();
+        if (bootstrap.profile?.fullName !== fullName)
+          await requireApi().saveProfile(fullName, bootstrap.profile?.revision ?? 0);
+        const updated = await requireApi().bootstrap();
+        setState((s) => ({ ...s, bootstrap: updated }));
+      }
+      setState((s) => ({ ...s, notice: 'Кабинет преподавателя открыт.' }));
     }),
     localServerStatus: async () => {
       const token = await localHostToken();
@@ -421,77 +438,11 @@ export function useSession(options: {
       await offlineRequest(requireApi().config, '/offline/admin/backup', {}, token);
       setState((s) => ({ ...s, notice: 'Резервная копия сохранена на Mac.' }));
     }),
-    sendCode: (email) =>
-      run('Отправляем код', async () => {
-        const a = requireApi();
-        if (a.config.offline) throw new Error('В локальном режиме используйте код аудитории или личный ключ.');
-        const clean = email.trim().toLowerCase();
-        if (!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/u.test(clean) || clean.length > 254)
-          throw new Error('Введите корректный email.');
-        if (current.current.auth.resendAvailableAt > Date.now())
-          throw new Error('Повторная отправка будет доступна через минуту.');
-        const { error } = await a.client.auth.signInWithOtp({
-          email: clean,
-          options: { shouldCreateUser: true },
-        });
-        if (error)
-          throw new Error(
-            error.status === 429
-              ? 'Запросов слишком много. Подождите и повторите отправку.'
-              : 'Не удалось отправить код. Проверьте адрес и настройки почты Supabase.',
-          );
-        pendingEmail.current = clean;
-        setState((s) => ({
-          ...s,
-          auth: {
-            status: 'awaiting-code',
-            email: clean,
-            userId: null,
-            resendAvailableAt: Date.now() + 60000,
-          },
-          notice: 'Если адрес доступен для входа, на него отправлен одноразовый код.',
-        }));
-      }),
-    verifyCode: (token) =>
-      run('Подтверждаем вход', async () => {
-        const email = pendingEmail.current ?? current.current.auth.email;
-        if (!email || !/^\d{6,8}$/u.test(token.trim()))
-          throw new Error('Введите код из письма: от 6 до 8 цифр.');
-        const { data, error } = await requireApi().client.auth.verifyOtp({
-          email,
-          token: token.trim(),
-          type: 'email',
-        });
-        if (error || !data.session)
-          throw new Error(
-            'Код не подошёл или срок его действия истёк. Проверьте письмо или запросите новый код.',
-          );
-        pendingEmail.current = null;
-        setState((s) => ({
-          ...s,
-          auth: {
-            ...s.auth,
-            status: 'signed-in',
-            email: data.session!.user.email ?? email,
-            userId: data.session!.user.id,
-          },
-          notice: 'Email подтверждён.',
-        }));
-      }),
-    changeEmail: () => {
-      pendingEmail.current = null;
-      setState((s) => ({
-        ...s,
-        error: null,
-        auth: { ...s.auth, status: 'signed-out', email: null, userId: null },
-      }));
-    },
     signOut: () =>
       run('Завершаем сеанс', async () => {
-        const { error } = await requireApi().client.auth.signOut({ scope: 'local' });
-        if (error) throw new Error('Не удалось завершить вход. Повторите действие.');
+        await requireApi().signOut();
         if (api?.config.offlineInstanceId) forgetLocalReceipt(api.config.offlineInstanceId);
-        pendingEmail.current = null;
+        enteredIdentity.current = null;
         selected.current = null;
         setSessionId(null);
         setProjection(null);
@@ -500,8 +451,9 @@ export function useSession(options: {
           bootstrap: null,
           snapshot: null,
           invitation: null,
-          auth: { status: 'signed-out', email: null, userId: null, resendAvailableAt: 0 },
-          notice: 'Вы вышли из учётной записи. Локальная тетрадь сохранена.',
+          availableSessions: [],
+          auth: { status: 'signed-out', email: null, userId: null },
+          notice: 'Вы вышли. Чтобы продолжить работу, введите тот же email и ФИО.',
         }));
       }),
     saveProfile: (fullName) =>
@@ -538,18 +490,18 @@ export function useSession(options: {
         applySnapshot(await requireApi().updateSession(requireSession(), revision, patch));
       }),
     rotateInvitation: (revision) =>
-      run('Обновляем код', async () => {
+      run('Обновляем приглашение', async () => {
         const id = requireSession();
         applySnapshot(await requireApi().rotateInvitation(id, revision));
         const invitation = await requireApi().invitation(id);
-        setState((s) => ({ ...s, invitation, notice: 'Прежний код больше не действует.' }));
+        setState((s) => ({ ...s, invitation, notice: 'Ссылка приглашения обновлена.' }));
       }),
     refresh: () =>
       run('Обновляем состояние', async () => {
         if (sessionId) await refreshing.current();
         else {
-          const bootstrap = await requireApi().bootstrap();
-          setState((s) => ({ ...s, bootstrap }));
+          const [bootstrap, availableSessions] = await Promise.all([requireApi().bootstrap(), requireApi().availableSessions()]);
+          setState((s) => ({ ...s, bootstrap, availableSessions }));
         }
       }),
     publish: (bundle, localKey, revision) =>

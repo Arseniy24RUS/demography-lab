@@ -1,0 +1,89 @@
+{
+  "checkedAt": "2026-11-09T11:17:43.146Z",
+  "engine": "PGlite",
+  "cloudApplied": false,
+  "reconstruction": "Five shipped migrations, then removal without CASCADE of the eleven function definitions recorded as missing in the audited cloud manifest.",
+  "stage8": {
+    "file": "supabase/migrations/20261109104701_stage8_simple_identity.sql",
+    "bytes": 34536,
+    "sha256": "bf9bdc90e1dce4b1b044965ab8828f2a38a9c413f14f6afc65f97620d6b3d9de"
+  },
+  "pending": {
+    "file": "scripts/deploy/pending-stage3-completion.sql",
+    "bytes": 16909,
+    "sha256": "418d23a95d234822323bcdcdf0742966ddfea81c1249e6048580e4e5ef2dc708"
+  },
+  "cases": [
+    {
+      "name": "stage8-alone-on-partial-cloud",
+      "status": "pass",
+      "identityStable": true,
+      "createListJoinAndRead": true,
+      "missingFunctionsRemainAbsent": [
+        "public.dw_cast_vote",
+        "public.dw_cast_vote_updates",
+        "public.dw_close_voting_round",
+        "public.dw_delete_family",
+        "public.dw_open_voting_round",
+        "public.dw_region_work",
+        "public.dw_save_family",
+        "public.dw_workshop_projector_updates",
+        "public.dw_workshop_updates",
+        "private.dw_delete_family",
+        "private.dw_save_family"
+      ],
+      "privileges": {
+        "anonymousPublicRpc": [
+          "dw_entry_logout",
+          "dw_entry_rpc",
+          "dw_entry_session",
+          "dw_identify",
+          "dw_survey_own_response",
+          "dw_survey_public_manifest",
+          "dw_survey_save_response",
+          "dw_survey_withdraw_response"
+        ],
+        "operatorIssuerPublic": false
+      }
+    },
+    {
+      "name": "pending-stage3-after-stage8",
+      "status": "pass",
+      "membershipsPreserved": true,
+      "existingEntryTokensWork": true,
+      "missingFunctionsCompleted": true,
+      "declaredVotingEligibilityPreserved": true,
+      "privileges": {
+        "anonymousPublicRpc": [
+          "dw_entry_logout",
+          "dw_entry_rpc",
+          "dw_entry_session",
+          "dw_identify",
+          "dw_survey_own_response",
+          "dw_survey_public_manifest",
+          "dw_survey_save_response",
+          "dw_survey_withdraw_response"
+        ],
+        "operatorIssuerPublic": false
+      }
+    },
+    {
+      "name": "pending-stage3-before-stage8",
+      "status": "pass",
+      "privileges": {
+        "anonymousPublicRpc": [
+          "dw_entry_logout",
+          "dw_entry_rpc",
+          "dw_entry_session",
+          "dw_identify",
+          "dw_survey_own_response",
+          "dw_survey_public_manifest",
+          "dw_survey_save_response",
+          "dw_survey_withdraw_response"
+        ],
+        "operatorIssuerPublic": false
+      }
+    }
+  ],
+  "status": "pass"
+}

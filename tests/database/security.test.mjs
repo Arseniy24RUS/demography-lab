@@ -409,13 +409,14 @@ describe('Moderation, roles, source integrity and projector isolation', { concur
       ['dw_barrier_events','dw_memberships','dw_profiles','dw_roadmap_events','dw_session_events','dw_sessions','dw_submissions','dw_workshop_events']);
     assert.ok(relations.rows.every((r) => r.relrowsecurity));
     const functions = await db.query("select n.nspname,p.proname,p.prosecdef,p.proconfig,has_function_privilege('anon',p.oid,'EXECUTE') anon_exec from pg_proc p join pg_namespace n on n.oid=p.pronamespace where p.proname like 'dw_%' and n.nspname in ('public','private')");
-    // Only the separate survey channel accepts anon. These four guarded entry points
-    // explicitly reject authenticated bearer identities in the Stage 4 SQL suite.
-    const surveyAnon = new Set(['dw_survey_public_manifest','dw_survey_own_response','dw_survey_save_response','dw_survey_withdraw_response']);
-    assert.ok(functions.rows.filter((r) => r.nspname === 'public').every((r) => !r.prosecdef && r.anon_exec === surveyAnon.has(r.proname)));
-    assert.ok(functions.rows.filter((r) => r.prosecdef).every((r) => r.nspname === 'private' && r.proconfig.includes('search_path=""') && r.anon_exec === surveyAnon.has(r.proname)));
+    // The separate survey channel and the opaque-session entry channel are the only
+    // anonymous functions. Their capabilities stay independent; neither exposes helpers.
+    const guardedAnon = new Set(['dw_survey_public_manifest','dw_survey_own_response','dw_survey_save_response','dw_survey_withdraw_response',
+      'dw_identify','dw_entry_session','dw_entry_logout','dw_entry_rpc']);
+    assert.ok(functions.rows.filter((r) => r.nspname === 'public').every((r) => !r.prosecdef && r.anon_exec === guardedAnon.has(r.proname)));
+    assert.ok(functions.rows.filter((r) => r.prosecdef).every((r) => r.nspname === 'private' && r.proconfig.includes('search_path=""') && r.anon_exec === guardedAnon.has(r.proname)));
     assert.deepEqual(functions.rows.filter((r) => r.anon_exec).map((r) => `${r.nspname}.${r.proname}`).sort(),
-      [...surveyAnon].flatMap((name) => [`private.${name}`, `public.${name}`]).sort());
+      [...guardedAnon].flatMap((name) => [`private.${name}`, `public.${name}`]).sort());
     assert.equal((await db.query("select has_function_privilege('authenticated','private.dw_validate_bundle(jsonb)','EXECUTE') allowed")).rows[0].allowed, false);
     assert.equal((await db.query("select has_table_privilege('authenticated','public.dw_submissions','INSERT,UPDATE,DELETE') allowed")).rows[0].allowed, false);
   });

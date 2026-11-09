@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Read-only checks of the deployed Auth/Data API. No account, email, session,
- * answer, or grant is created. Public RPC requests below call read functions only.
+ * Non-mutating probes of the deployed identification/Data API. No account, email,
+ * session, answer, or grant is created; the identification probe is intentionally invalid.
  * No database password, user JWT, or administrative key is accepted.
  */
 import { readFile } from 'node:fs/promises';
@@ -10,10 +10,10 @@ import { fileURLToPath } from 'node:url';
 
 const help = `Usage: node scripts/check-deployment.mjs [--config PATH] [--timeout-ms 45000]
 
-Uses public/workshop-config.json by default. Requires the five deployed migrations.
-Checks public configuration, Auth settings, anonymous access gates and a closed
-survey invitation. Does not send an email or sign in. SMTP delivery, authenticated
-Realtime, teacher permissions and browser/device behaviour require a rehearsal.
+Uses public/workshop-config.json by default. Requires all deployed migrations through stage 8.
+Checks public configuration, two-field entry validation, opaque-session access gates
+and a closed survey invitation. Does not send an email or create an identity.
+Successful participant entry, teacher permissions and browser/device behaviour require a rehearsal.
 An HTTP transport failure is an unverified check, not proof of a database defect.
 `;
 
@@ -82,7 +82,8 @@ function validatePublicConfig(value) {
       throw new Error('Survey requires separate HTTPS origins and a /survey.html path.');
     survey = 'configured-separate-origin';
   }
-  return { origin: url.origin, key, survey };
+  if (value.identification !== 'declared-email') throw new Error('The deployed entry must use declared-email identification.');
+  return { origin: url.origin, key, survey, identification: value.identification };
 }
 
 async function main() {
@@ -141,22 +142,25 @@ async function main() {
     status: 'pass',
     projectOrigin: config.origin,
     survey: config.survey,
+    identification: config.identification,
   });
 
-  await check('auth-public-settings', async () => {
-    const { status, data } = await request('/auth/v1/settings');
-    requireResult(status === 200, `Auth settings returned HTTP ${status}.`);
-    requireResult(data.external?.email === true, 'Email provider is disabled.');
-    requireResult(data.mailer_autoconfirm === false, 'Email confirmation is not enabled.');
-    requireResult(
-      data.external?.anonymous_users === false,
-      'Anonymous Auth sign-ins must remain disabled.',
-    );
-    requireResult(
-      data.disable_signup === false,
-      'New participants cannot create their verified account.',
-    );
-    return { email: true, emailConfirmation: true, anonymousAuth: false, signup: true };
+  await check('identify-invalid-input', async () => {
+    const { status, data } = await request('/rest/v1/rpc/dw_identify', {
+      body: { p_email: '', p_full_name: '' },
+    });
+    requireResult(status === 400 && data.message === 'INVALID_INPUT',
+      `Expected field validation without creating an identity; HTTP ${status}.`);
+    return { httpStatus: status, code: 'INVALID_INPUT' };
+  });
+  for (const [method, body] of [
+    ['dw_entry_session', { p_token: '0'.repeat(64) }],
+    ['dw_entry_rpc', { p_token: '0'.repeat(64), p_method: 'dw_bootstrap', p_args: {} }],
+  ]) await check(`entry-token-gate:${method}`, async () => {
+    const { status, data } = await request(`/rest/v1/rpc/${method}`, { body });
+    requireResult([400, 401, 403].includes(status) && data.message === 'AUTH_REQUIRED',
+      `Expected opaque-session denial; HTTP ${status}.`);
+    return { httpStatus: status, code: 'AUTH_REQUIRED' };
   });
 
   const sentinel = '00000000-0000-4000-8000-000000000000';
@@ -214,10 +218,9 @@ async function main() {
         total: results.length,
         results,
         notVerified: [
-          'SMTP delivery and rate limits',
-          'hosted OTP templates and Auth URL settings',
-          'teacher assignment after verified login',
-          'authenticated multi-device Realtime',
+          'successful two-field entry and returning to previous work',
+          'private operator access',
+          'multi-device polling with identified participants',
           'browser access to classroom and separate survey origin',
         ],
       },

@@ -1,5 +1,7 @@
 import { randomUuid } from '../../../../packages/security/crypto.mjs';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient, type Session } from '@supabase/supabase-js';
+import { DeclaredIdentity, type WorkshopIdentitySession } from './declared-identity';
+import { localIdentify } from './offline-api';
 import {
   parseBootstrap,
   parseInvitation,
@@ -12,12 +14,13 @@ import type {
   SessionPatch,
   SessionScope,
   SharedPracticeBundle,
+  AvailableSession,
 } from '../../../../packages/collaboration/types';
 import type { CloudConfig } from './cloud-config';
 
 const messages: Record<string, string> = {
-  AUTH_REQUIRED: 'Срок входа истёк. Войдите повторно с кодом из письма.',
-  EMAIL_NOT_VERIFIED: 'Сначала подтвердите email кодом из письма.',
+  AUTH_REQUIRED: 'Введите email и ФИО, чтобы продолжить свою работу.',
+  EMAIL_NOT_VERIFIED: 'Введите email и ФИО на странице входа.',
   PROFILE_REQUIRED: 'Укажите ФИО, чтобы участвовать в занятии.',
   FORBIDDEN: 'Для этого действия недостаточно прав. Обновите состояние занятия.',
   NOT_FOUND: 'Занятие или запись недоступны этой учётной записи.',
@@ -34,7 +37,7 @@ const messages: Record<string, string> = {
   CORPUS_NOT_READY:
     'На сервер ещё не загружена эта редакция документа. Попросите преподавателя выполнить импорт корпуса.',
   LIMIT_EXCEEDED: 'Достигнут предел объёма записи или занятия.',
-  INVALID_INVITATION: 'Код занятия не найден или был заменён. Проверьте код у преподавателя.',
+  INVALID_INVITATION: 'Приглашение недоступно. Откройте ссылку преподавателя или выберите занятие из списка.',
   JOIN_CLOSED: 'Преподаватель закрыл вход в это занятие.',
   RATE_LIMITED: 'Слишком много попыток. Повторите ввод после окончания защитного интервала.',
   REGION_UNAVAILABLE: 'Для этого региона ещё нет подготовленного текста на сервере.',
@@ -124,21 +127,67 @@ export class SessionApiError extends Error {
 }
 export class SessionApi {
   readonly client: SupabaseClient;
+  private readonly entry: DeclaredIdentity | null;
   private receipts = new Map<string, { fingerprint: string; id: string }>();
   constructor(readonly config: CloudConfig) {
+    this.entry = !config.offline && config.identification === 'declared-email' ? new DeclaredIdentity(config) : null;
     this.client = createClient(config.url, config.publishableKey, {
       auth: {
-        persistSession: true,
-        autoRefreshToken: true,
+        persistSession: !this.entry,
+        autoRefreshToken: !this.entry,
         detectSessionInUrl: false,
         storageKey: `dw-auth-${new URL(config.url).host}`,
       },
       realtime: { params: { eventsPerSecond: 2 } },
     });
   }
+  onIdentityChange(listener: (session: WorkshopIdentitySession | null) => void): () => void {
+    if (this.entry) return this.entry.onChange(listener);
+    const { data: { subscription } } = this.client.auth.onAuthStateChange((_event, session) => listener(session));
+    return () => subscription.unsubscribe();
+  }
+  async identitySession(): Promise<WorkshopIdentitySession | null> {
+    if (this.entry) return this.entry.getSession();
+    const { data, error } = await this.client.auth.getSession();
+    if (error) throw new Error('Не удалось открыть вашу работу. Введите email и ФИО снова.');
+    return data.session;
+  }
+  async identify(input: { email: string; fullName: string }) {
+    const email = input.email.normalize('NFC').trim().toLowerCase();
+    const fullName = input.fullName.normalize('NFC').trim().replace(/\s+/gu, ' ');
+    if (!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/u.test(email) || email.length > 254 ||
+      fullName.length < 2 || fullName.length > 200) throw new SessionApiError('INVALID_INPUT');
+    if (this.entry) {
+      try { return await this.entry.identify({ email, fullName }); }
+      catch (error) {
+        if (error instanceof Error && (error.message === 'INVALID_INPUT' || error.message === 'RATE_LIMITED'))
+          throw new SessionApiError(error.message);
+        throw new Error('Не удалось войти. Проверьте соединение и повторите действие.');
+      }
+    }
+    if (!this.config.offline) throw new Error('Обновите настройки платформы для входа по email и ФИО.');
+    const { session } = await localIdentify(this.config, { email, fullName });
+    await this.acceptLocalSession(session);
+    return session;
+  }
+  async acceptLocalSession(session: Session) {
+    if (!this.config.offline) throw new Error('Локальный вход недоступен на этом адресе.');
+    const { error } = await this.client.auth.setSession({ access_token: session.access_token, refresh_token: session.refresh_token });
+    if (error) throw new Error('Не удалось сохранить вход. Введите email и ФИО снова.');
+  }
+  async acceptHostLink(token: string) {
+    if (!this.entry) throw new Error('Ссылка преподавателя недоступна на этом адресе.');
+    return this.entry.acceptHostLink(token);
+  }
+  async signOut() {
+    this.receipts.clear();
+    if (this.entry) return this.entry.signOut();
+    const { error } = await this.client.auth.signOut({ scope: 'local' });
+    if (error) throw new Error('Не удалось завершить вход. Повторите действие.');
+  }
   /** Shared transport for independently versioned feature modules. Authorization stays server-side. */
   async rpc<T>(name: string, args: Record<string, unknown>, parse: (v: unknown) => T): Promise<T> {
-    const { data, error } = await this.client.rpc(name, args);
+    const { data, error } = this.entry ? await this.entry.rpc(name, args) : await this.client.rpc(name, args);
     if (error) {
       const found = Object.keys(messages).find(
         (code) => error.message === code || error.message.startsWith(code + ':'),
@@ -200,6 +249,19 @@ export class SessionApi {
   }
   bootstrap() {
     return this.rpc('dw_bootstrap', {}, parseBootstrap);
+  }
+  availableSessions() {
+    return this.rpc('dw_available_sessions', {}, (value): AvailableSession[] => {
+      if (!Array.isArray(value) || value.some((row) => !row || typeof row !== 'object' ||
+        typeof row.id !== 'string' || !/^[a-f\d]{8}-(?:[a-f\d]{4}-){3}[a-f\d]{12}$/iu.test(row.id) ||
+        typeof row.title !== 'string' || !['municipality', 'region', 'federal'].includes(row.scope) ||
+        (row.regionId !== null && typeof row.regionId !== 'string')))
+        throw new Error('Сервер вернул некорректный список занятий.');
+      return value as AvailableSession[];
+    });
+  }
+  joinOpenSession(id: string) {
+    return this.mutate('dw_join_open_session', { p_session_id: id }, parseSnapshot);
   }
   saveProfile(fullName: string, revision: number) {
     return this.mutate(

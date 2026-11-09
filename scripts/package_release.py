@@ -26,7 +26,7 @@ def main():
     args=parser.parse_args()
     if not all((ROOT/name).exists() for name in ['dist/index.html','dist/survey.html']): raise SystemExit('Run npm run build first.')
     paths=sorted(p for p in ROOT.rglob('*') if included(p))
-    manifest={'application':'Демографическая мастерская','version':VERSION,'stage':'07-offline-classroom','includesStages':[1,2,3,4,5,6,7],'files':[]}
+    manifest={'application':'Демографическая мастерская','version':VERSION,'stage':'08-simple-identification','includesStages':[1,2,3,4,5,6,7,8],'files':[]}
     for path in paths:
         data=path.read_bytes()
         manifest['files'].append({'path':path.relative_to(ROOT).as_posix(),'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()})

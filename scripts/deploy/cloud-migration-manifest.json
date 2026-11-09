@@ -1,9 +1,9 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "projectId": "alyrowehwzypgtrqnvdi",
-  "checkedAt": "2026-11-09T10:14:23.695Z",
-  "status": "partial-stage3-confirmation-required",
-  "appliedMigrationCount": 42,
+  "checkedAt": "2026-11-09T11:24:39.324969+00:00",
+  "status": "schema-complete-stage8",
+  "appliedMigrationCount": 44,
   "migrations": [
     {
       "version": "20261109011031",
@@ -256,69 +256,202 @@
       "name": "stage3_incomplete_read_api_guard",
       "statement_count": 1,
       "stored_sql_sha256": "e3bd8561162e8649751f6b281b33c7200dc0b6b3d883241036ecee387ae6aa0b"
+    },
+    {
+      "version": "20261109112010",
+      "name": "stage3_complete_guarded_functions",
+      "statement_count": 1,
+      "stored_sql_sha256": "418d23a95d234822323bcdcdf0742966ddfea81c1249e6048580e4e5ef2dc708"
+    },
+    {
+      "version": "20261109112043",
+      "name": "stage8_simple_identity",
+      "statement_count": 1,
+      "stored_sql_sha256": "bf9bdc90e1dce4b1b044965ab8828f2a38a9c413f14f6afc65f97620d6b3d9de"
     }
   ],
-  "expectedApplicationFunctionNames": 204,
-  "missingFunctions": [
-    {
-      "schema_name": "private",
-      "function_name": "dw_delete_family"
+  "expectedApplicationFunctionNames": 226,
+  "actualApplicationFunctionNames": 226,
+  "missingFunctions": [],
+  "stage3Completion": {
+    "file": "scripts/deploy/pending-stage3-completion.sql",
+    "bytes": 16909,
+    "appliedMigration": {
+      "version": "20261109112010",
+      "name": "stage3_complete_guarded_functions",
+      "statement_count": 1,
+      "stored_sql_sha256": "418d23a95d234822323bcdcdf0742966ddfea81c1249e6048580e4e5ef2dc708"
     },
-    {
-      "schema_name": "private",
-      "function_name": "dw_save_family"
-    },
-    {
-      "schema_name": "public",
-      "function_name": "dw_cast_vote"
-    },
-    {
-      "schema_name": "public",
-      "function_name": "dw_cast_vote_updates"
-    },
-    {
-      "schema_name": "public",
-      "function_name": "dw_close_voting_round"
-    },
-    {
-      "schema_name": "public",
-      "function_name": "dw_delete_family"
-    },
-    {
-      "schema_name": "public",
-      "function_name": "dw_open_voting_round"
-    },
-    {
-      "schema_name": "public",
-      "function_name": "dw_region_work"
-    },
-    {
-      "schema_name": "public",
-      "function_name": "dw_save_family"
-    },
-    {
-      "schema_name": "public",
-      "function_name": "dw_workshop_projector_updates"
-    },
-    {
-      "schema_name": "public",
-      "function_name": "dw_workshop_updates"
-    }
-  ],
-  "pendingSql": "scripts/deploy/pending-stage3-completion.sql",
-  "pendingSqlSha256": "92bface76daefecdecf8624ccd4f8bc9a5f1f2616f59c0d39e62b6febfb1ca7e",
-  "validation": {
-    "sourceDigests": [
+    "functions": [
       {
-        "checked": 80,
-        "passed": 80,
-        "mismatched": 0
+        "name": "dw_delete_family",
+        "schema": "private",
+        "arguments": "p_operation_id uuid, p_session_id uuid, p_family_id uuid, p_expected_board_revision bigint",
+        "anonExecute": false,
+        "securityDefiner": true,
+        "authenticatedExecute": true
+      },
+      {
+        "name": "dw_save_family",
+        "schema": "private",
+        "arguments": "p_operation_id uuid, p_session_id uuid, p_family_id uuid, p_expected_board_revision bigint, p_title text, p_mechanism text, p_rationale text, p_submission_ids uuid[]",
+        "anonExecute": false,
+        "securityDefiner": true,
+        "authenticatedExecute": true
+      },
+      {
+        "name": "dw_cast_vote",
+        "schema": "public",
+        "arguments": "p_operation_id uuid, p_session_id uuid, p_round_id uuid, p_family_id uuid, p_value integer, p_expected_revision bigint",
+        "anonExecute": false,
+        "securityDefiner": false,
+        "authenticatedExecute": true
+      },
+      {
+        "name": "dw_cast_vote_updates",
+        "schema": "public",
+        "arguments": "p_operation_id uuid, p_session_id uuid, p_round_id uuid, p_family_id uuid, p_value integer, p_expected_revision bigint, p_known_round_id uuid",
+        "anonExecute": false,
+        "securityDefiner": false,
+        "authenticatedExecute": true
+      },
+      {
+        "name": "dw_close_voting_round",
+        "schema": "public",
+        "arguments": "p_operation_id uuid, p_session_id uuid, p_round_id uuid, p_expected_revision bigint",
+        "anonExecute": false,
+        "securityDefiner": false,
+        "authenticatedExecute": true
+      },
+      {
+        "name": "dw_delete_family",
+        "schema": "public",
+        "arguments": "p_operation_id uuid, p_session_id uuid, p_family_id uuid, p_expected_board_revision bigint",
+        "anonExecute": false,
+        "securityDefiner": false,
+        "authenticatedExecute": true
+      },
+      {
+        "name": "dw_open_voting_round",
+        "schema": "public",
+        "arguments": "p_operation_id uuid, p_session_id uuid, p_title text, p_results_visibility text, p_expected_board_revision bigint, p_settings jsonb",
+        "anonExecute": false,
+        "securityDefiner": false,
+        "authenticatedExecute": true
+      },
+      {
+        "name": "dw_region_work",
+        "schema": "public",
+        "arguments": "p_operation_id uuid, p_session_id uuid, p_region_id text, p_action text, p_expected_revision bigint, p_note text",
+        "anonExecute": false,
+        "securityDefiner": false,
+        "authenticatedExecute": true
+      },
+      {
+        "name": "dw_save_family",
+        "schema": "public",
+        "arguments": "p_operation_id uuid, p_session_id uuid, p_family_id uuid, p_expected_board_revision bigint, p_title text, p_mechanism text, p_rationale text, p_submission_ids uuid[]",
+        "anonExecute": false,
+        "securityDefiner": false,
+        "authenticatedExecute": true
+      },
+      {
+        "name": "dw_workshop_projector_updates",
+        "schema": "public",
+        "arguments": "p_session_id uuid, p_known_round_id uuid",
+        "anonExecute": false,
+        "securityDefiner": false,
+        "authenticatedExecute": true
+      },
+      {
+        "name": "dw_workshop_updates",
+        "schema": "public",
+        "arguments": "p_session_id uuid, p_known_round_id uuid",
+        "anonExecute": false,
+        "securityDefiner": false,
+        "authenticatedExecute": true
       }
-    ],
+    ]
+  },
+  "stage8": {
+    "file": "supabase/migrations/20261109104701_stage8_simple_identity.sql",
+    "bytes": 34536,
+    "appliedMigration": {
+      "version": "20261109112043",
+      "name": "stage8_simple_identity",
+      "statement_count": 1,
+      "stored_sql_sha256": "bf9bdc90e1dce4b1b044965ab8828f2a38a9c413f14f6afc65f97620d6b3d9de"
+    }
+  },
+  "previousPartialSchema": {
+    "checkedAt": "2026-11-09T10:14:23.695Z",
+    "appliedMigrationCount": 42,
+    "expectedApplicationFunctionNames": 204,
+    "missingFunctions": [
+      {
+        "schema_name": "private",
+        "function_name": "dw_delete_family"
+      },
+      {
+        "schema_name": "private",
+        "function_name": "dw_save_family"
+      },
+      {
+        "schema_name": "public",
+        "function_name": "dw_cast_vote"
+      },
+      {
+        "schema_name": "public",
+        "function_name": "dw_cast_vote_updates"
+      },
+      {
+        "schema_name": "public",
+        "function_name": "dw_close_voting_round"
+      },
+      {
+        "schema_name": "public",
+        "function_name": "dw_delete_family"
+      },
+      {
+        "schema_name": "public",
+        "function_name": "dw_open_voting_round"
+      },
+      {
+        "schema_name": "public",
+        "function_name": "dw_region_work"
+      },
+      {
+        "schema_name": "public",
+        "function_name": "dw_save_family"
+      },
+      {
+        "schema_name": "public",
+        "function_name": "dw_workshop_projector_updates"
+      },
+      {
+        "schema_name": "public",
+        "function_name": "dw_workshop_updates"
+      }
+    ]
+  },
+  "localCompatibilityValidation": "scripts/deploy/stage8-compatibility-validation.json",
+  "validation": {
     "rlsFailures": [],
     "functionSecurityFailures": [],
     "publicExecutionLeaks": [],
     "anonymousPublicRpc": [
+      {
+        "proname": "dw_entry_logout"
+      },
+      {
+        "proname": "dw_entry_rpc"
+      },
+      {
+        "proname": "dw_entry_session"
+      },
+      {
+        "proname": "dw_identify"
+      },
       {
         "proname": "dw_survey_own_response"
       },
@@ -332,7 +465,112 @@
         "proname": "dw_survey_withdraw_response"
       }
     ],
+    "anonymousPrivateRpc": [
+      {
+        "proname": "dw_entry_logout"
+      },
+      {
+        "proname": "dw_entry_rpc"
+      },
+      {
+        "proname": "dw_entry_session"
+      },
+      {
+        "proname": "dw_identify"
+      },
+      {
+        "proname": "dw_survey_own_response"
+      },
+      {
+        "proname": "dw_survey_public_manifest"
+      },
+      {
+        "proname": "dw_survey_save_response"
+      },
+      {
+        "proname": "dw_survey_withdraw_response"
+      }
+    ],
+    "operatorIssuer": {
+      "exists": true,
+      "anonExecute": false,
+      "securityDefiner": true,
+      "pinnedSearchPath": true,
+      "authenticatedExecute": false
+    },
+    "newIdentityTables": [
+      {
+        "rls": true,
+        "table": "dw_actors",
+        "anonRead": false,
+        "authenticatedRead": false
+      },
+      {
+        "rls": true,
+        "table": "dw_declared_identities",
+        "anonRead": false,
+        "authenticatedRead": false
+      },
+      {
+        "rls": true,
+        "table": "dw_entry_sessions",
+        "anonRead": false,
+        "authenticatedRead": false
+      }
+    ],
     "tablePrivilegeLeaks": [],
-    "privateRealtimeLeaks": []
-  }
+    "privateRealtimeLeaks": [],
+    "realtimeTables": [
+      "dw_barrier_events",
+      "dw_roadmap_events",
+      "dw_session_events",
+      "dw_workshop_events"
+    ],
+    "applicationTableCount": 50,
+    "actorForeignKeyCount": 8,
+    "canonicalCounts": {
+      "blocks": 52390,
+      "series": 12053,
+      "territories": 2471,
+      "datasetSealed": true,
+      "sealedDocuments": 80,
+      "partialDocuments": 0
+    },
+    "sourceDigestVerification": {
+      "checkedAt": "2026-11-09T10:14:23.695Z",
+      "results": [
+        {
+          "checked": 80,
+          "passed": 80,
+          "mismatched": 0
+        }
+      ]
+    }
+  },
+  "advisors": {
+    "security": [
+      {
+        "name": "rls_enabled_no_policy",
+        "level": "INFO",
+        "count": 42,
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy"
+      }
+    ],
+    "performance": [
+      {
+        "name": "unindexed_foreign_keys",
+        "level": "INFO",
+        "count": 10,
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys"
+      },
+      {
+        "name": "unused_index",
+        "level": "INFO",
+        "count": 32,
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index"
+      }
+    ],
+    "health": []
+  },
+  "scope": "Read-only database metadata, grants, RLS and canonical counts. No account identities, token values or survey responses read. Does not establish end-to-end HTTP/browser login readiness."
 }

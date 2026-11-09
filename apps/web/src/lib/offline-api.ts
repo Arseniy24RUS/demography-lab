@@ -34,14 +34,15 @@ export interface LocalServerStatus {
 const localErrors: Record<string, string> = {
   INVALID_JOIN_CODE: 'Код локальной сети не подошёл. Проверьте его на экране преподавателя.',
   INVALID_CLASSROOM_CODE: 'Код локальной сети не подошёл. Проверьте его на экране преподавателя.',
-  INVALID_INPUT: 'Проверьте имя, email и код локальной сети.',
+  INVALID_INPUT: 'Проверьте email и ФИО.',
   INVALID_RECOVERY: 'Ключ доступа не найден на этом Mac. Проверьте квитанцию и адрес семинара.',
   INVALID_RECOVERY_SECRET: 'Ключ доступа не подошёл. Загрузите личную квитанцию или скопируйте ключ целиком.',
   RECOVERY_NOT_FOUND: 'Ключ доступа не найден на этом Mac. Проверьте квитанцию и адрес семинара.',
   FORBIDDEN: 'Это действие доступно преподавателю в браузере на Mac, где запущен сервер.',
   HOST_LOCAL_ONLY: 'Это действие доступно непосредственно на Mac преподавателя. Откройте локальный адрес 127.0.0.1.',
-  AUTH_REQUIRED: 'Войдите повторно, используя сохранённый ключ доступа.',
-  TOKEN_EXPIRED_OR_REVOKED: 'Срок этого входа истёк. Используйте сохранённый личный ключ доступа.',
+  AUTH_REQUIRED: 'Введите email и ФИО, чтобы продолжить работу.',
+  TOKEN_EXPIRED_OR_REVOKED: 'Срок этого входа истёк. Введите email и ФИО снова.',
+  SIMPLE_IDENTIFICATION_REQUIRED: 'Введите email и ФИО на странице входа.',
   RATE_LIMITED: 'Слишком много попыток. Подождите и повторите ввод.',
 };
 
@@ -103,8 +104,10 @@ export async function localRecovery(config: CloudConfig, recoverySecret: string)
     serverUrl: config.url, recoverySecret });
   return result;
 }
-export const localHost = (config: CloudConfig) =>
-  offlineRequest<{ session: Session }>(config, '/offline/auth/host-bootstrap', {});
+export const localHost = (config: CloudConfig, fullName?: string) =>
+  offlineRequest<{ session: Session }>(config, '/offline/auth/host-bootstrap', fullName ? { fullName } : {});
+export const localIdentify = (config: CloudConfig, input: { email: string; fullName: string }) =>
+  offlineRequest<{ session: Session }>(config, '/offline/auth/identify', input);
 
 const receiptKey = (instanceId: string) => `dw-local-access-v1:${instanceId}`;
 const pendingPrefix = (instanceId: string) => `dw-local-access-pending-v1:${instanceId}:`;

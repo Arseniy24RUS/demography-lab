@@ -81,6 +81,7 @@ async function migrations(db) {
   if ([...applied.keys()].some(name => !files.includes(name))) throw new Error('OFFLINE_DATABASE_NEWER_THAN_BUILD');
   for (const name of files) {
     const sql = await readFile(resolve(ROOT, 'supabase/migrations', name), 'utf8');
+    if (!sql.trim()) throw new Error('OFFLINE_MIGRATION_EMPTY: ' + name);
     const hash = sha256(sql);
     if (applied.has(name) && applied.get(name) !== hash) throw new Error('OFFLINE_MIGRATION_CHANGED: ' + name);
     if (!applied.has(name)) await db.transaction(async tx => {
@@ -175,13 +176,15 @@ export async function openRuntime({ dataDir=process.env.DW_OFFLINE_DATA_DIR ?? d
     const migrationManifest = await migrations(db);
     const identitySql = await readFile(new URL('./identity.sql', import.meta.url), 'utf8');
     const refreshSql = await readFile(new URL('./refresh.sql', import.meta.url), 'utf8');
+    const identifySql = await readFile(new URL('./identify.sql', import.meta.url), 'utf8');
     await db.transaction(tx => tx.exec(identitySql));
     await db.transaction(tx => tx.exec(refreshSql));
+    await db.transaction(tx => tx.exec(identifySql));
     const seed = testSeed ? await testSeed(db) : await seedProduction(db, progress);
     await purgeExpiredSurveys(db, { apply:true });
     const catalogue = await discoverRpc(db);
     const ready = { schemaVersion:1, instanceId:operator.instanceId, migrations:migrationManifest,
-      identitySha256:sha256(identitySql), runtimeSchemaSha256:sha256(refreshSql), seed, preparedAt:new Date().toISOString() };
+      identitySha256:sha256(identitySql), runtimeSchemaSha256:sha256(refreshSql+'\n'+identifySql), seed, preparedAt:new Date().toISOString() };
     await atomicJson(resolve(dataDir, 'ready.json'), ready);
     let tail=Promise.resolve(), pending=0, closing=false, closingPromise=null, lastBackup=await latestBackup(dataDir);
     const runtime = {

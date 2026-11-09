@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from 'react';
-import { Copy, KeyRound, Pause, Play, RefreshCw, Square } from 'lucide-react';
+import { Copy, Link2, Pause, Play, Square } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Modal } from '@/components/Modal';
 import type {
@@ -14,7 +14,6 @@ import { useOfflineShareUrl } from '../../hooks/useOfflineShareUrl';
 
 export function HostControls({
   session,
-  invitation,
   busy,
   actions,
   compact = false,
@@ -28,7 +27,6 @@ export function HostControls({
   const id = useId();
   const [invitationOpen, setInvitationOpen] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
-  const [confirmRotate, setConfirmRotate] = useState(false);
   const [error, setError] = useState('');
   const [copyMessage, setCopyMessage] = useState('');
   const [working, setWorking] = useState(false);
@@ -37,14 +35,12 @@ export function HostControls({
     if (compact) setControlsOpen(false);
   }, [compact, setControlsOpen]);
   const disabled = busy || working;
-  const originalInviteUrl = invitation
-    ? (() => {
-        const url = new URL(window.location.pathname, window.location.origin);
-        url.searchParams.set('join', invitation.code);
-        return url.toString();
-      })()
-    : '';
-  const inviteUrl = useOfflineShareUrl(originalInviteUrl, true) ?? '';
+  const originalInviteUrl = (() => {
+    const url = new URL(window.location.pathname, window.location.origin);
+    url.hash = new URLSearchParams({ session: session.id }).toString();
+    return url.toString();
+  })();
+  const inviteUrl = useOfflineShareUrl(originalInviteUrl) ?? '';
 
   async function perform(action: () => Promise<void>, onSuccess?: () => void) {
     setWorking(true);
@@ -144,15 +140,15 @@ export function HostControls({
             <div className="session-action-row">
               <button
                 className="button button-secondary"
-                disabled={disabled || !invitation}
+                disabled={disabled || !inviteUrl}
                 onClick={() => {
                   setInvitationOpen(true);
                   setCopyMessage('');
                   setError('');
                 }}
               >
-                <KeyRound size={16} />
-                Код приглашения
+                <Link2 size={16} />
+                Пригласить участников
               </button>
               <label className="session-checkbox">
                 <input
@@ -192,7 +188,7 @@ export function HostControls({
           ) : null}
         </div>
       </details>
-      {invitationOpen && invitation ? (
+      {invitationOpen ? (
         <Modal
           title="Пригласить участников"
           onClose={() => {
@@ -208,17 +204,10 @@ export function HostControls({
               title="QR-код для входа в занятие"
             />
             <div>
-              <p className="session-invitation-label">Код занятия</p>
-              <p className="session-join-code" aria-label={`Код занятия: ${invitation.code}`}>
-                {invitation.code}
-              </p>
+              <p className="session-invitation-label">{session.title}</p>
               <p className="session-hint">
-                Участники откроют ссылку, подтвердят email и присоединятся к этой группе.
+                Участники откроют ссылку, введут email и ФИО и сразу присоединятся к занятию.
               </p>
-              <button className="button button-quiet" onClick={() => void copy(invitation.code)}>
-                <Copy size={16} />
-                Скопировать код
-              </button>
             </div>
           </div>
           {!session.joinOpen || session.status === 'closed' ? (
@@ -242,56 +231,12 @@ export function HostControls({
               <Copy size={16} />
               Скопировать ссылку
             </button>
-            <button
-              className="button button-secondary"
-              disabled={disabled}
-              onClick={() => {
-                setConfirmRotate(true);
-                setCopyMessage('');
-              }}
-            >
-              <RefreshCw size={16} />
-              Заменить код
-            </button>
+
           </div>
           {copyMessage ? (
             <p className="session-hint session-form-footer" role="status">
               {copyMessage}
             </p>
-          ) : null}
-          {confirmRotate ? (
-            <div className="session-message session-form-footer" data-tone="warning">
-              <div>
-                <p>
-                  Старая ссылка перестанет принимать новых участников. Доступ уже присоединившихся
-                  сохранится.
-                </p>
-                <div className="session-action-row">
-                  <button
-                    className="button button-secondary"
-                    disabled={disabled}
-                    onClick={() =>
-                      void perform(
-                        () => actions.rotateInvitation(invitation.revision),
-                        () => {
-                          setConfirmRotate(false);
-                          setCopyMessage('Код заменён. Используйте новую ссылку.');
-                        },
-                      )
-                    }
-                  >
-                    Создать новый код
-                  </button>
-                  <button
-                    className="button button-quiet"
-                    disabled={disabled}
-                    onClick={() => setConfirmRotate(false)}
-                  >
-                    Сохранить прежний
-                  </button>
-                </div>
-              </div>
-            </div>
           ) : null}
           {error ? (
             <p className="session-form-error" role="alert">

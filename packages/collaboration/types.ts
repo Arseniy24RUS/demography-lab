@@ -72,6 +72,13 @@ export interface BootstrapResult {
   canCreateSession: boolean;
   sessions: SessionSummary[];
 }
+/** Public classroom metadata; no participant identities or results. */
+export interface AvailableSession {
+  id: string;
+  title: string;
+  scope: SessionScope;
+  regionId: string | null;
+}
 export interface SessionPatch {
   title?: string;
   status?: SessionStatus;
@@ -87,10 +94,9 @@ export interface SessionInvitation {
 export type ConnectionStatus =
   'unconfigured' | 'connecting' | 'live' | 'polling' | 'offline' | 'error';
 export interface SessionAuthState {
-  status: 'loading' | 'signed-out' | 'awaiting-code' | 'signed-in';
+  status: 'loading' | 'signed-out' | 'signed-in';
   email: string | null;
   userId: string | null;
-  resendAvailableAt: number;
 }
 export interface SessionAreaState {
   configured: boolean;
@@ -107,20 +113,18 @@ export interface SessionAreaState {
   notice: string | null;
   initialJoinCode: string;
   lastSyncedAt: string | null;
+  availableSessions?: AvailableSession[];
 }
 export interface SessionAreaActions {
-  localRegister?(input: { email: string; fullName: string; joinCode: string; recoverySecret: string }): Promise<void>;
-  localRecover?(recoverySecret: string): Promise<void>;
-  localHost?(): Promise<void>;
+  identify(input: { email: string; fullName: string }): Promise<void>;
+  joinOpenSession(id: string): Promise<void>;
+  localHost?(fullName?: string): Promise<void>;
   localServerStatus?(): Promise<{
     instanceId: string; joinCode: string; port: number; surveyPort: number;
     counts: Record<string, number>; lanHosts: string[]; queueDepth: number;
     lastBackup: null | { createdAt: string; path: string; bytes: number };
   }>;
   localBackup?(): Promise<void>;
-  sendCode(email: string): Promise<void>;
-  verifyCode(token: string): Promise<void>;
-  changeEmail(): void;
   signOut(): Promise<void>;
   saveProfile(fullName: string): Promise<void>;
   createSession(input: {

@@ -1,6 +1,6 @@
 # Текущий накопительный выпуск
 
-Приёмка текущей версии 0.7.0 находится в [stage-07-acceptance.md](stage-07-acceptance.md); инструкция — [offline-macos.md](offline-macos.md). Архив 0.7 содержит предыдущие модули. Историческая приёмка версии 0.6.0 находится в [stage-06-acceptance.md](stage-06-acceptance.md). Подробные проверки нового модуля — [stage-06-testing-notes.md](stage-06-testing-notes.md). Протокол [этапа 5](stage-05-acceptance.md) сохранён. Протокол [этапа 4](stage-04-acceptance.md) сохранён. Протоколы [этапа 3](stage-03-acceptance.md) и [этапа 2](stage-02-acceptance.md) сохранены. Ниже сохранён исторический протокол этапа 1; его даты, состав и ограничения относятся к версии 0.1.0.
+Приёмка текущей версии 0.8.0 находится в [stage-08-acceptance.md](stage-08-acceptance.md); инструкция — [offline-macos.md](offline-macos.md). Архив 0.8 содержит все предыдущие модули и единый вход по email и ФИО онлайн и офлайн. Исторические протоколы [этапа 7](stage-07-acceptance.md), [этапа 6](stage-06-acceptance.md), [этапа 5](stage-05-acceptance.md), [этапа 4](stage-04-acceptance.md), [этапа 3](stage-03-acceptance.md) и [этапа 2](stage-02-acceptance.md) сохранены. Ниже приведены исторические проверки; их состав и ограничения относятся к указанным версиям.
 
 # Проверка выпуска 0.1.0
 

@@ -4,8 +4,11 @@ import { HttpError, object } from './rpc.mjs';
 
 const ACCESS_SECONDS=3600;
 const REFRESH_SECONDS=7*24*3600;
-const RECOVERY=/^[A-Za-z0-9_-]{43,128}$/;
-const EMAIL=/^[^\s@\u0000-\u001f]+@[^\s@\u0000-\u001f]+\.[^\s@\u0000-\u001f]+$/u;
+const TOKEN=/^[A-Za-z0-9_-]{43,128}$/;
+const EMAIL=/^[^\s@\u0000-\u001f\u007f]+@[^\s@\u0000-\u001f\u007f]+\.[^\s@\u0000-\u001f\u007f]+$/u;
+// One local authority for email provenance, disabled actors and participant/operator separation.
+const ACCOUNT_SAFE='private.dw_actor_eligible(u.id)';
+const normalizeEmail=email=>email.trim().normalize('NFC').toLowerCase();
 const receiptKey=operator=>Buffer.from(sha256('demography-lab:refresh-receipt:v1:'+operator.tokenSigningSecret),'hex');
 function encryptReceipt(operator,session,oldHash) {
   const nonce=randomBytes(12),cipher=createCipheriv('aes-256-gcm',receiptKey(operator),nonce);
@@ -58,7 +61,7 @@ export async function authenticate(runtime,accessToken) {
   if(!accessToken)throw new HttpError(401,'AUTH_REQUIRED');
   // The hash is the authority: a forged or previously revoked signed JWT is never sufficient.
   const {rows}=await runtime.db.query(`select s.id as session_id,u.* from offline.sessions s
-    join auth.users u on u.id=s.user_id where s.revoked_at is null and (
+    join auth.users u on u.id=s.user_id where ${ACCOUNT_SAFE} and s.revoked_at is null and (
       (s.access_hash=$1 and s.access_expires_at>now()) or exists(
         select 1 from offline.refresh_receipts r where r.session_id=s.id and r.old_access_hash=$1
           and r.new_refresh_hash=s.refresh_hash and r.expires_at>now() and r.old_access_expires_at>now()))`,[sha256(accessToken)]);
@@ -68,36 +71,50 @@ export async function authenticate(runtime,accessToken) {
 function fields(input,allowed) {
   if(!object(input)||Object.keys(input).some(k=>!allowed.includes(k)))throw new HttpError(400,'INVALID_INPUT');
 }
-export async function register(runtime,input) {
-  fields(input,['email','fullName','joinCode','recoverySecret']);
-  if(!RECOVERY.test(input.recoverySecret??'') || typeof input.email!=='string' || input.email.length>254
-    || !EMAIL.test(input.email.trim()) || typeof input.fullName!=='string'
-    || input.fullName.trim().length<1 || input.fullName.trim().length>200)
+export async function identify(runtime,input) {
+  fields(input,['email','fullName']);
+  if(typeof input.email!=='string' || input.email.length>512 || typeof input.fullName!=='string'
+      || input.fullName.length>512) throw new HttpError(400,'INVALID_INPUT');
+  const email=normalizeEmail(input.email);
+  const fullName=input.fullName.normalize('NFC').trim().replace(/\s+/gu,' ');
+  if(email.length>254 || !EMAIL.test(email) || !fullName || fullName.length>200
+      || /[\u0000-\u001f\u007f]/u.test(fullName))
     throw new HttpError(400,'INVALID_INPUT');
-  if(!sameSecret(input.joinCode,runtime.operator.joinCode))throw new HttpError(403,'INVALID_CLASSROOM_CODE');
   return runtime.db.transaction(async tx=>{
-    const existing=await tx.query(`select u.* from offline.accounts a join auth.users u on u.id=a.user_id
-      where a.recovery_hash=$1 and a.kind='participant'`,[sha256(input.recoverySecret)]);
-    if(existing.rows.length)return {session:await mint(tx,runtime.operator,userDto(existing.rows[0]))};
-    const id=randomUUID(),email=input.email.trim(),fullName=input.fullName.trim();
-    const row=(await tx.query(`insert into auth.users(id,email,raw_user_meta_data,raw_app_meta_data)
-      values($1,$2,$3::jsonb,'{"offline":true,"provider":"offline","email_verified":false}'::jsonb) returning *`,
-      [id,email,JSON.stringify({full_name:fullName,claimed_email:email,email_verified:false})])).rows[0];
-    await tx.query("insert into offline.accounts(user_id,recovery_hash,kind) values($1,$2,'participant')",[id,sha256(input.recoverySecret)]);
-    await tx.query('insert into public.dw_profiles(user_id,full_name) values($1,$2)',[id,fullName]);
+    await tx.query('select pg_advisory_xact_lock(hashtextextended($1,0))',['offline-email:'+email]);
+    let row=(await tx.query(`select u.*,a.kind,(${ACCOUNT_SAFE}) as participant_safe
+      from offline.email_identities e join offline.accounts a on a.user_id=e.user_id
+      join auth.users u on u.id=e.user_id where e.normalized_email=$1`,[email])).rows[0];
+    if(row && (row.kind!=='participant'||!row.participant_safe))throw new HttpError(403,'PARTICIPANT_IDENTITY_UNAVAILABLE');
+    if(!row) {
+      // Before 0.8 devices with the same claimed email could have separate accounts.
+      // Select the earliest eligible identity without moving/deleting any historical work.
+      // Keep exactly one canonicalizer: PostgreSQL lower and JS Unicode lower differ for e.g. İ/Σ.
+      const candidates=(await tx.query(`select u.id,u.email from auth.users u join offline.accounts a on a.user_id=u.id
+        where a.kind='participant' and ${ACCOUNT_SAFE}
+          and not exists(select 1 from offline.email_identities e where e.user_id=u.id)
+        order by a.created_at,u.created_at,u.id`)).rows;
+      const legacy=candidates.find(candidate=>typeof candidate.email==='string'&&normalizeEmail(candidate.email)===email);
+      if(legacy)row=(await tx.query('select * from auth.users where id=$1',[legacy.id])).rows[0];
+      if(!row) {
+        row=(await tx.query(`insert into auth.users(id,email,raw_user_meta_data,raw_app_meta_data)
+          values($1,$2,$3::jsonb,'{"offline":true,"provider":"offline","email_verified":false}'::jsonb) returning *`,
+          [randomUUID(),email,JSON.stringify({full_name:fullName,claimed_email:email,email_verified:false})])).rows[0];
+        await tx.query("insert into offline.accounts(user_id,kind) values($1,'participant')",[row.id]);
+      }
+      await tx.query('insert into offline.email_identities(normalized_email,user_id) values($1,$2)',[email,row.id]);
+    }
+    const profile=(await tx.query('select full_name,revision from public.dw_profiles where user_id=$1',[row.id])).rows[0];
+    if(!profile || profile.full_name!==fullName) {
+      // Reuse the normal revision/event path so account attribution and session cursors stay coherent.
+      await tx.query("select set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true)",
+        [row.id,JSON.stringify({sub:row.id,role:'authenticated',app_metadata:{offline:true,provider:'offline'}})]);
+      await tx.query('select private.dw_save_profile($1,$2,$3)',[randomUUID(),profile?.revision??0,fullName]);
+    }
+    row=(await tx.query(`update auth.users set email=$2,raw_user_meta_data=raw_user_meta_data||$3::jsonb,
+      updated_at=now() where id=$1 returning *`,[row.id,email,JSON.stringify({full_name:fullName,claimed_email:email,email_verified:false})])).rows[0];
+    await tx.query('update offline.email_identities set last_identified_at=now() where normalized_email=$1',[email]);
     return {session:await mint(tx,runtime.operator,userDto(row))};
-  });
-}
-export async function recover(runtime,input) {
-  fields(input,['recoverySecret']);
-  if(!RECOVERY.test(input.recoverySecret??''))throw new HttpError(400,'INVALID_RECOVERY_SECRET');
-  return runtime.db.transaction(async tx=>{
-    const {rows}=await tx.query(`select u.* from offline.accounts a join auth.users u on u.id=a.user_id
-      where a.recovery_hash=$1 and a.kind='participant'`,[sha256(input.recoverySecret)]);
-    if(!rows.length)throw new HttpError(403,'RECOVERY_NOT_FOUND');
-    // Recovery revokes older sessions, preventing a lost device from continuing to write.
-    await tx.query('update offline.sessions set revoked_at=now() where user_id=$1 and revoked_at is null',[rows[0].id]);
-    return {session:await mint(tx,runtime.operator,userDto(rows[0]))};
   });
 }
 export async function hostLogin(runtime,input) {
@@ -107,30 +124,36 @@ export async function hostLogin(runtime,input) {
     throw new HttpError(400,'INVALID_INPUT');
   return runtime.db.transaction(async tx=>{
     let row=(await tx.query("select u.* from auth.users u join offline.accounts a on a.user_id=u.id where a.kind='host'")).rows[0];
+    const fullName=input.fullName?.trim()??'Преподаватель';
     if(!row){
-      const id=randomUUID(),fullName=input.fullName?.trim();
+      const id=randomUUID();
       row=(await tx.query(`insert into auth.users(id,email,raw_user_meta_data,raw_app_meta_data)
         values($1,$2,$3::jsonb,'{"offline":true,"provider":"offline","email_verified":false}'::jsonb) returning *`,
         [id,`host@${runtime.operator.instanceId}.local`,JSON.stringify({full_name:fullName,email_verified:false})])).rows[0];
       await tx.query("insert into offline.accounts(user_id,kind) values($1,'host')",[id]);
-      if(fullName)await tx.query('insert into public.dw_profiles(user_id,full_name) values($1,$2)',[id,fullName]);
       await tx.query('insert into private.facilitators(user_id) values($1)',[id]);
+    }
+    const profile=(await tx.query('select full_name from public.dw_profiles where user_id=$1',[row.id])).rows[0];
+    if(!profile) {
+      await tx.query('insert into public.dw_profiles(user_id,full_name) values($1,$2)',[row.id,fullName]);
+      row=(await tx.query(`update auth.users set raw_user_meta_data=raw_user_meta_data||$2::jsonb,
+        updated_at=now() where id=$1 returning *`,[row.id,JSON.stringify({full_name:fullName})])).rows[0];
     }
     return {session:await mint(tx,runtime.operator,userDto(row))};
   });
 }
 export async function refresh(runtime,input) {
   fields(input,['refresh_token']);
-  if(!RECOVERY.test(input.refresh_token??''))throw new HttpError(400,'REFRESH_TOKEN_INVALID');
+  if(!TOKEN.test(input.refresh_token??''))throw new HttpError(400,'REFRESH_TOKEN_INVALID');
   return runtime.db.transaction(async tx=>{
     const oldHash=sha256(input.refresh_token);
     await tx.query('delete from offline.refresh_receipts where expires_at<=now()');
     const {rows}=await tx.query(`select s.id as session_id,s.access_hash as old_access_hash,s.access_expires_at as old_access_expires_at,u.* from offline.sessions s join auth.users u on u.id=s.user_id
-      where s.refresh_hash=$1 and s.revoked_at is null and s.refresh_expires_at>now() for update of s`,[oldHash]);
+      where ${ACCOUNT_SAFE} and s.refresh_hash=$1 and s.revoked_at is null and s.refresh_expires_at>now() for update of s`,[oldHash]);
     if(!rows.length) {
       const receipt=(await tx.query(`select r.response_ciphertext,s.access_hash,u.* from offline.refresh_receipts r
         join offline.sessions s on s.id=r.session_id join auth.users u on u.id=s.user_id
-        where r.old_refresh_hash=$1 and r.expires_at>now() and r.new_refresh_hash=s.refresh_hash
+        where ${ACCOUNT_SAFE} and r.old_refresh_hash=$1 and r.expires_at>now() and r.new_refresh_hash=s.refresh_hash
           and s.revoked_at is null and s.access_expires_at>now()`,[oldHash])).rows[0];
       if(!receipt)throw new HttpError(400,'REFRESH_TOKEN_EXPIRED_OR_REUSED');
       const result=decryptReceipt(runtime.operator,receipt.response_ciphertext,oldHash);

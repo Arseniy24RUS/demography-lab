@@ -9,8 +9,8 @@ import { pathToFileURL } from 'node:url';
 import { pipeline } from 'node:stream/promises';
 import { createGzip } from 'node:zlib';
 import { ROOT, openRuntime, backupRuntime, restoreBackup, defaultDataDirectory, counts, atomicJson } from './storage.mjs';
-import { HttpError, invokeRpc } from './rpc.mjs';
-import { bearer, sameSecret, authenticate, register, recover, hostLogin, refresh, logout } from './auth.mjs';
+import { HttpError, invokeRpc, object } from './rpc.mjs';
+import { bearer, sameSecret, authenticate, identify, hostLogin, refresh, logout } from './auth.mjs';
 
 const BODY_LIMIT=1024*1024;
 const MIME=new Map(Object.entries({'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8',
@@ -213,16 +213,19 @@ export async function startServer({runtime,host=process.env.DW_OFFLINE_HOST??'0.
       const input=await body(request,16*1024);
       if(path==='/offline/auth/host-bootstrap') {
         if(!isLoopback(request)||!localName(context.hostname)||request.headers.origin!==context.origin
-          ||request.headers['x-offline-host-bootstrap']!=='1'||!input||Object.keys(input).length)
+          ||request.headers['x-offline-host-bootstrap']!=='1'||!object(input)||Object.keys(input).some(key=>key!=='fullName'))
           throw new HttpError(403,'HOST_BOOTSTRAP_FORBIDDEN');
-        return json(response,200,await runtime.enqueue(()=>hostLogin(runtime,{hostKey:runtime.operator.hostKey})));
+        if(input.fullName!==undefined&&typeof input.fullName!=='string')throw new HttpError(400,'INVALID_INPUT');
+        return json(response,200,await runtime.enqueue(()=>hostLogin(runtime,{hostKey:runtime.operator.hostKey,
+          ...(input.fullName?.trim()?{fullName:input.fullName}:{})})));
       }
       if(path==='/offline/auth/host') {
         if(!isLoopback(request)||!localName(context.hostname))throw new HttpError(403,'HOST_LOCAL_ONLY');
         return json(response,200,await runtime.enqueue(()=>hostLogin(runtime,input)));
       }
-      if(path==='/offline/auth/register')return json(response,200,await runtime.enqueue(()=>register(runtime,input)));
-      if(path==='/offline/auth/recover')return json(response,200,await runtime.enqueue(()=>recover(runtime,input)));
+      if(path==='/offline/auth/identify')return json(response,200,await runtime.enqueue(()=>identify(runtime,input)));
+      if(path==='/offline/auth/register'||path==='/offline/auth/recover')
+        return json(response,410,{code:'SIMPLE_IDENTIFICATION_REQUIRED',message:'Введите email и ФИО',details:null,hint:null});
       if(path==='/auth/v1/token'&&context.url.searchParams.get('grant_type')==='refresh_token')
         return json(response,200,await runtime.enqueue(()=>refresh(runtime,input)));
       if(path==='/auth/v1/logout') {

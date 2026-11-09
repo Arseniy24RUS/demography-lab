@@ -26,29 +26,16 @@ export function SessionLobby({
   regions: SessionRegionOption[];
 }) {
   const id = useId();
-  const [joinCode, setJoinCode] = useState(state.initialJoinCode);
   const [createOpen, setCreateOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [scope, setScope] = useState<SessionScope>('municipality');
   const [regionId, setRegionId] = useState('');
   const [error, setError] = useState('');
-  const [joinError, setJoinError] = useState('');
   const [working, setWorking] = useState(false);
   const disabled = working || state.busy !== null;
   const sessions = state.bootstrap?.sessions ?? [];
+  const available = (state.availableSessions ?? []).filter((item) => !sessions.some((mine) => mine.id === item.id));
   const regionNames = new Map(regions.map((region) => [region.id, region.name]));
-
-  async function join() {
-    setJoinError('');
-    setWorking(true);
-    try {
-      await actions.joinSession(joinCode.trim());
-    } catch (cause) {
-      setJoinError(messageFromError(cause));
-    } finally {
-      setWorking(false);
-    }
-  }
 
   async function create() {
     setError('');
@@ -116,8 +103,8 @@ export function SessionLobby({
               <BookOpen size={35} strokeWidth={1.5} aria-hidden="true" />
               <h3>Здесь появятся ваши занятия</h3>
               <p>
-                Введите код, который сообщил преподаватель. После присоединения вы увидите общую
-                доску и публикации участников.
+                Выберите открытое занятие или перейдите по ссылке преподавателя. Здесь сохранятся
+                ваши материалы и результаты.
               </p>
               <button className="button button-secondary" onClick={actions.openLocalWork}>
                 Открыть библиотеку документов <ArrowRight size={16} />
@@ -126,47 +113,21 @@ export function SessionLobby({
           )}
         </section>
         <aside className="session-lobby-aside">
-          <form
-            className="session-side-form"
-            aria-labelledby={`${id}-join-title`}
-            onSubmit={(event) => {
-              event.preventDefault();
-              void join();
-            }}
-          >
-            <h2 id={`${id}-join-title`}>Присоединиться к группе</h2>
-            <p>Код связывает ваши работы с конкретным занятием.</p>
-            <div className="session-field">
-              <label htmlFor={`${id}-join-code`}>Код занятия</label>
-              <input
-                id={`${id}-join-code`}
-                className="session-input session-input-code"
-                value={joinCode}
-                onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
-                autoComplete="off"
-                autoCapitalize="characters"
-                spellCheck={false}
-                minLength={6}
-                maxLength={32}
-                required
-                disabled={disabled}
-                aria-describedby={joinError ? `${id}-join-error` : undefined}
-              />
-            </div>
-            {joinError ? (
-              <p id={`${id}-join-error`} className="session-form-error" role="alert">
-                {joinError}
-              </p>
-            ) : null}
-            <button
-              className="button button-primary block"
-              type="submit"
-              disabled={disabled || joinCode.trim().length < 6}
-            >
-              <LogIn size={17} />
-              Присоединиться
-            </button>
-          </form>
+          <section className="session-side-form" aria-labelledby={`${id}-join-title`}>
+            <h2 id={`${id}-join-title`}>Открытые занятия</h2>
+            {available.length ? <div className="session-list">
+              {available.map((item) => <div key={item.id} className="session-open-entry">
+                <h3>{item.title}</h3>
+                <p className="session-hint">{item.regionId ? (regionNames.get(item.regionId) ?? item.regionId) : 'Российская Федерация'}</p>
+                <button className="button button-primary block" disabled={disabled}
+                  aria-label={`Присоединиться к занятию «${item.title}»`}
+                  onClick={() => void actions.joinOpenSession(item.id).catch(() => undefined)}>
+                  <LogIn size={17} /> Присоединиться
+                </button>
+              </div>)}
+            </div> : <p>{sessions.length ? 'Вы уже присоединились к доступным занятиям.' :
+              'Преподаватель ещё не открыл занятие. Когда оно появится, нажмите «Обновить».'}</p>}
+          </section>
           {state.bootstrap?.canCreateSession ? (
             <section className="session-side-form" aria-labelledby={`${id}-host-title`}>
               <h2 id={`${id}-host-title`}>Провести занятие</h2>

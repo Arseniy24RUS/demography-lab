@@ -40,7 +40,7 @@ async function copyPayload(source, destination) {
     'scripts/seed-roadmaps.mjs', 'scripts/seed-supabase.mjs', 'scripts/cache-originals.mjs', 'scripts/purge-expired-surveys.mjs',
     'packages/territories/series.mjs', 'packages/security', 'supabase/migrations',
     'node_modules/@electric-sql/pglite', 'node_modules/@noble/hashes',
-    'package.json', 'docs/offline-macos.md', 'docs/stage-07-acceptance.md', 'CHANGELOG.md',
+    'package.json', 'docs/offline-macos.md', 'docs/stage-07-acceptance.md', 'docs/stage-08-acceptance.md', 'CHANGELOG.md',
     'THIRD_PARTY_NOTICES.md', 'licenses',
   ];
   for (const path of relativePaths) {
@@ -123,7 +123,7 @@ export async function buildMacBundle({ output, arch = 'universal', nodeArchive, 
       dependencies: { '@electric-sql/pglite': runtimeLock.pgliteVersion, '@noble/hashes': runtimeLock.nobleHashesVersion },
       preparedDatabase: false, userDataIncluded: false, downloadsRequired: false,
     }, null, 2) + '\n');
-    const readme = `# Демографическая мастерская ${sourcePackage.version}\n\nПолный автономный комплект для macOS, архитектура ${arch === 'universal' ? 'Apple Silicon (M-серия) и Intel; выбор автоматически' : arch === 'arm64' ? 'Apple Silicon (M-серия)' : 'Intel'}.\n\nРаспакуйте ZIP целиком в постоянную папку. Заранее откройте macos/Prepare.command: подготовка локальной базы из уже включённых данных. Интернет для этого комплекта не нужен. Затем macos/Network.command и macos/Start-Seminar.command. После занятия macos/Stop-Seminar.command создаёт резервную копию и закрывает базу.\n\nДанные участников хранятся вне папки программы: ~/Library/Application Support/DemographyLab. Этот комплект не содержит чужих аккаунтов, ключей преподавателя или результатов занятий.\n\nПолная инструкция: docs/offline-macos.md. Не удаляйте каталог данных при обновлении программы. Если macOS требует подтверждения открытия скачанного .command, используйте разрешение конкретного файла в настройках безопасности после проверки происхождения архива. Не отключайте защиту системы целиком.\n`;
+    const readme = `# Демографическая мастерская ${sourcePackage.version}\n\nПолный автономный комплект для macOS, архитектура ${arch === 'universal' ? 'Apple Silicon (M-серия) и Intel; выбор автоматически' : arch === 'arm64' ? 'Apple Silicon (M-серия)' : 'Intel'}.\n\nРаспакуйте ZIP целиком в постоянную папку. Заранее откройте macos/Prepare.command: подготовка локальной базы из уже включённых данных. Интернет для этого комплекта не нужен. Затем macos/Network.command и macos/Start-Seminar.command. После занятия macos/Stop-Seminar.command создаёт резервную копию и закрывает базу.\n\nСлушатель открывает ссылку или QR-код занятия и вводит email и ФИО в одной форме. Вход преподавателя на самом Mac доступен через локальный адрес 127.0.0.1, открываемый командой запуска.\n\nДанные участников хранятся вне папки программы: ~/Library/Application Support/DemographyLab. Этот комплект не содержит чужих аккаунтов, ключей преподавателя или результатов занятий.\n\nПолная инструкция, включая обновление с 0.7 на 0.8: docs/offline-macos.md. Не удаляйте каталог данных при обновлении программы. Если macOS требует подтверждения открытия скачанного .command, используйте разрешение конкретного файла в настройках безопасности после проверки происхождения архива. Не отключайте защиту системы целиком.\n`;
     await writeFile(join(bundle, 'START-HERE.md'), readme, 'utf8');
     const manifest = await writeManifest(bundle);
     await checkManifest(bundle);

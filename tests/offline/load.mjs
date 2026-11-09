@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { randomBytes, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { performance } from 'node:perf_hooks';
 import { openRuntime, atomicJson } from '../../scripts/offline/storage.mjs';
 import { startServer } from '../../scripts/offline/server.mjs';
@@ -32,15 +32,17 @@ try {
   }
   const host=(await send('/offline/auth/host-bootstrap',{},null,'host-auth',{'X-Offline-Host-Bootstrap':'1'})).session;
   const rpc=(token,name,input={},category)=>send('/rest/v1/rpc/'+name,input,token,category);
-  await rpc(host.access_token,'dw_save_profile',{p_operation_id:randomUUID(),p_expected_revision:0,p_full_name:'Load test instructor'});
+  const bootstrap=await rpc(host.access_token,'dw_bootstrap');
+  await rpc(host.access_token,'dw_save_profile',{p_operation_id:randomUUID(),p_expected_revision:bootstrap.profile.revision,p_full_name:'Load test instructor'});
   const session=(await rpc(host.access_token,'dw_create_session',{p_operation_id:randomUUID(),p_title:'Load test temporary classroom',p_scope:'municipality',p_region_id:'respublika-mordoviia'})).session;
-  const invite=await rpc(host.access_token,'dw_invitation',{p_session_id:session.id});
   const participants=await Promise.all(Array.from({length:50},async(_,i)=>{
-    const auth=await send('/offline/auth/register',{email:`synthetic-${i}@load.example.test`,fullName:`Synthetic participant ${i}`,
-      recoverySecret:randomBytes(32).toString('base64url'),joinCode:runtime.operator.joinCode},null,'register');
-    await rpc(auth.session.access_token,'dw_join_session',{p_operation_id:randomUUID(),p_code:invite.code},'join');
+    const auth=await send('/offline/auth/identify',{email:`synthetic-${i}@load.example.test`,fullName:`Synthetic participant ${i}`},null,'identify');
+    await rpc(auth.session.access_token,'dw_join_open_session',{p_operation_id:randomUUID(),p_session_id:session.id},'join');
     return auth.session;
   }));
+  const uniqueAccounts=new Set(participants.map(p=>p.user.id)).size;
+  const sessionMembers=(await rpc(host.access_token,'dw_session_snapshot',{p_session_id:session.id})).members.length;
+  assert.equal(uniqueAccounts,50);assert.equal(sessionMembers,51);
   const setupMs=performance.now()-started;
   const concurrentStart=performance.now();
   for(let round=0;round<10;round++) {
@@ -60,9 +62,9 @@ try {
   for(const[name,values]of metrics){values.sort((a,b)=>a-b);const at=q=>Number(values[Math.min(values.length-1,Math.ceil(q*values.length)-1)].toFixed(2));
     groups[name]={requests:values.length,p50Ms:at(.5),p95Ms:at(.95),maxMs:at(1)};}
   const report={schemaVersion:1,createdAt:new Date().toISOString(),platform:process.platform,arch:process.arch,node:process.version,
-    pglite:'0.5.15',participants:50,canonical:runtime.ready.seed,setupMs:Number(setupMs.toFixed(2)),
+    pglite:'0.5.15',participants:50,identification:'email-and-full-name',joining:'open-session',canonical:runtime.ready.seed,setupMs:Number(setupMs.toFixed(2)),
     concurrentBatchMs:Number(concurrentMs.toFixed(2)),observedMaxQueueDepth:highWater,groups,
-    backupBytes:backups.backup.bytes,verified:{uniqueAccounts:50,sessionMembers:51,barriers:50,allRequestsSucceeded:true},
+    backupBytes:backups.backup.bytes,verified:{uniqueAccounts,sessionMembers,barriers:snapshot.barriers.length,allRequestsSucceeded:true},
     scope:'Single Linux container, local HTTP loopback, production PGlite and complete corpus. Not Mac, Wi-Fi, battery or audience device validation.'};
   if(process.argv[2])await atomicJson(resolve(process.argv[2]),report);
   console.log(JSON.stringify(report,null,2));

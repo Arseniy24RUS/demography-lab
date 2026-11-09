@@ -155,15 +155,47 @@ grant execute on function public.dw_survey_own_response(uuid,text),private.dw_su
 grant execute on function public.dw_survey_save_response(uuid,uuid,text,text,jsonb),private.dw_survey_save_response(uuid,uuid,text,text,jsonb) to anon,authenticated;
 grant execute on function public.dw_survey_withdraw_response(uuid,uuid,text,bigint),private.dw_survey_withdraw_response(uuid,uuid,text,bigint) to anon,authenticated;
 
+-- Stage 8 can be installed independently while this transaction awaits confirmation.
+-- Preserve exactly its four guarded entry RPCs if the complete entry surface exists.
+-- A partially installed surface is an error; never grant access to additional helpers.
+do $$
+declare v_entry_count integer;
+begin
+  select count(*) into v_entry_count from unnest(array[
+    'public.dw_identify(text,text)','private.dw_identify(text,text)',
+    'public.dw_entry_session(text)','private.dw_entry_session(text)',
+    'public.dw_entry_logout(text)','private.dw_entry_logout(text)',
+    'public.dw_entry_rpc(text,text,jsonb)','private.dw_entry_rpc(text,text,jsonb)'
+  ]::text[]) signature where to_regprocedure(signature) is not null;
+  if v_entry_count not in (0,8) then raise exception 'Incomplete Stage 8 entry surface'; end if;
+  if v_entry_count=8 then
+    grant execute on function public.dw_identify(text,text),private.dw_identify(text,text),
+      public.dw_entry_session(text),private.dw_entry_session(text),
+      public.dw_entry_logout(text),private.dw_entry_logout(text),
+      public.dw_entry_rpc(text,text,jsonb),private.dw_entry_rpc(text,text,jsonb) to anon,authenticated;
+  end if;
+end $$;
+
 -- Fail closed if a privilege invariant is unexpectedly violated.
 do $$
-declare v_allowed text[];
+declare v_allowed text[]; v_expected text[];
 begin
+  v_expected:=array['dw_survey_own_response','dw_survey_public_manifest','dw_survey_save_response','dw_survey_withdraw_response']::text[];
+  if to_regprocedure('private.dw_identify(text,text)') is not null then
+    v_expected:=array['dw_entry_logout','dw_entry_rpc','dw_entry_session','dw_identify',
+      'dw_survey_own_response','dw_survey_public_manifest','dw_survey_save_response','dw_survey_withdraw_response']::text[];
+  end if;
   select array_agg(p.proname::text order by p.proname::text) into v_allowed
   from pg_proc p join pg_namespace n on n.oid=p.pronamespace
   where n.nspname='private' and has_function_privilege('anon',p.oid,'execute');
-  if v_allowed is distinct from array['dw_survey_own_response','dw_survey_public_manifest','dw_survey_save_response','dw_survey_withdraw_response']::text[] then
+  if v_allowed is distinct from v_expected then
     raise exception 'Unexpected anonymous private function privileges';
+  end if;
+  select array_agg(p.proname::text order by p.proname::text) into v_allowed
+  from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+  where n.nspname='public' and p.proname like 'dw_%' and has_function_privilege('anon',p.oid,'execute');
+  if v_allowed is distinct from v_expected then
+    raise exception 'Unexpected anonymous public function privileges';
   end if;
   if not has_function_privilege('authenticated','public.dw_save_family(uuid,uuid,uuid,bigint,text,text,text,uuid[])','execute')
      or not has_function_privilege('authenticated','public.dw_delete_family(uuid,uuid,uuid,bigint)','execute')

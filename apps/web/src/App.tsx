@@ -93,6 +93,7 @@ export function App() {
     route.has('session') ||
     route.has('join') ||
     route.has('sessions') ||
+    route.has('hostAccess') ||
     new URLSearchParams(location.search).has('join')
       ? 'sessions'
       : 'documents',
@@ -776,7 +777,7 @@ export function App() {
                 ? 'Локальная тетрадь сохраняется на этом устройстве'
                 : 'Работа сохраняется на этом устройстве'}
         </span>
-        <span className="footer-version">Версия 0.7 · локальная ревизия {snapshot.revision}</span>
+        <span className="footer-version">Версия 0.8 · локальная ревизия {snapshot.revision}</span>
       </footer>
       <input
         ref={fileInput}
