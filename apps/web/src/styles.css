@@ -2190,18 +2190,21 @@ svg {
     gap: 20px;
   }
 }
-/* Keep full Russian labels and usable touch targets on narrow screens. */
+/* Preserve full labels and touch targets in one scrollable navigation row. */
 @media (max-width: 540px) {
   .topnav {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    display: flex;
+    flex-wrap: nowrap;
     width: 100%;
     min-width: 0;
-    height: auto;
-    gap: 2px 12px;
+    height: 46px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    gap: 18px;
     margin-inline: 0;
   }
   .topnav .nav-button {
+    flex: 0 0 auto;
     min-width: 0;
     min-height: 44px;
     padding-inline: 0;
@@ -2210,8 +2213,7 @@ svg {
 }
 @media (max-width: 360px) {
   .topnav {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 2px 8px;
+    gap: 16px;
   }
   .topnav .nav-button {
     font-size: 12px;

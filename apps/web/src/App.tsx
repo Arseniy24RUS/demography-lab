@@ -61,7 +61,7 @@ const ConnectedBarriers = lazy(() =>
   import('./components/ConnectedBarriers').then((m) => ({ default: m.ConnectedBarriers })),
 );
 const ConnectedRoadmaps = lazy(() => import('./components/ConnectedRoadmaps').then(m => ({ default: m.ConnectedRoadmaps })));
-const ConnectedSurveyStart = lazy(() => import('./components/ConnectedSurveyStart').then(m => ({ default: m.ConnectedSurveyStart })));
+const ConnectedFlipchart = lazy(() => import('./components/ConnectedFlipchart').then(m => ({ default: m.ConnectedFlipchart })));
 const LivePracticeVoting = lazy(() => import('./components/workshop/LivePracticeVoting').then(m => ({ default: m.LivePracticeVoting })));
 const TerritoryExplorer = lazy(() => import('./components/roadmaps/TerritoryExplorer').then(m => ({ default: m.TerritoryExplorer })));
 const LocalAtlas = lazy(() =>
@@ -670,14 +670,10 @@ export function App() {
           <SessionArea
             state={session.state}
             actions={session.actions}
-            renderSurvey={(onContinue) => session.state.snapshot && session.state.auth.userId ? (
-              <Suspense fallback={<p aria-busy="true">Открываем опрос…</p>}>
-                <ConnectedSurveyStart api={session.api} session={session.state.snapshot.session}
-                  userId={session.state.auth.userId} onContinue={onContinue}>
-                  {session.state.snapshot.session.role === 'host' ? <ConnectedBarriers
-                    state={session.state} sessionActions={session.actions} barriers={barriers}
-                    manifest={manifest} api={session.api} surveyOnly /> : null}
-                </ConnectedSurveyStart>
+            renderFlipchart={() => session.state.snapshot && session.state.auth.userId ? (
+              <Suspense fallback={<p aria-busy="true">Открываем флипчарт…</p>}>
+                <ConnectedFlipchart key={`${session.sessionId}:${session.state.auth.userId}`} api={session.api}
+                  sessionId={session.sessionId} userId={session.state.auth.userId} />
               </Suspense>
             ) : null}
             renderLiveVotes={() => (
@@ -761,7 +757,7 @@ export function App() {
                   ? 'Работа сохраняется в вашем профиле'
                   : 'Заметки в этом браузере · войдите для сохранения в профиле'}
         </span>
-        <span className="footer-version">Версия 0.9.1</span>
+        <span className="footer-version">Версия 0.10.0</span>
       </footer>
       {dialog === 'source' ? (
         <SourceDetails entry={entry} doc={doc} onClose={() => setDialog(null)} />

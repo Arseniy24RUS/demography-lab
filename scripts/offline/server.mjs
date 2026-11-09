@@ -305,7 +305,7 @@ export async function startServer({runtime,host=process.env.DW_OFFLINE_HOST??'0.
         runtime.enqueue(()=>backupRuntime(runtime,{kind:'automatic'})).catch(e=>logger.error('Автоматическая копия:',safeCode(e))).finally(()=>{backupQueued=false;});
       },backupIntervalMs);interval.unref();
     }
-    logger.log(`Мастерская готова: http://127.0.0.1:${record.port}/; опрос: http://127.0.0.1:${record.surveyPort}/survey.html`);
+    logger.log(`Мастерская готова: http://127.0.0.1:${record.port}/`);
     return {runtime,main,survey,stop,...record};
   }catch(error){await Promise.all([closeServer(main),closeServer(survey)]);await runtime.close();throw error;}
 }

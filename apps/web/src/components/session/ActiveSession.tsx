@@ -31,7 +31,7 @@ export function ActiveSession({
   renderWorkshop,
   renderBarriers,
   renderRoadmaps,
-  renderSurvey,
+  renderFlipchart,
   renderLiveVotes,
 }: {
   state: SessionAreaState;
@@ -41,7 +41,7 @@ export function ActiveSession({
   renderWorkshop?: (view: WorkshopView) => ReactNode;
   renderBarriers?: () => ReactNode;
   renderRoadmaps?: () => ReactNode;
-  renderSurvey?: (onContinue: () => void) => ReactNode;
+  renderFlipchart?: () => ReactNode;
   renderLiveVotes?: () => ReactNode;
 }) {
   const id = useId();
@@ -52,7 +52,7 @@ export function ActiveSession({
   const [error, setError] = useState('');
   const [working, setWorking] = useState(false);
   const [contextOpen, setContextOpen] = useResponsiveDisclosure();
-  const [workspaceView, setWorkspaceView] = useState<'survey' | 'board' | 'barriers' | 'roadmaps' | WorkshopView>(renderSurvey ? 'survey' : 'board');
+  const [workspaceView, setWorkspaceView] = useState<'flipchart' | 'board' | 'barriers' | 'roadmaps' | WorkshopView>(renderFlipchart ? 'flipchart' : 'board');
   const sceneNavigation = useRef<HTMLElement>(null);
   function selectWorkspace(next: typeof workspaceView) {
     setWorkspaceView(next);
@@ -111,13 +111,15 @@ export function ActiveSession({
           <span> · {scopeLabels[session.scope]} уровень</span>
         </p>
         <div className="session-action-row">
-          <button className="button button-secondary" onClick={actions.openLocalWork}>
+          <button className="button button-secondary" onClick={actions.openLocalWork} aria-label="Работать с документами">
             <BookOpen size={16} />
-            Работать с документами
+            <span className="workspace-action-full" aria-hidden="true">Работать с документами</span>
+            <span className="workspace-action-short" aria-hidden="true">Документы</span>
           </button>
-          <button className="button button-primary" onClick={actions.openProjector}>
+          <button className="button button-primary" onClick={actions.openProjector} aria-label="Экран проектора">
             <Monitor size={17} />
-            Экран проектора
+            <span className="workspace-action-full" aria-hidden="true">Экран проектора</span>
+            <span className="workspace-action-short" aria-hidden="true">Проектор</span>
           </button>
         </div>
       </div>
@@ -148,7 +150,7 @@ export function ActiveSession({
         >
           {(
             [
-              ...(renderSurvey ? ([['survey', 'Опрос']] as const) : []),
+              ...(renderFlipchart ? ([['flipchart', 'Флипчарт']] as const) : []),
               ...(renderBarriers ? ([['barriers', 'Барьеры']] as const) : []),
               ['regions', 'Программы'],
               ['board', 'Практики'],
@@ -168,8 +170,8 @@ export function ActiveSession({
           ))}
         </nav>
       ) : null}
-      {workspaceView === 'survey'
-        ? renderSurvey?.(() => selectWorkspace('barriers'))
+      {workspaceView === 'flipchart'
+        ? renderFlipchart?.()
         : workspaceView === 'roadmaps'
         ? renderRoadmaps?.()
         : workspaceView === 'barriers'

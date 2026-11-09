@@ -18,7 +18,7 @@ export function SessionArea({
   renderWorkshop,
   renderBarriers,
   renderRoadmaps,
-  renderSurvey,
+  renderFlipchart,
   renderLiveVotes,
 }: {
   state: SessionAreaState;
@@ -27,12 +27,12 @@ export function SessionArea({
   renderWorkshop?: (view: WorkshopView) => ReactNode;
   renderBarriers?: () => ReactNode;
   renderRoadmaps?: () => ReactNode;
-  renderSurvey?: (onContinue: () => void) => ReactNode;
+  renderFlipchart?: () => ReactNode;
   renderLiveVotes?: () => ReactNode;
 }) {
   const ready = state.auth.status === 'signed-in' && state.bootstrap?.profile;
   return (
-    <main id="main-content" className="session-page">
+    <main id="main-content" className={`session-page${ready && state.snapshot ? ' session-page--shared' : ''}`}>
       <header className="session-heading">
         <div>
           <h1>{ready && state.snapshot ? state.snapshot.session.title : 'Мастерская'}</h1>
@@ -109,7 +109,7 @@ export function SessionArea({
           renderWorkshop={renderWorkshop}
           renderBarriers={renderBarriers}
           renderRoadmaps={renderRoadmaps}
-          renderSurvey={renderSurvey}
+          renderFlipchart={renderFlipchart}
           renderLiveVotes={renderLiveVotes}
         />
       ) : (

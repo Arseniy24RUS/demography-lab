@@ -168,6 +168,7 @@ function mount() {
     return {
       state,
       api,
+      legacySurvey: true,
       barriers,
       sessionActions: { openSource: vi.fn() } as unknown as SessionAreaActions,
       manifest: { schemaVersion: 1, generatedAt: '2026-11-08', documents: [] },

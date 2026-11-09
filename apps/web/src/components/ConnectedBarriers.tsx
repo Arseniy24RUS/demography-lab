@@ -28,6 +28,7 @@ export function ConnectedBarriers({
   manifest,
   api,
   surveyOnly = false,
+  legacySurvey = false,
 }: {
   state: SessionAreaState;
   sessionActions: SessionAreaActions;
@@ -35,6 +36,8 @@ export function ConnectedBarriers({
   manifest: CorpusManifest;
   api: SessionApi | null;
   surveyOnly?: boolean;
+  /** Explicit compatibility path; ordinary barrier work never loads an old invitation. */
+  legacySurvey?: boolean;
 }) {
   const [invitationUrl, setInvitationUrl] = useState<string | null>(null),
     [invitationError, setInvitationError] = useState<string | null>(null);
@@ -54,7 +57,7 @@ export function ConnectedBarriers({
     let active = true;
     setInvitationUrl(null);
     setInvitationError(null);
-    if (!key || !api || current?.role !== 'host' || !survey) return;
+    if ((!surveyOnly && !legacySurvey) || !key || !api || current?.role !== 'host' || !survey) return;
     if (!api.config.survey) {
       setInvitationError(
         api.config.surveyError ?? 'Для общей ссылки настройте отдельный origin формы опроса.',
@@ -127,7 +130,7 @@ export function ConnectedBarriers({
     return () => {
       active = false;
     };
-  }, [key, api, current?.role, current?.id, survey?.id, survey?.revision, surveyOnly]);
+  }, [key, api, current?.role, current?.id, survey?.id, survey?.revision, surveyOnly, legacySurvey]);
   if (!current || !userId || !api || !key) return null;
   function candidate(attempt: string) {
     let token: string | null = null;

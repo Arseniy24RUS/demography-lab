@@ -14,6 +14,7 @@ import { BarrierProjectionView } from './barriers/BarrierProjectionView';
 import { RoadmapProjection } from './roadmaps/RoadmapProjection';
 import { BarrierTopicCloud } from './barriers/BarrierTopicCloud';
 import { LivePracticeRanking } from './workshop/LivePracticeVoting';
+import { ConnectedFlipchartProjector } from './ConnectedFlipchart';
 import '../workshop.css';
 import '../barriers.css';
 
@@ -31,8 +32,8 @@ export function ProjectorContainer({
   onExit: () => void;
 }) {
   const [mode, setMode] = useState<
-    'cards' | 'regions' | 'ranking' | 'topics' | 'path' | 'links' | 'solutions' | 'roadmaps'
-  >('topics');
+    'stickers' | 'cards' | 'regions' | 'ranking' | 'topics' | 'path' | 'links' | 'solutions' | 'roadmaps'
+  >('stickers');
   const [held, setHeld] = useState<WorkshopProjection | null>(null);
   const [heldBarriers, setHeldBarriers] = useState<BarriersProjection | null>(null);
   const [busy, setBusy] = useState(false);
@@ -90,6 +91,7 @@ export function ProjectorContainer({
       <nav className="projection-mode-tabs" aria-label="Сцены проектора">
         {(
           [
+            ['stickers', 'Стикеры'],
             ['topics', 'Темы'],
             ['path', 'Барьеры'],
             ['cards', 'Карточки'],
@@ -126,15 +128,15 @@ export function ProjectorContainer({
           <header className="workshop-projection-heading">
             <div>
               <h1>
-                {(barrierScene ? shownBarriers?.title : shown?.title) ?? 'Коллективная работа'}
+                {mode === 'stickers' ? 'Живой флипчарт' : (barrierScene ? shownBarriers?.title : shown?.title) ?? 'Коллективная работа'}
               </h1>
-              <p>
+              {mode !== 'stickers' ? <p>
                 {mode === 'regions'
                   ? 'Работа с региональными программами'
                   : mode === 'ranking'
                     ? 'Оценка участников сессии'
                     : 'Барьеры родительства, основания и предложения'}
-              </p>
+              </p> : null}
             </div>
             <div className="session-action-row">
               <button className="button button-secondary" onClick={onExit}>
@@ -149,7 +151,7 @@ export function ProjectorContainer({
               </button>
             </div>
           </header>
-          {mode !== 'ranking' ? <div className="projection-display-controls">
+          {mode !== 'ranking' && mode !== 'stickers' ? <div className="projection-display-controls">
             <button
               className="button button-secondary"
               disabled={barrierScene ? !barriers.projection : !workshop.projection}
@@ -170,7 +172,10 @@ export function ProjectorContainer({
             </button>
             {frozen ? <span role="status">Композиция зафиксирована для обсуждения.</span> : null}
           </div> : null}
-          {mode === 'ranking' ? (
+          {mode === 'stickers' ? (
+            <ConnectedFlipchartProjector key={`${session.sessionId}:${session.state.auth.userId}`}
+              api={session.api} sessionId={session.sessionId} userId={session.state.auth.userId} />
+          ) : mode === 'ranking' ? (
             <LivePracticeRanking api={session.api} sessionId={session.sessionId} userId={session.state.auth.userId} />
           ) : barrierScene ? (
             <>

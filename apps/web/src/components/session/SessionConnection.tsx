@@ -31,7 +31,7 @@ export function SessionConnection({
         className={connection === 'connecting' ? 'session-spinner' : undefined}
         aria-hidden="true"
       />
-      {connectionLabels[connection]}
+      <span className="session-connection-text">{connectionLabels[connection]}</span>
     </span>
   );
 }

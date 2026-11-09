@@ -107,9 +107,9 @@ async function enter(page, email, name, fresh = true, role = 'participant') {
   const snapshot = await response.json();
   expect(snapshot.session.role).toBe(role);
   await expect(page.locator('.header-account .account-name')).toHaveText(name);
-  await expect(scenes(page).getByRole('button', { name: 'Опрос', exact: true })).toHaveAttribute('aria-current', 'page');
-  await expect(page.getByRole('heading', { name: 'Что мешает родительству?', exact: true })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Ответить анонимно', exact: true })).toBeVisible();
+  await expect(scenes(page).getByRole('button', { name: 'Флипчарт', exact: true })).toHaveAttribute('aria-current', 'page');
+  await expect(page.getByRole('region', { name: 'Общий флипчарт', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Ответить анонимно', exact: true })).toHaveCount(0);
   await cleanInterface(page);
   return snapshot.session.id;
 }
@@ -142,13 +142,13 @@ try {
   await stage('First participant enters the shared workshop without any teacher, invitation or opening action', a.page, async () => {
     sessionId = await enter(a.page, 'shared-a@example.test', NAME_A);
     await noOverflow(a.page, 1440);
-    await screenshot(a.page, 'shared-survey-first-desktop.png');
+    await screenshot(a.page, 'shared-flipchart-first-desktop.png');
   });
-  await stage('Independent phone participant enters the same workshop and sees the opening survey', b.page, async () => {
+  await stage('Independent phone participant enters the same workshop and sees the opening flipchart', b.page, async () => {
     expect(await enter(b.page, 'shared-b@example.test', NAME_B)).toBe(sessionId);
     expect(await b.page.evaluate(() => isSecureContext)).toBe(false);
     await noOverflow(b.page, 390);
-    await screenshot(b.page, 'shared-survey-first-mobile.png');
+    await screenshot(b.page, 'shared-flipchart-first-mobile.png');
   });
   await stage('FIO itself opens profile editing; explicit save survives reload without extra header text', a.page, async () => {
     await a.page.locator('.header-account .account-name').click();
@@ -241,6 +241,8 @@ try {
     const popup = a.page.waitForEvent('popup');
     await a.page.getByRole('button', { name: 'Экран проектора', exact: true }).click();
     projector = await popup; watch(projector); lastPage = projector;
+    await expect(projector.getByRole('region', { name: 'Флипчарт на проекторе', exact: true })).toBeVisible();
+    await projector.getByRole('button', { name: 'Темы', exact: true }).click();
     await expect(projector.getByRole('heading', { name: 'Темы общей доски', exact: true })).toBeVisible();
     await expect(projector.getByRole('button', { name: 'жилье: 1 карточка', exact: true })).toBeVisible();
     await barrier(b.page, 'Жильё далеко от работы', 'Долгая дорога затрудняет уход за ребёнком.');
@@ -266,7 +268,7 @@ try {
     await b.page.setViewportSize({ width: 320, height: 800 });
     await noOverflow(b.page, 320);
     await cleanInterface(b.page);
-    await screenshot(b.page, 'shared-survey-first-320.png');
+    await screenshot(b.page, 'shared-flipchart-first-320.png');
   });
   const teacher = await participant();
   await stage('Teacher enters the existing common board and synchronizes without obsolete invitations', teacher.page, async () => {
@@ -280,7 +282,7 @@ try {
     await expect(teacher.page.getByRole('alert')).toHaveCount(0);
     await expect(teacher.page.locator('[data-tone="error"]')).toHaveCount(0);
     expect(invitationRequests).toEqual([]);
-    await screenshot(teacher.page, 'shared-teacher-first-survey.png');
+    await screenshot(teacher.page, 'shared-teacher-first-flipchart.png');
     await scene(teacher.page, 'Практики');
     const publication = teacher.page.getByRole('article', { name: PRACTICE, exact: true });
     await expect(publication).toBeVisible();

@@ -1,6 +1,6 @@
 {
   "name": "demography-workshop",
-  "version": "0.9.1",
+  "version": "0.10.0",
   "private": true,
   "description": "Демографическая мастерская — документы, практики, барьеры и совместное проектирование",
   "scripts": {
@@ -28,7 +28,8 @@
     "offline:originals": "node scripts/cache-originals.mjs",
     "test:offline": "node --test --test-concurrency=1 tests/offline/*.test.mjs",
     "test:macos": "node --test tests/macos/*.test.mjs",
-    "test:e2e:offline": "node tests/offline/browser.e2e.mjs"
+    "test:e2e:offline": "node tests/offline/browser.e2e.mjs",
+    "test:e2e:flipchart": "node tests/offline/live-flipchart.e2e.mjs"
   },
   "keywords": [],
   "author": "Арсений Михайлович Ситковский",

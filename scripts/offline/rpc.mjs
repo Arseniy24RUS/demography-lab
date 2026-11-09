@@ -8,6 +8,7 @@ const NAMES = [
   'dw_workspace_read', 'dw_workspace_commit',
   'dw_enter_workspace', 'dw_configure_workspace', 'dw_workshop_survey',
   'dw_workspace_votes', 'dw_workspace_votes_projection', 'dw_workspace_vote',
+  'dw_flipchart_updates', 'dw_flipchart_add', 'dw_flipchart_vote', 'dw_flipchart_status',
   'dw_available_sessions', 'dw_join_open_session',
   'dw_session_snapshot', 'dw_session_cursor', 'dw_projector_snapshot', 'dw_update_session',
   'dw_publish_submission', 'dw_moderate_submission', 'dw_invitation', 'dw_rotate_invitation',

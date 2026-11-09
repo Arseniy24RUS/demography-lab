@@ -1,4 +1,6 @@
-/** Compiled shared entry + real persistent server + native anonymous browser fetch. */
+/** Legacy private survey regression: explicit HTTP setup, then native anonymous browser fetch.
+ * The survey is deliberately NOT the opening workshop stage; its older answers stay private.
+ */
 import { chromium, expect } from '@playwright/test';
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -12,7 +14,7 @@ const dataDir=await mkdtemp(join(tmpdir(),'demography-survey-09-'));
 const runtime=await openRuntime({dataDir});
 const server=await startServer({runtime,port:8897,surveyPort:8898,backupIntervalMs:0});
 const browser=await chromium.launch({headless:true,...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH}:{}),args:['--no-sandbox','--disable-dev-shm-usage','--disable-gpu']});
-const errors=[], outside=[], publicCalls=[], checks=[];
+const errors=[], outside=[], publicCalls=[], automaticSurveyCalls=[], checks=[];
 let lastPage;
 async function context(viewport){
  const context=await browser.newContext({viewport,locale:'ru-RU',reducedMotion:'reduce',acceptDownloads:true});
@@ -25,6 +27,7 @@ async function context(viewport){
   page.on('pageerror',error=>errors.push(error.message));
   page.on('request',request=>{
    const url=new URL(request.url());
+   if(url.pathname.endsWith('/dw_workshop_survey'))automaticSurveyCalls.push(url.pathname);
    if(url.port==='8898'&&url.pathname.startsWith('/rest/')){
     const h=request.headers();
     publicCalls.push({path:url.pathname,authorization:!!h.authorization,cookie:!!h.cookie,referer:!!h.referer});
@@ -39,28 +42,47 @@ async function login(context,email,name){
  await page.getByRole('textbox',{name:'Email',exact:true}).fill(email);
  await page.locator('.session-access-main').getByRole('button',{name:'Войти',exact:true}).click();
  await page.getByRole('textbox',{name:'Фамилия, имя, отчество',exact:true}).fill(name);
+ const identifying=page.waitForResponse(response=>new URL(response.url()).pathname==='/offline/auth/identify'&&response.request().method()==='POST');
+ const entering=page.waitForResponse(response=>new URL(response.url()).pathname==='/rest/v1/rpc/dw_enter_workspace'&&response.request().method()==='POST');
  await page.getByRole('button',{name:'Продолжить',exact:true}).click();
- await expect(page.getByRole('link',{name:'Ответить анонимно',exact:true})).toBeVisible();
- return page;
+ const auth=await (await identifying).json(), snapshot=await (await entering).json();
+ await expect(page.getByRole('region',{name:'Общий флипчарт',exact:true})).toBeVisible();
+ await expect(page.getByRole('link',{name:'Ответить анонимно',exact:true})).toHaveCount(0);
+ return {page,auth:auth.session,snapshot};
+}
+async function legacyEntry(auth,sessionId){
+ // Explicit legacy-module setup through the same public production HTTP gateway.
+ // No private-table writes, injected browser state, fabricated answers or UI resurrection.
+ const response=await fetch('http://127.0.0.1:8897/rest/v1/rpc/dw_workshop_survey',{
+  method:'POST',headers:{'Content-Type':'application/json',Origin:'http://127.0.0.1:8897',Authorization:`Bearer ${auth.access_token}`},
+  body:JSON.stringify({p_session_id:sessionId}),
+ });
+ assert.equal(response.status,200);return response.json();
 }
 try{
  const desktop=await context({width:1440,height:1000});
- const first=await login(desktop,'survey-first-browser@example.test','Технический Участник');
- const firstLink=await first.getByRole('link',{name:'Ответить анонимно',exact:true}).getAttribute('href');
+ const initial=await login(desktop,'survey-first-browser@example.test','Технический Участник');
+ const first=initial.page;
+ assert.deepEqual(automaticSurveyCalls,[]);
+ assert.equal((await runtime.db.query('select count(*)::int count from research.surveys')).rows[0].count,0);
+ const entry=await legacyEntry(initial.auth,initial.snapshot.session.id);
+ const firstLink=`http://127.0.0.1:8898/survey.html#${new URLSearchParams({survey:entry.survey.id,invite:entry.invitationToken})}`;
  assert(new URL(firstLink).port==='8898');
  await expect(first.getByRole('button',{name:/Пригласить участников|Разрешить присоединение|Создать занятие/})).toHaveCount(0);
- await first.screenshot({path:join(evidence,'shared-survey-desktop.png'),fullPage:false});
- checks.push('First participant enters ready survey without teacher or invitation');
+ await first.screenshot({path:join(evidence,'flipchart-before-legacy-survey.png'),fullPage:false});
+ checks.push('First participant enters flipchart; legacy survey is created only by explicit API setup');
  const mobile=await context({width:390,height:844});
- const second=await login(mobile,'survey-second-browser@example.test','Второй Участник');
- assert.equal(await second.getByRole('link',{name:'Ответить анонимно',exact:true}).getAttribute('href'),firstLink);
+ const secondEntry=await login(mobile,'survey-second-browser@example.test','Второй Участник');
+ const second=secondEntry.page;
+ assert.equal(secondEntry.snapshot.session.id,initial.snapshot.session.id);
+ const secondLegacy=await legacyEntry(secondEntry.auth,secondEntry.snapshot.session.id);
+ assert.equal(secondLegacy.survey.id,entry.survey.id);assert.equal(secondLegacy.invitationToken,entry.invitationToken);
  await second.setViewportSize({width:320,height:844});
  assert((await second.evaluate(()=>document.documentElement.scrollWidth))<=320);
- await second.screenshot({path:join(evidence,'shared-survey-mobile-320.png'),fullPage:false});
- checks.push('Second independent browser opens same survey; mobile 320 has no overflow');
- const popup=desktop.waitForEvent('page');
- await first.getByRole('link',{name:'Ответить анонимно',exact:true}).click();
- const survey=await popup;lastPage=survey;survey.setDefaultTimeout(20000);
+ await second.screenshot({path:join(evidence,'flipchart-before-legacy-survey-320.png'),fullPage:false});
+ checks.push('Second independent browser opens same flipchart; old survey remains available by explicit legacy API');
+ const survey=await desktop.newPage();lastPage=survey;survey.setDefaultTimeout(20000);
+ await survey.goto(firstLink);
  await expect(survey.getByRole('heading',{name:'Что мешает родительству?',exact:true})).toBeVisible();
  await expect(survey.getByRole('textbox',{name:/Email|ФИО|Муниципалитет/i})).toHaveCount(0);
  assert.equal(await survey.evaluate(()=>document.referrer),'');
@@ -87,20 +109,22 @@ try{
  const secret=note.match(/Личный ключ:\n([a-f0-9]{64})/)?.[1];assert(secret);assert(!new URL(survey.url()).hash.includes(secret));
  const row=(await runtime.db.query('select * from research.responses')).rows[0];
  assert.equal(row.status,'submitted');assert(!('actor_id' in row));assert(!('email' in row));
- const metadata=await first.getByRole('link',{name:'Ответить анонимно',exact:true}).getAttribute('href');assert.equal(metadata,firstLink);
+ await expect(first.getByRole('region',{name:'Общий флипчарт',exact:true}).getByRole('article')).toHaveCount(0);
+ await expect(first.getByText('Технический пример: недоступно жильё рядом с работой.',{exact:true})).toHaveCount(0);
+ checks.push('Existing private survey answer never becomes a public flipchart sticker');
  await survey.getByRole('button',{name:'Удалить мой ответ',exact:true}).click();
  await survey.getByRole('dialog',{name:'Удалить мой ответ?',exact:true}).getByRole('button',{name:'Удалить мой ответ без восстановления',exact:true}).click();
  await expect(survey.getByText(/^Ваш ответ удалён\./)).toBeVisible();
  const removed=(await runtime.db.query('select answers,status from research.responses')).rows[0];assert.deepEqual(removed,{answers:null,status:'withdrawn'});
  checks.push('Text receipt and irreversible response withdrawal preserve anonymous contract');
- await first.getByRole('button',{name:'К барьерам',exact:true}).click();
+ await first.getByRole('navigation',{name:'Этапы коллективной работы',exact:true}).getByRole('button',{name:'Барьеры',exact:true}).click();
  await expect(first.getByRole('button',{name:'Добавить барьер',exact:true})).toBeVisible();
  checks.push('Participant continues to shared barriers without teacher');
  assert(publicCalls.some(x=>x.path.endsWith('dw_survey_save_response')));
  assert(publicCalls.every(x=>!x.authorization&&!x.cookie&&!x.referer));
- assert.deepEqual(errors,[]);assert.deepEqual(outside,[]);
+ assert.deepEqual(errors,[]);assert.deepEqual(outside,[]);assert.deepEqual(automaticSurveyCalls,[]);
  checks.push('All survey requests omit account credentials/cookies/referrer; no external requests or browser errors');
- await writeFile(join(evidence,'report.json'),JSON.stringify({status:'passed',checks,publicCalls,errors,outside,browser:browser.version(),environment:'Linux Chromium; production offline HTTP server; not physical macOS or Wi-Fi'},null,2));
+ await writeFile(join(evidence,'report.json'),JSON.stringify({status:'passed',checks,publicCalls,automaticSurveyCalls,errors,outside,browser:browser.version(),environment:'Browser plugin not available; Linux Chromium; production offline HTTP server; legacy survey compatibility; not physical macOS or Wi-Fi'},null,2));
  console.log(JSON.stringify({status:'passed',checks:checks.length,publicRequests:publicCalls.length,evidence}));
 } catch(error){
  if(lastPage)await lastPage.screenshot({path:join(evidence,'failure.png'),fullPage:true}).catch(()=>{});
