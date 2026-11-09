@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "release": "0.8.0",
+  "status": "passed",
+  "recordedAtUtc": "2026-11-09T12:14:21Z",
+  "timezone": {
+    "display": "Europe/Moscow",
+    "utcOffset": "+03:00",
+    "technicalTimestamps": "UTC"
+  },
+  "repository": "Arseniy24RUS/demography-lab",
+  "urls": {
+    "application": "https://arseniy24rus.github.io/demography-lab/",
+    "release": "https://arseniy24rus.github.io/demography-lab/?release=0.8.0",
+    "browserEntry": "https://arseniy24rus.github.io/demography-lab/#sessions=1"
+  },
+  "github": {
+    "workflowRunId": 42612768336,
+    "workflowUrl": "https://github.com/Arseniy24RUS/demography-lab/actions/runs/42612768336",
+    "workflowPath": ".github/workflows/pages.yml",
+    "runAttempt": 2,
+    "headSha": "62c96955d39e6ef8321b81b1b7725112f5d9cf1d",
+    "status": "completed",
+    "conclusion": "success",
+    "createdAtUtc": "2026-11-09T11:55:05Z",
+    "runStartedAtUtc": "2026-11-09T12:05:51Z",
+    "updatedAtUtc": "2026-11-09T12:06:18Z",
+    "updatedAtMoscow": "2026-11-09T15:06:18+03:00",
+    "deployJobId": 129149777316,
+    "artifactId": 13671630551,
+    "sourceCheck": {
+      "step": "Verify Pages workflow source",
+      "status": "completed",
+      "conclusion": "success",
+      "buildType": "workflow",
+      "logAtUtc": "2026-11-09T12:06:09.0385166Z",
+      "log": "Verified GitHub Pages Source: GitHub Actions."
+    },
+    "deployment": {
+      "step": "Publish compiled application",
+      "status": "completed",
+      "conclusion": "success",
+      "reportedSuccessAtUtc": "2026-11-09T12:06:15.6004593Z",
+      "reportedSuccessAtMoscow": "2026-11-09T15:06:15.600459+03:00",
+      "log": "Reported success!"
+    }
+  },
+  "https": {
+    "checkedAtUtc": "2026-11-09T12:07:28.035741Z",
+    "pages": [
+      {
+        "url": "https://arseniy24rus.github.io/demography-lab/",
+        "status": 200,
+        "contentType": "text/html; charset=utf-8",
+        "cache": "MISS",
+        "age": 0,
+        "responseDateUtc": "2026-11-09T12:07:10Z",
+        "responseDateMoscow": "2026-11-09T15:07:10+03:00",
+        "lastModifiedUtc": "2026-11-09T12:06:12Z",
+        "sha256": "e6f6aa9576ae2e8a7909194be6952f184ed25da8cc375adf81e7c5b220c4224d",
+        "moduleEntrypoint": "./assets/classroom-CHDJaTuH.js",
+        "sourceTsxEntrypointPresent": false
+      },
+      {
+        "url": "https://arseniy24rus.github.io/demography-lab/?release=0.8.0",
+        "status": 200,
+        "contentType": "text/html; charset=utf-8",
+        "cache": "HIT",
+        "age": 0,
+        "responseDateUtc": "2026-11-09T12:07:10Z",
+        "responseDateMoscow": "2026-11-09T15:07:10+03:00",
+        "lastModifiedUtc": "2026-11-09T12:06:12Z",
+        "sha256": "e6f6aa9576ae2e8a7909194be6952f184ed25da8cc375adf81e7c5b220c4224d",
+        "moduleEntrypoint": "./assets/classroom-CHDJaTuH.js",
+        "sourceTsxEntrypointPresent": false
+      }
+    ],
+    "javascript": {
+      "url": "https://arseniy24rus.github.io/demography-lab/assets/classroom-CHDJaTuH.js",
+      "status": 200,
+      "contentType": "application/javascript; charset=utf-8",
+      "bytes": 180446,
+      "cache": "MISS",
+      "age": 0,
+      "responseDateUtc": "2026-11-09T12:07:18Z",
+      "responseDateMoscow": "2026-11-09T15:07:18+03:00",
+      "sha256": "74b5a58f5e84b80e3f5e9dd301c2a155b25a4c4260fe3e3b103e6c93da8ffce8"
+    },
+    "configuration": {
+      "url": "https://arseniy24rus.github.io/demography-lab/workshop-config.json",
+      "status": 200,
+      "contentType": "application/json; charset=utf-8",
+      "cache": "MISS",
+      "age": 0,
+      "responseDateUtc": "2026-11-09T12:07:28Z",
+      "responseDateMoscow": "2026-11-09T15:07:28+03:00",
+      "identification": "declared-email",
+      "realtime": false,
+      "supabaseUrl": "https://alyrowehwzypgtrqnvdi.supabase.co",
+      "surveyUrl": "https://demography-lab-survey.sunnydew4.chatgpt.site/survey.html",
+      "classroomOrigin": "https://arseniy24rus.github.io",
+      "publishableKeyPresent": true,
+      "publishableKeyValueRecorded": false
+    }
+  },
+  "browser": {
+    "status": "passed",
+    "verificationMethod": "Live CUA browser through ordinary application controls",
+    "reportedBy": "root",
+    "dateMoscow": "2026-11-09",
+    "exactActionTimestampsRecorded": false,
+    "url": "https://arseniy24rus.github.io/demography-lab/#sessions=1",
+    "identityFixture": "Previously created synthetic participant; no fixture values copied",
+    "steps": [
+      {
+        "name": "login_form",
+        "passed": true,
+        "fields": [
+          "email",
+          "fullName"
+        ],
+        "fieldCount": 2
+      },
+      {
+        "name": "returning_participant_login",
+        "passed": true,
+        "result": "Existing participant's session list displayed"
+      },
+      {
+        "name": "open_previous_work",
+        "passed": true,
+        "context": "Mordovia technical rehearsal",
+        "sessionStatus": "closed"
+      },
+      {
+        "name": "retained_publication",
+        "passed": true,
+        "citationCount": 4
+      },
+      {
+        "name": "retained_rating",
+        "passed": true,
+        "tab": "Оценивание",
+        "roundStatus": "closed",
+        "votesFor": 1,
+        "votesAgainst": 1,
+        "responded": 2,
+        "eligible": 3
+      },
+      {
+        "name": "ordinary_sign_out",
+        "passed": true,
+        "result": "Returned to the common two-field login form"
+      },
+      {
+        "name": "final_cleanup",
+        "passed": true,
+        "testNotificationRemoved": true,
+        "tabMarkedAsDeliverable": true
+      }
+    ],
+    "screenshot": {
+      "fileName": "demography-lab-entry-1794226245180.jpg",
+      "delivery": "Saved separately by root; not embedded in the repository"
+    },
+    "terminalState": "signed-out login form",
+    "newEducationalContentCreated": false
+  },
+  "scope": {
+    "ciAndHttps": "Read-only plugin/API/public HTTPS verification; no repository or server changes.",
+    "browser": "Existing synthetic work viewed through the live application; ordinary login and logout performed.",
+    "excludedFromReport": [
+      "email values",
+      "full-name values",
+      "user IDs",
+      "entry tokens",
+      "private fixture contents"
+    ],
+    "notExtendedTo": [
+      "physical Mac or Wi-Fi hardware acceptance",
+      "all browsers and operating systems",
+      "new broad regression suite"
+    ]
+  }
+}
