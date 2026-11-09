@@ -156,6 +156,11 @@ def main():
     report = {'schemaVersion': 1, 'startedAt': now(), 'projectRef': 'alyrowehwzypgtrqnvdi',
         'transport': 'Real HTTPS PostgREST; Python urllib; public application key plus private opaque operator capability',
         'requests': [], 'assertions': [], 'status': 'running', 'scope': 'Synthetic application rehearsal; not physical device, Wi-Fi, SMTP or Realtime certification.'}
+    if args.report.exists():
+        previous = json.loads(args.report.read_text())
+        if previous.get('schemaVersion') == 1 and previous.get('projectRef') == report['projectRef']:
+            history = previous.pop('previousAttempts', [])
+            report['previousAttempts'] = (history + [previous])[-10:]
     api = Api(json.loads(args.config.read_text()), report)
     api.secrets.add(token)
     lock = fixture_file.with_name(fixture_file.name + '.lock')
@@ -274,7 +279,7 @@ def main():
             active = opened['round']
         else:
             check('one_fixture_round', len(rounds) == 1)
-            active = api.rpc(token, 'dw_workshop_round_snapshot', {'p_session_id': sid, 'p_round_id': rounds[0]['id']}, 'existing_frozen_round')['round']
+            active = api.rpc(token, 'dw_workshop_round_snapshot', {'p_session_id': sid, 'p_round_id': rounds[0]['id']}, 'existing_frozen_round')
         fixture['roundId'] = active['id']
         save()
         frozen = next(f for f in active['families'] if f['id'] == fid)
@@ -284,13 +289,13 @@ def main():
         for key, desired in [('alice', 1), ('bob', -1)]:
             own = api.rpc(sessions[key]['access_token'], 'dw_workshop_round_snapshot', {'p_session_id': sid,
                 'p_round_id': active['id']}, 'own_round_' + key)
-            family = next(f for f in own['round']['families'] if f['id'] == fid)
+            family = next(f for f in own['families'] if f['id'] == fid)
             if family['myVote'] != desired:
                 need(not fixture.get('votesVerified'), 'FIXTURE_BALLOT_CHANGED')
                 own = api.rpc(sessions[key]['access_token'], 'dw_cast_vote', {'p_operation_id': operation('vote-' + key),
                     'p_session_id': sid, 'p_round_id': active['id'], 'p_family_id': fid, 'p_value': desired,
-                    'p_expected_revision': family['myVoteRevision']}, 'cast_vote_' + key)
-                family = next(f for f in own['round']['families'] if f['id'] == fid)
+                    'p_expected_revision': family['myVoteRevision']}, 'cast_vote_' + key)['round']
+                family = next(f for f in own['families'] if f['id'] == fid)
             check('own_vote_private_' + key, family['myVote'] == desired and family['totals'] is None)
         api.call('dw_entry_logout', {'p_token': a}, 'participant_logout')
         api.call('dw_entry_session', {'p_token': a}, 'old_session_revoked', expected_error='AUTH_REQUIRED')
@@ -299,9 +304,9 @@ def main():
         check('same_uuid_after_logout', again['user']['id'] == sessions['alice']['user']['id'])
         resumed = api.rpc(again['access_token'], 'dw_workshop_round_snapshot', {'p_session_id': sid,
             'p_round_id': active['id']}, 'vote_after_reentry')
-        check('vote_restored_after_reentry', next(f for f in resumed['round']['families'] if f['id'] == fid)['myVote'] == 1)
+        check('vote_restored_after_reentry', next(f for f in resumed['families'] if f['id'] == fid)['myVote'] == 1)
         peer = api.rpc(b, 'dw_workshop_round_snapshot', {'p_session_id': sid, 'p_round_id': active['id']}, 'peer_unaffected')
-        check('second_participant_unchanged', next(f for f in peer['round']['families'] if f['id'] == fid)['myVote'] == -1)
+        check('second_participant_unchanged', next(f for f in peer['families'] if f['id'] == fid)['myVote'] == -1)
         projection = api.rpc(token, 'dw_workshop_projector_snapshot', {'p_session_id': sid}, 'projector_blind_results')
         check('projector_no_intermediate_totals', not projection['round']['totalsVisible'] and all(f['totals'] is None and 'myVote' not in f for f in projection['round']['families']))
         fixture.update({'status': 'ready-open', 'votesVerified': True, 'lastVerifiedAt': now()})
@@ -314,6 +319,10 @@ def main():
         report['status'] = 'failed'
         report['failureCode'] = str(error)
         raise
+    except Exception as error:
+        report['status'] = 'failed'
+        report['failureCode'] = 'CLIENT_CONTRACT_ERROR_' + type(error).__name__
+        raise Failure(report['failureCode']) from None
     finally:
         report['finishedAt'] = now()
         report['requestCounts'] = dict(collections.Counter(item['route'] for item in report['requests']))

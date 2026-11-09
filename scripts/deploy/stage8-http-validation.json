@@ -1,0 +1,547 @@
+{
+  "schemaVersion": 1,
+  "startedAt": "2026-11-09T11:35:58.959370+00:00",
+  "projectRef": "alyrowehwzypgtrqnvdi",
+  "transport": "Real HTTPS PostgREST; Python urllib; public application key plus private opaque operator capability",
+  "requests": [
+    {
+      "label": "operator_session",
+      "route": "dw_entry_session",
+      "httpStatus": 200,
+      "durationMs": 7018.69,
+      "passed": true
+    },
+    {
+      "label": "operator_bootstrap",
+      "route": "dw_entry_rpc",
+      "httpStatus": 200,
+      "durationMs": 5746.68,
+      "passed": true,
+      "method": "dw_bootstrap"
+    },
+    {
+      "label": "identify_alice",
+      "route": "dw_identify",
+      "httpStatus": 200,
+      "durationMs": 5380.22,
+      "passed": true
+    },
+    {
+      "label": "identify_bob",
+      "route": "dw_identify",
+      "httpStatus": 200,
+      "durationMs": 5417.08,
+      "passed": true
+    },
+    {
+      "label": "participant_host_action_denied",
+      "route": "dw_entry_rpc",
+      "httpStatus": 400,
+      "durationMs": 5315.09,
+      "passed": true,
+      "method": "dw_create_session",
+      "errorCode": "FORBIDDEN"
+    },
+    {
+      "label": "open_list_alice",
+      "route": "dw_entry_rpc",
+      "httpStatus": 200,
+      "durationMs": 5475.99,
+      "passed": true,
+      "method": "dw_available_sessions"
+    },
+    {
+      "label": "join_alice",
+      "route": "dw_entry_rpc",
+      "httpStatus": 200,
+      "durationMs": 5568.31,
+      "passed": true,
+      "method": "dw_join_open_session"
+    },
+    {
+      "label": "open_list_bob",
+      "route": "dw_entry_rpc",
+      "httpStatus": 200,
+      "durationMs": 5455.82,
+      "passed": true,
+      "method": "dw_available_sessions"
+    },
+    {
+      "label": "join_bob",
+      "route": "dw_entry_rpc",
+      "httpStatus": 200,
+      "durationMs": 5923.74,
+      "passed": true,
+      "method": "dw_join_open_session"
+    },
+    {
+      "label": "source_snapshot",
+      "route": "dw_entry_rpc",
+      "httpStatus": 200,
+      "durationMs": 5990.2,
+      "passed": true,
+      "method": "dw_session_snapshot"
+    },
+    {
+      "label": "family_snapshot",
+      "route": "dw_entry_rpc",
+      "httpStatus": 200,
+      "durationMs": 6722.27,
+      "passed": true,
+      "method": "dw_workshop_snapshot"
+    },
+    {
+      "label": "before_round",
+      "route": "dw_entry_rpc",
+      "httpStatus": 200,
+      "durationMs": 5662.27,
+      "passed": true,
+      "method": "dw_session_snapshot"
+    },
+    {
+      "label": "existing_frozen_round",
+      "route": "dw_entry_rpc",
+      "httpStatus": 200,
+      "durationMs": 5483.7,
+      "passed": true,
+      "method": "dw_workshop_round_snapshot"
+    },
+    {
+      "label": "own_round_alice",
+      "route": "dw_entry_rpc",
+      "httpStatus": 200,
+      "durationMs": 5542.54,
+      "passed": true,
+      "method": "dw_workshop_round_snapshot"
+    },
+    {
+      "label": "cast_vote_alice",
+      "route": "dw_entry_rpc",
+      "httpStatus": 200,
+      "durationMs": 5526.07,
+      "passed": true,
+      "method": "dw_cast_vote"
+    },
+    {
+      "label": "own_round_bob",
+      "route": "dw_entry_rpc",
+      "httpStatus": 200,
+      "durationMs": 5612.02,
+      "passed": true,
+      "method": "dw_workshop_round_snapshot"
+    },
+    {
+      "label": "cast_vote_bob",
+      "route": "dw_entry_rpc",
+      "httpStatus": 200,
+      "durationMs": 6486.44,
+      "passed": true,
+      "method": "dw_cast_vote"
+    },
+    {
+      "label": "participant_logout",
+      "route": "dw_entry_logout",
+      "httpStatus": 200,
+      "durationMs": 5453.09,
+      "passed": true
+    },
+    {
+      "label": "old_session_revoked",
+      "route": "dw_entry_session",
+      "httpStatus": 400,
+      "durationMs": 5529.67,
+      "passed": true,
+      "errorCode": "AUTH_REQUIRED"
+    },
+    {
+      "label": "participant_reentry",
+      "route": "dw_identify",
+      "httpStatus": 200,
+      "durationMs": 5695.3,
+      "passed": true
+    },
+    {
+      "label": "vote_after_reentry",
+      "route": "dw_entry_rpc",
+      "httpStatus": 200,
+      "durationMs": 5741.41,
+      "passed": true,
+      "method": "dw_workshop_round_snapshot"
+    },
+    {
+      "label": "peer_unaffected",
+      "route": "dw_entry_rpc",
+      "httpStatus": 200,
+      "durationMs": 8675.87,
+      "passed": true,
+      "method": "dw_workshop_round_snapshot"
+    },
+    {
+      "label": "projector_blind_results",
+      "route": "dw_entry_rpc",
+      "httpStatus": 200,
+      "durationMs": 5547.87,
+      "passed": true,
+      "method": "dw_workshop_projector_snapshot"
+    }
+  ],
+  "assertions": [
+    "existing_operator_identity",
+    "operator_can_create",
+    "existing_fixture_membership",
+    "technical_classroom_open",
+    "email_unverified_alice",
+    "identity_stable_alice",
+    "email_unverified_bob",
+    "identity_stable_bob",
+    "independent_participants",
+    "classroom_listed_alice",
+    "joined_alice",
+    "classroom_listed_bob",
+    "joined_bob",
+    "canonical_bundle_preserved",
+    "one_fixture_family",
+    "one_fixture_round",
+    "frozen_source_exact",
+    "blind_open_round",
+    "captured_roster",
+    "own_vote_private_alice",
+    "own_vote_private_bob",
+    "same_uuid_after_logout",
+    "vote_restored_after_reentry",
+    "second_participant_unchanged",
+    "projector_no_intermediate_totals"
+  ],
+  "status": "passed",
+  "scope": "Synthetic application rehearsal; not physical device, Wi-Fi, SMTP or Realtime certification.",
+  "classroomCreatedThisRun": false,
+  "effects": {
+    "syntheticLearnersUsed": 2,
+    "technicalClassroomsUsed": 1,
+    "sourceBundlesUsed": 1,
+    "practiceFamiliesUsed": 1,
+    "frozenRoundsUsed": 1,
+    "ballotsVerified": 2,
+    "operatorCreated": false,
+    "emailsSent": false,
+    "ddlExecuted": false
+  },
+  "finishedAt": "2026-11-09T11:38:13.959476+00:00",
+  "requestCounts": {
+    "dw_entry_session": 2,
+    "dw_entry_rpc": 17,
+    "dw_identify": 3,
+    "dw_entry_logout": 1
+  },
+  "authApiRequests": 0,
+  "previousAttempts": [
+    {
+      "schemaVersion": 1,
+      "startedAt": "2026-11-09T11:33:26.270687+00:00",
+      "projectRef": "alyrowehwzypgtrqnvdi",
+      "transport": "Real HTTPS PostgREST; Python urllib; public application key plus private opaque operator capability",
+      "requests": [
+        {
+          "label": "operator_session",
+          "route": "dw_entry_session",
+          "httpStatus": 200,
+          "durationMs": 7918.18,
+          "passed": true
+        },
+        {
+          "label": "operator_bootstrap",
+          "route": "dw_entry_rpc",
+          "httpStatus": 200,
+          "durationMs": 5682.26,
+          "passed": true,
+          "method": "dw_bootstrap"
+        },
+        {
+          "label": "create_technical_classroom",
+          "route": "dw_entry_rpc",
+          "httpStatus": 200,
+          "durationMs": 5339.13,
+          "passed": true,
+          "method": "dw_create_session"
+        },
+        {
+          "label": "identify_alice",
+          "route": "dw_identify",
+          "httpStatus": 200,
+          "durationMs": 5431.15,
+          "passed": true
+        },
+        {
+          "label": "identify_bob",
+          "route": "dw_identify",
+          "httpStatus": 200,
+          "durationMs": 5703.84,
+          "passed": true
+        },
+        {
+          "label": "participant_host_action_denied",
+          "route": "dw_entry_rpc",
+          "httpStatus": 400,
+          "durationMs": 7882.53,
+          "passed": true,
+          "method": "dw_create_session",
+          "errorCode": "FORBIDDEN"
+        },
+        {
+          "label": "open_list_alice",
+          "route": "dw_entry_rpc",
+          "httpStatus": 200,
+          "durationMs": 5686.08,
+          "passed": true,
+          "method": "dw_available_sessions"
+        },
+        {
+          "label": "join_alice",
+          "route": "dw_entry_rpc",
+          "httpStatus": 200,
+          "durationMs": 5433.11,
+          "passed": true,
+          "method": "dw_join_open_session"
+        },
+        {
+          "label": "open_list_bob",
+          "route": "dw_entry_rpc",
+          "httpStatus": 200,
+          "durationMs": 5889.04,
+          "passed": true,
+          "method": "dw_available_sessions"
+        },
+        {
+          "label": "join_bob",
+          "route": "dw_entry_rpc",
+          "httpStatus": 200,
+          "durationMs": 5731.99,
+          "passed": true,
+          "method": "dw_join_open_session"
+        },
+        {
+          "label": "source_snapshot",
+          "route": "dw_entry_rpc",
+          "httpStatus": 200,
+          "durationMs": 5398.26,
+          "passed": true,
+          "method": "dw_session_snapshot"
+        },
+        {
+          "label": "publish_canonical_quote",
+          "route": "dw_entry_rpc",
+          "httpStatus": 200,
+          "durationMs": 5519.99,
+          "passed": true,
+          "method": "dw_publish_submission"
+        },
+        {
+          "label": "family_snapshot",
+          "route": "dw_entry_rpc",
+          "httpStatus": 200,
+          "durationMs": 5768.54,
+          "passed": true,
+          "method": "dw_workshop_snapshot"
+        },
+        {
+          "label": "create_source_family",
+          "route": "dw_entry_rpc",
+          "httpStatus": 200,
+          "durationMs": 5342.49,
+          "passed": true,
+          "method": "dw_save_family"
+        },
+        {
+          "label": "before_round",
+          "route": "dw_entry_rpc",
+          "httpStatus": 200,
+          "durationMs": 6237.54,
+          "passed": true,
+          "method": "dw_session_snapshot"
+        },
+        {
+          "label": "discussion_phase",
+          "route": "dw_entry_rpc",
+          "httpStatus": 200,
+          "durationMs": 5393.76,
+          "passed": true,
+          "method": "dw_update_session"
+        },
+        {
+          "label": "open_frozen_round",
+          "route": "dw_entry_rpc",
+          "httpStatus": 200,
+          "durationMs": 5393.83,
+          "passed": true,
+          "method": "dw_open_voting_round"
+        },
+        {
+          "label": "own_round_alice",
+          "route": "dw_entry_rpc",
+          "httpStatus": 200,
+          "durationMs": 5625.19,
+          "passed": true,
+          "method": "dw_workshop_round_snapshot"
+        }
+      ],
+      "assertions": [
+        "existing_operator_identity",
+        "operator_can_create",
+        "technical_classroom_open",
+        "email_unverified_alice",
+        "identity_stable_alice",
+        "email_unverified_bob",
+        "identity_stable_bob",
+        "independent_participants",
+        "classroom_listed_alice",
+        "joined_alice",
+        "classroom_listed_bob",
+        "joined_bob",
+        "canonical_bundle_preserved",
+        "one_fixture_family",
+        "frozen_source_exact",
+        "blind_open_round",
+        "captured_roster"
+      ],
+      "status": "client-parser-corrected-after-successful-http-steps",
+      "scope": "Synthetic application rehearsal; not physical device, Wi-Fi, SMTP or Realtime certification.",
+      "classroomCreatedThisRun": true,
+      "finishedAt": "2026-11-09T11:35:11.685856+00:00",
+      "requestCounts": {
+        "dw_entry_session": 1,
+        "dw_entry_rpc": 15,
+        "dw_identify": 2
+      },
+      "authApiRequests": 0,
+      "failureCode": "CLIENT_CONTRACT_ERROR_KeyError_round_wrapper"
+    }
+  ],
+  "stateImmediatelyAfterRehearsal": {
+    "classroomLeftOpen": true,
+    "roundLeftOpen": true
+  },
+  "fixtureLifecycleStatus": "closed-after-rehearsal",
+  "currentClassroomStatus": "closed",
+  "currentRoundStatus": "closed",
+  "currentJoinOpen": false,
+  "subsequentClosure": {
+    "schemaVersion": 1,
+    "startedAt": "2026-11-09T11:42:32.122552+00:00",
+    "projectRef": "alyrowehwzypgtrqnvdi",
+    "transport": "Real HTTPS PostgREST; Python urllib; public application key plus private opaque operator capability",
+    "requests": [
+      {
+        "label": "operator_session",
+        "route": "dw_entry_session",
+        "httpStatus": 200,
+        "durationMs": 6972.11,
+        "passed": true
+      },
+      {
+        "label": "operator_bootstrap",
+        "route": "dw_entry_rpc",
+        "httpStatus": 200,
+        "durationMs": 6765.31,
+        "passed": true,
+        "method": "dw_bootstrap"
+      },
+      {
+        "label": "cleanup_snapshot",
+        "route": "dw_entry_rpc",
+        "httpStatus": 200,
+        "durationMs": 6896.85,
+        "passed": true,
+        "method": "dw_workshop_snapshot"
+      },
+      {
+        "label": "close_technical_round",
+        "route": "dw_entry_rpc",
+        "httpStatus": 200,
+        "durationMs": 11081.67,
+        "passed": true,
+        "method": "dw_close_voting_round"
+      },
+      {
+        "label": "cleanup_classroom",
+        "route": "dw_entry_rpc",
+        "httpStatus": 200,
+        "durationMs": 5826.72,
+        "passed": true,
+        "method": "dw_session_snapshot"
+      },
+      {
+        "label": "close_technical_classroom",
+        "route": "dw_entry_rpc",
+        "httpStatus": 200,
+        "durationMs": 5229.23,
+        "passed": true,
+        "method": "dw_update_session"
+      }
+    ],
+    "assertions": [
+      "existing_operator_identity",
+      "operator_can_create",
+      "existing_fixture_membership"
+    ],
+    "status": "closed",
+    "scope": "Synthetic application rehearsal; not physical device, Wi-Fi, SMTP or Realtime certification.",
+    "classroomCreatedThisRun": false,
+    "effects": "Closed only the previously identified technical round and classroom; retained authored test material and audit history.",
+    "finishedAt": "2026-11-09T11:43:14.908079+00:00",
+    "requestCounts": {
+      "dw_entry_session": 1,
+      "dw_entry_rpc": 5
+    },
+    "authApiRequests": 0,
+    "readbackVerification": {
+      "checkedAt": "2026-11-09T11:44:07.076742+00:00",
+      "classroomStatus": "closed",
+      "joinOpen": false,
+      "roundStatus": "closed",
+      "absentFromOpenList": true,
+      "publicationPreserved": true,
+      "familyPreserved": true,
+      "frozenSourcePreserved": true,
+      "authorPreserved": true,
+      "ballots": {
+        "support": 1,
+        "oppose": 1,
+        "cast": 2
+      },
+      "requests": [
+        {
+          "label": "verify_closed_classroom",
+          "route": "dw_entry_rpc",
+          "httpStatus": 200,
+          "durationMs": 5844.1,
+          "passed": true,
+          "method": "dw_session_snapshot"
+        },
+        {
+          "label": "verify_closed_round",
+          "route": "dw_entry_rpc",
+          "httpStatus": 200,
+          "durationMs": 5280.05,
+          "passed": true,
+          "method": "dw_workshop_round_snapshot"
+        },
+        {
+          "label": "verify_preserved_family",
+          "route": "dw_entry_rpc",
+          "httpStatus": 200,
+          "durationMs": 5083.77,
+          "passed": true,
+          "method": "dw_workshop_snapshot"
+        },
+        {
+          "label": "verify_absent_from_open_list",
+          "route": "dw_entry_rpc",
+          "httpStatus": 200,
+          "durationMs": 4599.91,
+          "passed": true,
+          "method": "dw_available_sessions"
+        }
+      ]
+    }
+  }
+}

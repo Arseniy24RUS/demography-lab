@@ -7,11 +7,12 @@ on:
 
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
 concurrency:
-  group: pages
+  group: demography-compiled-pages
   cancel-in-progress: false
 
 jobs:
@@ -23,6 +24,7 @@ jobs:
         with:
           node-version: '24'
           cache: npm
+      - run: node --test tests/deployment/pages-order.test.mjs
       - run: npm ci --no-audit --no-fund
       - run: npm run build
       - run: npm run check:survey-bundle
@@ -42,6 +44,16 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Wait for legacy Pages publication
+        timeout-minutes: 6
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # GITHUB_REPOSITORY and GITHUB_SHA are supplied by GitHub Actions.
+        run: node scripts/wait-for-legacy-pages.mjs
       - name: Publish compiled application
         id: deployment
         uses: actions/deploy-pages@v4
