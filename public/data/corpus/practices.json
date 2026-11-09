@@ -1,0 +1,3279 @@
+{
+  "schemaVersion": 1,
+  "normalizationVersion": "unicode-nfc-lf-v1",
+  "offsetEncoding": "unicode-code-points",
+  "status": "editorial-candidates-source-exact-human-review-pending",
+  "sourceCommit": "5dde46ae663b7652a448ec982585e64d61a26a61",
+  "families": [
+    {
+      "id": "kindergarten-fee-compensation",
+      "title": "Компенсация платы за детский сад",
+      "mechanism": "Возмещение родительской платы",
+      "description": "Семейство объединяет механизм; региональные условия, суммы и редакции сохраняются в вариантах."
+    },
+    {
+      "id": "student-parent-childcare",
+      "title": "Уход за детьми родителей-студентов",
+      "mechanism": "Компенсация расходов на уход",
+      "description": "Семейство объединяет механизм; региональные условия, суммы и редакции сохраняются в вариантах."
+    },
+    {
+      "id": "mortgage-repayment-at-birth",
+      "title": "Погашение ипотеки при рождении детей",
+      "mechanism": "Уменьшение ипотечного долга",
+      "description": "Семейство объединяет механизм; региональные условия, суммы и редакции сохраняются в вариантах."
+    },
+    {
+      "id": "family-friendly-work",
+      "title": "Совмещение работы и родительства",
+      "mechanism": "Изменение условий занятости",
+      "description": "Семейство объединяет механизм; региональные условия, суммы и редакции сохраняются в вариантах."
+    },
+    {
+      "id": "first-birth-payment",
+      "title": "Выплата при рождении ребёнка",
+      "mechanism": "Единовременная денежная выплата",
+      "description": "Семейство объединяет механизм; региональные условия, суммы и редакции сохраняются в вариантах."
+    },
+    {
+      "id": "young-family-housing",
+      "title": "Жильё для молодой семьи",
+      "mechanism": "Социальная выплата на жильё",
+      "description": "Семейство объединяет механизм; региональные условия, суммы и редакции сохраняются в вариантах."
+    },
+    {
+      "id": "family-case-management",
+      "title": "Сопровождение семьи",
+      "mechanism": "Индивидуальная социальная помощь",
+      "description": "Семейство объединяет механизм; региональные условия, суммы и редакции сохраняются в вариантах."
+    },
+    {
+      "id": "school-start-support",
+      "title": "Помощь к учебному году",
+      "mechanism": "Материальная помощь на школьные товары",
+      "description": "Семейство объединяет механизм; региональные условия, суммы и редакции сохраняются в вариантах."
+    },
+    {
+      "id": "large-family-housing-expenses",
+      "title": "Расходы многодетной семьи на жильё",
+      "mechanism": "Компенсация платы за жилое помещение",
+      "description": "Семейство объединяет механизм; региональные условия, суммы и редакции сохраняются в вариантах."
+    },
+    {
+      "id": "student-parent-education",
+      "title": "Образование родителей-студентов",
+      "mechanism": "Перевод на бюджетное обучение",
+      "description": "Семейство объединяет механизм; региональные условия, суммы и редакции сохраняются в вариантах."
+    },
+    {
+      "id": "student-parent-housing",
+      "title": "Жильё родителей-студентов",
+      "mechanism": "Комната в студенческом общежитии",
+      "description": "Семейство объединяет механизм; региональные условия, суммы и редакции сохраняются в вариантах."
+    },
+    {
+      "id": "private-childcare-compensation",
+      "title": "Доступность частного ухода за детьми",
+      "mechanism": "Компенсация стоимости частного детского сада",
+      "description": "Семейство объединяет механизм; региональные условия, суммы и редакции сохраняются в вариантах."
+    },
+    {
+      "id": "family-rental-housing",
+      "title": "Аренда жилья для семьи",
+      "mechanism": "Компенсация арендной платы",
+      "description": "Семейство объединяет механизм; региональные условия, суммы и редакции сохраняются в вариантах."
+    }
+  ],
+  "variants": [
+    {
+      "id": "mordovia-kindergarten-compensation",
+      "familyId": "kindergarten-fee-compensation",
+      "regionId": "respublika-mordoviia",
+      "title": "Компенсация родительской платы за детский сад",
+      "mechanism": "Возмещение части среднего размера родительской платы, ограниченное фактически внесённой платой.",
+      "eligibility": "Родители детей в государственных и муниципальных дошкольных образовательных организациях Республики Мордовия.",
+      "amount": "Первый ребёнок: 20–29%; второй: 50–72%; третий и последующие: 70–100% среднего размера платы; не выше фактической платы.",
+      "conditions": [
+        "Проценты различаются по очередности рождения; условия выбора конкретного процента в приведённом фрагменте не раскрыты."
+      ],
+      "implementationStatus": "described-existing",
+      "theme": "childcare",
+      "lifecycleStages": [
+        "childcare",
+        "next-child"
+      ],
+      "catalogId": "sovetmam:mord-004",
+      "occurrenceIds": [
+        "occ-mordovia-kindergarten-compensation-title",
+        "occ-mordovia-kindergarten-compensation-mechanism",
+        "occ-mordovia-kindergarten-compensation-eligibility",
+        "occ-mordovia-kindergarten-compensation-amount"
+      ],
+      "evidence": [
+        {
+          "kind": "fragment",
+          "field": "title",
+          "occurrenceId": "occ-mordovia-kindergarten-compensation-title",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Компенсация родительской платы за детский сад",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "mechanism",
+          "occurrenceId": "occ-mordovia-kindergarten-compensation-mechanism",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Возмещение части среднего размера родительской платы, ограниченное фактически внесённой платой.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "eligibility",
+          "occurrenceId": "occ-mordovia-kindergarten-compensation-eligibility",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Родители детей в государственных и муниципальных дошкольных образовательных организациях Республики Мордовия.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "amount",
+          "occurrenceId": "occ-mordovia-kindergarten-compensation-amount",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Первый ребёнок: 20–29%; второй: 50–72%; третий и последующие: 70–100% среднего размера платы; не выше фактической платы.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        }
+      ],
+      "reviewStatus": "candidate",
+      "regionName": "Республика Мордовия",
+      "documentId": "regional-respublika-mordoviia",
+      "editionLabel": "19 декабря 2024 года",
+      "sourceUrl": "https://github.com/Arseniy24RUS/family-support/blob/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-respublika-mordoviia.pdf",
+      "legalCurrency": "unverified",
+      "effectiveness": "unverified",
+      "verificationNote": "Цитаты и хеши проверены автоматически. Семантические связи подготовлены ассистентом и требуют подтверждения преподавателем. Это не проверка действующего права или эффективности меры.",
+      "catalogSourceUrl": "https://app.sovetmam.ru/catalog/mord-004"
+    },
+    {
+      "id": "mordovia-student-childcare",
+      "familyId": "student-parent-childcare",
+      "regionId": "respublika-mordoviia",
+      "title": "Компенсация детского сада родителям-студентам",
+      "mechanism": "Компенсация студентам расходов на содержание ребёнка в муниципальном детском саду.",
+      "eligibility": "Студенты, имеющие детей в муниципальных дошкольных образовательных организациях.",
+      "amount": "В размере фактических расходов родителей на содержание ребёнка.",
+      "conditions": [
+        "Состав подтверждающих документов и дополнительные критерии в выбранном фрагменте не приведены."
+      ],
+      "implementationStatus": "described-existing",
+      "theme": "education",
+      "lifecycleStages": [
+        "childcare",
+        "education-work"
+      ],
+      "occurrenceIds": [
+        "occ-mordovia-student-childcare-title",
+        "occ-mordovia-student-childcare-mechanism",
+        "occ-mordovia-student-childcare-eligibility",
+        "occ-mordovia-student-childcare-amount"
+      ],
+      "evidence": [
+        {
+          "kind": "fragment",
+          "field": "title",
+          "occurrenceId": "occ-mordovia-student-childcare-title",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Компенсация детского сада родителям-студентам",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "mechanism",
+          "occurrenceId": "occ-mordovia-student-childcare-mechanism",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Компенсация студентам расходов на содержание ребёнка в муниципальном детском саду.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "eligibility",
+          "occurrenceId": "occ-mordovia-student-childcare-eligibility",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Студенты, имеющие детей в муниципальных дошкольных образовательных организациях.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "amount",
+          "occurrenceId": "occ-mordovia-student-childcare-amount",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "В размере фактических расходов родителей на содержание ребёнка.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        }
+      ],
+      "reviewStatus": "candidate",
+      "regionName": "Республика Мордовия",
+      "documentId": "regional-respublika-mordoviia",
+      "editionLabel": "19 декабря 2024 года",
+      "sourceUrl": "https://github.com/Arseniy24RUS/family-support/blob/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-respublika-mordoviia.pdf",
+      "legalCurrency": "unverified",
+      "effectiveness": "unverified",
+      "verificationNote": "Цитаты и хеши проверены автоматически. Семантические связи подготовлены ассистентом и требуют подтверждения преподавателем. Это не проверка действующего права или эффективности меры."
+    },
+    {
+      "id": "mordovia-mortgage-repayment",
+      "familyId": "mortgage-repayment-at-birth",
+      "regionId": "respublika-mordoviia",
+      "title": "Снижение ипотечного долга при рождении детей",
+      "mechanism": "Социальная выплата на частичное или полное погашение ипотечного кредита, включая рефинансированный.",
+      "eligibility": "Для детей, родившихся после получения ипотеки, и отдельно для малоимущих семей с двумя и более детьми, рождёнными до получения ипотеки.",
+      "amount": "После получения ипотеки: по 10% за первого и второго ребёнка,30% за третьего,полное погашение за четвёртого; для ранее рождённых детей предусмотрены отдельные условия.",
+      "conditions": [
+        "Для малоимущих семей с детьми, рождёнными до получения ипотеки:10–20% в зависимости от числа детей, при пяти детях — полное погашение.",
+        "Сохранены две различные группы условий; они не объединены в универсальную льготу."
+      ],
+      "implementationStatus": "described-existing",
+      "theme": "housing",
+      "lifecycleStages": [
+        "first-child",
+        "next-child"
+      ],
+      "catalogId": "sovetmam:mord-003",
+      "occurrenceIds": [
+        "occ-mordovia-mortgage-repayment-title",
+        "occ-mordovia-mortgage-repayment-mechanism",
+        "occ-mordovia-mortgage-repayment-eligibility",
+        "occ-mordovia-mortgage-repayment-amount"
+      ],
+      "evidence": [
+        {
+          "kind": "fragment",
+          "field": "title",
+          "occurrenceId": "occ-mordovia-mortgage-repayment-title",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Снижение ипотечного долга при рождении детей",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "mechanism",
+          "occurrenceId": "occ-mordovia-mortgage-repayment-mechanism",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Социальная выплата на частичное или полное погашение ипотечного кредита, включая рефинансированный.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "eligibility",
+          "occurrenceId": "occ-mordovia-mortgage-repayment-eligibility",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Для детей, родившихся после получения ипотеки, и отдельно для малоимущих семей с двумя и более детьми, рождёнными до получения ипотеки.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "amount",
+          "occurrenceId": "occ-mordovia-mortgage-repayment-amount",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "После получения ипотеки: по 10% за первого и второго ребёнка,30% за третьего,полное погашение за четвёртого; для ранее рождённых детей предусмотрены отдельные условия.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        }
+      ],
+      "reviewStatus": "candidate",
+      "regionName": "Республика Мордовия",
+      "documentId": "regional-respublika-mordoviia",
+      "editionLabel": "19 декабря 2024 года",
+      "sourceUrl": "https://github.com/Arseniy24RUS/family-support/blob/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-respublika-mordoviia.pdf",
+      "legalCurrency": "unverified",
+      "effectiveness": "unverified",
+      "verificationNote": "Цитаты и хеши проверены автоматически. Семантические связи подготовлены ассистентом и требуют подтверждения преподавателем. Это не проверка действующего права или эффективности меры.",
+      "catalogSourceUrl": "https://app.sovetmam.ru/catalog/mord-003"
+    },
+    {
+      "id": "mordovia-flexible-work",
+      "familyId": "family-friendly-work",
+      "regionId": "respublika-mordoviia",
+      "title": "Гибкий график для родителей детей до 14 лет",
+      "mechanism": "Рекомендация работодателям закреплять семейные гарантии в коллективных договорах: гибкий график по договорённости.",
+      "eligibility": "Женщины (родители), имеющие детей до 14 лет; по договорённости с работодателем.",
+      "amount": null,
+      "conditions": [
+        "В документе это рекомендация работодателям, а не безусловное право на новую денежную выплату."
+      ],
+      "implementationStatus": "recommended",
+      "theme": "work",
+      "lifecycleStages": [
+        "childcare",
+        "education-work",
+        "next-child"
+      ],
+      "occurrenceIds": [
+        "occ-mordovia-flexible-work-title",
+        "occ-mordovia-flexible-work-mechanism",
+        "occ-mordovia-flexible-work-eligibility"
+      ],
+      "evidence": [
+        {
+          "kind": "fragment",
+          "field": "title",
+          "occurrenceId": "occ-mordovia-flexible-work-title",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Гибкий график для родителей детей до 14 лет",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "mechanism",
+          "occurrenceId": "occ-mordovia-flexible-work-mechanism",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Рекомендация работодателям закреплять семейные гарантии в коллективных договорах: гибкий график по договорённости.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "eligibility",
+          "occurrenceId": "occ-mordovia-flexible-work-eligibility",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Женщины (родители), имеющие детей до 14 лет; по договорённости с работодателем.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        }
+      ],
+      "reviewStatus": "candidate",
+      "regionName": "Республика Мордовия",
+      "documentId": "regional-respublika-mordoviia",
+      "editionLabel": "19 декабря 2024 года",
+      "sourceUrl": "https://github.com/Arseniy24RUS/family-support/blob/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-respublika-mordoviia.pdf",
+      "legalCurrency": "unverified",
+      "effectiveness": "unverified",
+      "verificationNote": "Цитаты и хеши проверены автоматически. Семантические связи подготовлены ассистентом и требуют подтверждения преподавателем. Это не проверка действующего права или эффективности меры."
+    },
+    {
+      "id": "mordovia-first-child-proposal",
+      "familyId": "first-birth-payment",
+      "regionId": "respublika-mordoviia",
+      "title": "Предложение выплаты 150 тыс.рублей при рождении первенца до 25 лет",
+      "mechanism": "Предложено введение новой единовременной выплаты женщинам при рождении первого ребёнка.",
+      "eligibility": "Женщина, родившая первого ребёнка в возрасте до 25 лет; условия предложения из программы.",
+      "amount": "150000 рублей — предложенная, а не подтверждённая действующая сумма.",
+      "conditions": [
+        "Абзац содержит слова «предлагается введение». Нельзя показывать его как установленную действующую выплату.",
+        "Указанный в программе ожидаемый прирост рождений не является оценкой причинного эффекта."
+      ],
+      "implementationStatus": "proposed",
+      "theme": "income",
+      "lifecycleStages": [
+        "first-child"
+      ],
+      "catalogId": "sovetmam:mord-001",
+      "occurrenceIds": [
+        "occ-mordovia-first-child-proposal-title",
+        "occ-mordovia-first-child-proposal-mechanism",
+        "occ-mordovia-first-child-proposal-eligibility",
+        "occ-mordovia-first-child-proposal-amount"
+      ],
+      "evidence": [
+        {
+          "kind": "fragment",
+          "field": "title",
+          "occurrenceId": "occ-mordovia-first-child-proposal-title",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Предложение выплаты 150 тыс.рублей при рождении первенца до 25 лет",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "mechanism",
+          "occurrenceId": "occ-mordovia-first-child-proposal-mechanism",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Предложено введение новой единовременной выплаты женщинам при рождении первого ребёнка.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "eligibility",
+          "occurrenceId": "occ-mordovia-first-child-proposal-eligibility",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Женщина, родившая первого ребёнка в возрасте до 25 лет; условия предложения из программы.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "amount",
+          "occurrenceId": "occ-mordovia-first-child-proposal-amount",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "150000 рублей — предложенная, а не подтверждённая действующая сумма.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        }
+      ],
+      "reviewStatus": "candidate",
+      "regionName": "Республика Мордовия",
+      "documentId": "regional-respublika-mordoviia",
+      "editionLabel": "19 декабря 2024 года",
+      "sourceUrl": "https://github.com/Arseniy24RUS/family-support/blob/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-respublika-mordoviia.pdf",
+      "legalCurrency": "unverified",
+      "effectiveness": "unverified",
+      "verificationNote": "Цитаты и хеши проверены автоматически. Семантические связи подготовлены ассистентом и требуют подтверждения преподавателем. Это не проверка действующего права или эффективности меры.",
+      "catalogSourceUrl": "https://app.sovetmam.ru/catalog/mord-001"
+    },
+    {
+      "id": "perm-young-family-housing",
+      "familyId": "young-family-housing",
+      "regionId": "permskii-krai",
+      "title": "Краевая жилищная выплата молодой семье",
+      "mechanism": "Социальная выплата участникам краевого направления программы «Молодая семья».",
+      "eligibility": "Молодые семьи — участники краевого направления; в порядке очередности без приоритетных категорий.",
+      "amount": "10% расчётной (средней) стоимости жилья.",
+      "conditions": [
+        "Краевое направление с 10% отделено от федерального направления с 30–35%, описанного соседним абзацем."
+      ],
+      "implementationStatus": "described-existing",
+      "theme": "housing",
+      "lifecycleStages": [
+        "family-formation",
+        "first-child",
+        "next-child"
+      ],
+      "occurrenceIds": [
+        "occ-perm-young-family-housing-title",
+        "occ-perm-young-family-housing-mechanism",
+        "occ-perm-young-family-housing-eligibility",
+        "occ-perm-young-family-housing-amount"
+      ],
+      "evidence": [
+        {
+          "kind": "fragment",
+          "field": "title",
+          "occurrenceId": "occ-perm-young-family-housing-title",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Краевая жилищная выплата молодой семье",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "mechanism",
+          "occurrenceId": "occ-perm-young-family-housing-mechanism",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Социальная выплата участникам краевого направления программы «Молодая семья».",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "eligibility",
+          "occurrenceId": "occ-perm-young-family-housing-eligibility",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Молодые семьи — участники краевого направления; в порядке очередности без приоритетных категорий.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "amount",
+          "occurrenceId": "occ-perm-young-family-housing-amount",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "10% расчётной (средней) стоимости жилья.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        }
+      ],
+      "reviewStatus": "candidate",
+      "regionName": "Пермский край",
+      "documentId": "regional-permskii-krai",
+      "editionLabel": "15 января 2025 года",
+      "sourceUrl": "https://github.com/Arseniy24RUS/family-support/blob/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-permskii-krai.pdf",
+      "legalCurrency": "unverified",
+      "effectiveness": "unverified",
+      "verificationNote": "Цитаты и хеши проверены автоматически. Семантические связи подготовлены ассистентом и требуют подтверждения преподавателем. Это не проверка действующего права или эффективности меры."
+    },
+    {
+      "id": "perm-family-case-management",
+      "familyId": "family-case-management",
+      "regionId": "permskii-krai",
+      "title": "Сопровождение беременных и семей с ребёнком до 1 года",
+      "mechanism": "Муниципальные офисы отделений сопровождения: социально-бытовой патронаж, психологические и правовые услуги.",
+      "eligibility": "Беременные женщины и семьи с детьми от 0 до 1 года — прямо названные в фрагменте целевые группы.",
+      "amount": null,
+      "conditions": [
+        "В тексте упомянуто признание нуждаемости в социальном обслуживании; конкретный порядок допуска требует отдельной нормативной проверки.",
+        "Число охваченных услугой семей не доказывает изменение рождаемости."
+      ],
+      "implementationStatus": "described-existing",
+      "theme": "services",
+      "lifecycleStages": [
+        "pregnancy",
+        "first-child",
+        "childcare"
+      ],
+      "occurrenceIds": [
+        "occ-perm-family-case-management-title",
+        "occ-perm-family-case-management-mechanism",
+        "occ-perm-family-case-management-eligibility"
+      ],
+      "evidence": [
+        {
+          "kind": "fragment",
+          "field": "title",
+          "occurrenceId": "occ-perm-family-case-management-title",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Сопровождение беременных и семей с ребёнком до 1 года",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "mechanism",
+          "occurrenceId": "occ-perm-family-case-management-mechanism",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Муниципальные офисы отделений сопровождения: социально-бытовой патронаж, психологические и правовые услуги.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "eligibility",
+          "occurrenceId": "occ-perm-family-case-management-eligibility",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Беременные женщины и семьи с детьми от 0 до 1 года — прямо названные в фрагменте целевые группы.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        }
+      ],
+      "reviewStatus": "candidate",
+      "regionName": "Пермский край",
+      "documentId": "regional-permskii-krai",
+      "editionLabel": "15 января 2025 года",
+      "sourceUrl": "https://github.com/Arseniy24RUS/family-support/blob/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-permskii-krai.pdf",
+      "legalCurrency": "unverified",
+      "effectiveness": "unverified",
+      "verificationNote": "Цитаты и хеши проверены автоматически. Семантические связи подготовлены ассистентом и требуют подтверждения преподавателем. Это не проверка действующего права или эффективности меры."
+    },
+    {
+      "id": "perm-school-goods-assistance",
+      "familyId": "school-start-support",
+      "regionId": "permskii-krai",
+      "title": "Материальная помощь на школьные товары",
+      "mechanism": "Срочная социальная услуга нуждающимся семьям один раз в учебном году.",
+      "eligibility": "Малоимущие и многодетные малоимущие семьи, семьи в социально опасном положении, на социальном обслуживании на дому или в группе риска.",
+      "amount": "5000 рублей один раз в учебном году; единица назначения на семью или ребёнка в абзаце не уточнена.",
+      "conditions": [
+        "Нельзя автоматически приравнивать к отдельной выплате на школьную форму из каталога."
+      ],
+      "implementationStatus": "described-existing",
+      "theme": "income",
+      "lifecycleStages": [
+        "school",
+        "next-child"
+      ],
+      "catalogId": "sovetmam:perm-009",
+      "occurrenceIds": [
+        "occ-perm-school-goods-assistance-title",
+        "occ-perm-school-goods-assistance-mechanism",
+        "occ-perm-school-goods-assistance-eligibility",
+        "occ-perm-school-goods-assistance-amount"
+      ],
+      "evidence": [
+        {
+          "kind": "fragment",
+          "field": "title",
+          "occurrenceId": "occ-perm-school-goods-assistance-title",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Материальная помощь на школьные товары",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "mechanism",
+          "occurrenceId": "occ-perm-school-goods-assistance-mechanism",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Срочная социальная услуга нуждающимся семьям один раз в учебном году.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "eligibility",
+          "occurrenceId": "occ-perm-school-goods-assistance-eligibility",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Малоимущие и многодетные малоимущие семьи, семьи в социально опасном положении, на социальном обслуживании на дому или в группе риска.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "amount",
+          "occurrenceId": "occ-perm-school-goods-assistance-amount",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "5000 рублей один раз в учебном году; единица назначения на семью или ребёнка в абзаце не уточнена.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        }
+      ],
+      "reviewStatus": "candidate",
+      "regionName": "Пермский край",
+      "documentId": "regional-permskii-krai",
+      "editionLabel": "15 января 2025 года",
+      "sourceUrl": "https://github.com/Arseniy24RUS/family-support/blob/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-permskii-krai.pdf",
+      "legalCurrency": "unverified",
+      "effectiveness": "unverified",
+      "verificationNote": "Цитаты и хеши проверены автоматически. Семантические связи подготовлены ассистентом и требуют подтверждения преподавателем. Это не проверка действующего права или эффективности меры.",
+      "catalogSourceUrl": "https://app.sovetmam.ru/catalog/perm-009"
+    },
+    {
+      "id": "tambov-newborn-payment",
+      "familyId": "first-birth-payment",
+      "regionId": "tambovskaia-oblast",
+      "title": "Выплата 5000 рублей на каждого рождённого ребёнка",
+      "mechanism": "Единовременная выплата в Тамбовской области независимо от очередности рождения.",
+      "eligibility": "Дети, родившиеся с 01.10.2022 по 31.12.2025 включительно; срок указан в сохранённой редакции.",
+      "amount": "5000 рублей на каждого ребёнка.",
+      "conditions": [
+        "Окончание периода рождений в источнике:31.12.2025. Продление нормы этим корпусом не подтверждено."
+      ],
+      "implementationStatus": "period-ended-in-source",
+      "theme": "income",
+      "lifecycleStages": [
+        "first-child",
+        "next-child"
+      ],
+      "catalogId": "sovetmam:tamb-003",
+      "occurrenceIds": [
+        "occ-tambov-newborn-payment-title",
+        "occ-tambov-newborn-payment-mechanism",
+        "occ-tambov-newborn-payment-eligibility",
+        "occ-tambov-newborn-payment-amount"
+      ],
+      "evidence": [
+        {
+          "kind": "fragment",
+          "field": "title",
+          "occurrenceId": "occ-tambov-newborn-payment-title",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Выплата 5000 рублей на каждого рождённого ребёнка",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "mechanism",
+          "occurrenceId": "occ-tambov-newborn-payment-mechanism",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Единовременная выплата в Тамбовской области независимо от очередности рождения.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "eligibility",
+          "occurrenceId": "occ-tambov-newborn-payment-eligibility",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Дети, родившиеся с 01.10.2022 по 31.12.2025 включительно; срок указан в сохранённой редакции.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "amount",
+          "occurrenceId": "occ-tambov-newborn-payment-amount",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "5000 рублей на каждого ребёнка.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        }
+      ],
+      "reviewStatus": "candidate",
+      "regionName": "Тамбовская область",
+      "documentId": "regional-tambovskaia-oblast",
+      "editionLabel": "16 декабря 2024 года",
+      "sourceUrl": "https://github.com/Arseniy24RUS/family-support/blob/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-tambovskaia-oblast.pdf",
+      "legalCurrency": "unverified",
+      "effectiveness": "unverified",
+      "verificationNote": "Цитаты и хеши проверены автоматически. Семантические связи подготовлены ассистентом и требуют подтверждения преподавателем. Это не проверка действующего права или эффективности меры.",
+      "catalogSourceUrl": "https://app.sovetmam.ru/catalog/tamb-003"
+    },
+    {
+      "id": "tambov-large-family-housing-fee",
+      "familyId": "large-family-housing-expenses",
+      "regionId": "tambovskaia-oblast",
+      "title": "Компенсация платы за жилое помещение многодетным",
+      "mechanism": "Новая мера по Закону Тамбовской области 11.06.2024№505-З, описанная в региональной программе.",
+      "eligibility": "Многодетные семьи Тамбовской области; дополнительные условия получения в выбранном абзаце не раскрыты.",
+      "amount": "30% суммы платы за жилое помещение.",
+      "conditions": [
+        "Плата за жилое помещение и коммунальные услуги — разные базы расчёта."
+      ],
+      "implementationStatus": "described-existing",
+      "theme": "housing",
+      "lifecycleStages": [
+        "next-child",
+        "childcare",
+        "school"
+      ],
+      "catalogId": "sovetmam:zhku-mnogodetnym-tambov",
+      "occurrenceIds": [
+        "occ-tambov-large-family-housing-fee-title",
+        "occ-tambov-large-family-housing-fee-mechanism",
+        "occ-tambov-large-family-housing-fee-eligibility",
+        "occ-tambov-large-family-housing-fee-amount"
+      ],
+      "evidence": [
+        {
+          "kind": "fragment",
+          "field": "title",
+          "occurrenceId": "occ-tambov-large-family-housing-fee-title",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Компенсация платы за жилое помещение многодетным",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "mechanism",
+          "occurrenceId": "occ-tambov-large-family-housing-fee-mechanism",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Новая мера по Закону Тамбовской области 11.06.2024№505-З, описанная в региональной программе.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "eligibility",
+          "occurrenceId": "occ-tambov-large-family-housing-fee-eligibility",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Многодетные семьи Тамбовской области; дополнительные условия получения в выбранном абзаце не раскрыты.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "amount",
+          "occurrenceId": "occ-tambov-large-family-housing-fee-amount",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "30% суммы платы за жилое помещение.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        }
+      ],
+      "reviewStatus": "candidate",
+      "regionName": "Тамбовская область",
+      "documentId": "regional-tambovskaia-oblast",
+      "editionLabel": "16 декабря 2024 года",
+      "sourceUrl": "https://github.com/Arseniy24RUS/family-support/blob/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-tambovskaia-oblast.pdf",
+      "legalCurrency": "unverified",
+      "effectiveness": "unverified",
+      "verificationNote": "Цитаты и хеши проверены автоматически. Семантические связи подготовлены ассистентом и требуют подтверждения преподавателем. Это не проверка действующего права или эффективности меры.",
+      "catalogSourceUrl": "https://app.sovetmam.ru/catalog/zhku-mnogodetnym-tambov"
+    },
+    {
+      "id": "tambov-student-budget-transfer",
+      "familyId": "student-parent-education",
+      "regionId": "tambovskaia-oblast",
+      "title": "Перевод родивших студенток СПО на бюджетное обучение",
+      "mechanism": "Перевод с платного обучения на обучение за счёт средств бюджета Тамбовской области.",
+      "eligibility": "Студентки организаций СПО, обучающиеся по договорам об оказании платных образовательных услуг и родившие ребёнка во время обучения.",
+      "amount": null,
+      "conditions": [
+        "Сроки мероприятия в таблице:30.08.2021–31.12.2027. Денежная стоимость на получателя в строке не установлена."
+      ],
+      "implementationStatus": "described-existing",
+      "theme": "education",
+      "lifecycleStages": [
+        "first-child",
+        "education-work"
+      ],
+      "occurrenceIds": [
+        "occ-tambov-student-budget-transfer-title",
+        "occ-tambov-student-budget-transfer-mechanism",
+        "occ-tambov-student-budget-transfer-eligibility"
+      ],
+      "evidence": [
+        {
+          "kind": "fragment",
+          "field": "title",
+          "occurrenceId": "occ-tambov-student-budget-transfer-title",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Перевод родивших студенток СПО на бюджетное обучение",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "mechanism",
+          "occurrenceId": "occ-tambov-student-budget-transfer-mechanism",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Перевод с платного обучения на обучение за счёт средств бюджета Тамбовской области.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "eligibility",
+          "occurrenceId": "occ-tambov-student-budget-transfer-eligibility",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Студентки организаций СПО, обучающиеся по договорам об оказании платных образовательных услуг и родившие ребёнка во время обучения.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        }
+      ],
+      "reviewStatus": "candidate",
+      "regionName": "Тамбовская область",
+      "documentId": "regional-tambovskaia-oblast",
+      "editionLabel": "16 декабря 2024 года",
+      "sourceUrl": "https://github.com/Arseniy24RUS/family-support/blob/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-tambovskaia-oblast.pdf",
+      "legalCurrency": "unverified",
+      "effectiveness": "unverified",
+      "verificationNote": "Цитаты и хеши проверены автоматически. Семантические связи подготовлены ассистентом и требуют подтверждения преподавателем. Это не проверка действующего права или эффективности меры."
+    },
+    {
+      "id": "tambov-student-family-dormitory",
+      "familyId": "student-parent-housing",
+      "regionId": "tambovskaia-oblast",
+      "title": "Комната в общежитии родителям-студентам СПО",
+      "mechanism": "Предоставление комнаты в студенческом общежитии родителям-студентам.",
+      "eligibility": "Родители-студенты СПО, имеющие детей.",
+      "amount": null,
+      "conditions": [
+        "Размер платы за общежитие и порядок приоритетного распределения в выбранной строке не указаны."
+      ],
+      "implementationStatus": "described-existing",
+      "theme": "housing",
+      "lifecycleStages": [
+        "first-child",
+        "education-work",
+        "childcare"
+      ],
+      "occurrenceIds": [
+        "occ-tambov-student-family-dormitory-title",
+        "occ-tambov-student-family-dormitory-mechanism",
+        "occ-tambov-student-family-dormitory-eligibility"
+      ],
+      "evidence": [
+        {
+          "kind": "fragment",
+          "field": "title",
+          "occurrenceId": "occ-tambov-student-family-dormitory-title",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Комната в общежитии родителям-студентам СПО",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "mechanism",
+          "occurrenceId": "occ-tambov-student-family-dormitory-mechanism",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Предоставление комнаты в студенческом общежитии родителям-студентам.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "eligibility",
+          "occurrenceId": "occ-tambov-student-family-dormitory-eligibility",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Родители-студенты СПО, имеющие детей.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        }
+      ],
+      "reviewStatus": "candidate",
+      "regionName": "Тамбовская область",
+      "documentId": "regional-tambovskaia-oblast",
+      "editionLabel": "16 декабря 2024 года",
+      "sourceUrl": "https://github.com/Arseniy24RUS/family-support/blob/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-tambovskaia-oblast.pdf",
+      "legalCurrency": "unverified",
+      "effectiveness": "unverified",
+      "verificationNote": "Цитаты и хеши проверены автоматически. Семантические связи подготовлены ассистентом и требуют подтверждения преподавателем. Это не проверка действующего права или эффективности меры."
+    },
+    {
+      "id": "sakhalin-private-childcare",
+      "familyId": "private-childcare-compensation",
+      "regionId": "sakhalinskaia-oblast",
+      "title": "Компенсация стоимости частного ухода за ребёнком",
+      "mechanism": "Компенсация части платы частной организации за присмотр и уход за детьми.",
+      "eligibility": "Родители или законные представители детей от 2 месяцев до 7 лет, посещающих частные организации в Сахалинской области.",
+      "amount": "50% установленной частной организацией платы, но не более 10000 рублей на ребёнка в месяц.",
+      "conditions": [
+        "Ставка и месячный предел действуют совместно; нельзя представлять 10000 рублей как безусловную выплату."
+      ],
+      "implementationStatus": "described-existing",
+      "theme": "childcare",
+      "lifecycleStages": [
+        "childcare",
+        "education-work",
+        "next-child"
+      ],
+      "catalogId": "sovetmam:sah-002",
+      "occurrenceIds": [
+        "occ-sakhalin-private-childcare-title",
+        "occ-sakhalin-private-childcare-mechanism",
+        "occ-sakhalin-private-childcare-eligibility",
+        "occ-sakhalin-private-childcare-amount"
+      ],
+      "evidence": [
+        {
+          "kind": "fragment",
+          "field": "title",
+          "occurrenceId": "occ-sakhalin-private-childcare-title",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Компенсация стоимости частного ухода за ребёнком",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "mechanism",
+          "occurrenceId": "occ-sakhalin-private-childcare-mechanism",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Компенсация части платы частной организации за присмотр и уход за детьми.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "eligibility",
+          "occurrenceId": "occ-sakhalin-private-childcare-eligibility",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Родители или законные представители детей от 2 месяцев до 7 лет, посещающих частные организации в Сахалинской области.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "amount",
+          "occurrenceId": "occ-sakhalin-private-childcare-amount",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "50% установленной частной организацией платы, но не более 10000 рублей на ребёнка в месяц.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        }
+      ],
+      "reviewStatus": "candidate",
+      "regionName": "Сахалинская область",
+      "documentId": "regional-sakhalinskaia-oblast",
+      "editionLabel": "1 апреля 2025 года",
+      "sourceUrl": "https://github.com/Arseniy24RUS/family-support/blob/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-sakhalinskaia-oblast.pdf",
+      "legalCurrency": "unverified",
+      "effectiveness": "unverified",
+      "verificationNote": "Цитаты и хеши проверены автоматически. Семантические связи подготовлены ассистентом и требуют подтверждения преподавателем. Это не проверка действующего права или эффективности меры.",
+      "catalogSourceUrl": "https://app.sovetmam.ru/catalog/sah-002"
+    },
+    {
+      "id": "sakhalin-kindergarten-compensation",
+      "familyId": "kindergarten-fee-compensation",
+      "regionId": "sakhalinskaia-oblast",
+      "title": "Компенсация родительской платы:20/50/100%",
+      "mechanism": "Компенсация родителям части среднего размера родительской платы за дошкольную образовательную организацию.",
+      "eligibility": "Родители или законные представители детей, посещающих дошкольные образовательные организации; размер зависит от очередности ребёнка.",
+      "amount": "20% на первого ребёнка;50% на второго;100% на третьего и последующих.",
+      "conditions": [
+        "При сравнении с Мордовией сохраняются разные диапазоны, база расчёта и ограничения."
+      ],
+      "implementationStatus": "described-existing",
+      "theme": "childcare",
+      "lifecycleStages": [
+        "childcare",
+        "next-child"
+      ],
+      "catalogId": "sovetmam:sah-001",
+      "occurrenceIds": [
+        "occ-sakhalin-kindergarten-compensation-title",
+        "occ-sakhalin-kindergarten-compensation-mechanism",
+        "occ-sakhalin-kindergarten-compensation-eligibility",
+        "occ-sakhalin-kindergarten-compensation-amount"
+      ],
+      "evidence": [
+        {
+          "kind": "fragment",
+          "field": "title",
+          "occurrenceId": "occ-sakhalin-kindergarten-compensation-title",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Компенсация родительской платы:20/50/100%",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "mechanism",
+          "occurrenceId": "occ-sakhalin-kindergarten-compensation-mechanism",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Компенсация родителям части среднего размера родительской платы за дошкольную образовательную организацию.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "eligibility",
+          "occurrenceId": "occ-sakhalin-kindergarten-compensation-eligibility",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Родители или законные представители детей, посещающих дошкольные образовательные организации; размер зависит от очередности ребёнка.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "amount",
+          "occurrenceId": "occ-sakhalin-kindergarten-compensation-amount",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "20% на первого ребёнка;50% на второго;100% на третьего и последующих.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        }
+      ],
+      "reviewStatus": "candidate",
+      "regionName": "Сахалинская область",
+      "documentId": "regional-sakhalinskaia-oblast",
+      "editionLabel": "1 апреля 2025 года",
+      "sourceUrl": "https://github.com/Arseniy24RUS/family-support/blob/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-sakhalinskaia-oblast.pdf",
+      "legalCurrency": "unverified",
+      "effectiveness": "unverified",
+      "verificationNote": "Цитаты и хеши проверены автоматически. Семантические связи подготовлены ассистентом и требуют подтверждения преподавателем. Это не проверка действующего права или эффективности меры.",
+      "catalogSourceUrl": "https://app.sovetmam.ru/catalog/sah-001"
+    },
+    {
+      "id": "sakhalin-rental-house-compensation",
+      "familyId": "family-rental-housing",
+      "regionId": "sakhalinskaia-oblast",
+      "title": "Компенсация 50% взносов за арендное жильё",
+      "mechanism": "Компенсация расходов по оплате ежемесячных взносов за аренду жилья в многоквартирном арендном доме.",
+      "eligibility": "Отдельные категории семей с детьми: молодые, многодетные и семьи с детьми-инвалидами.",
+      "amount": "50% ежемесячных взносов за аренду жилья.",
+      "conditions": [
+        "Мера привязана к многоквартирному арендному дому; не ко всякой частной аренде квартиры."
+      ],
+      "implementationStatus": "described-existing",
+      "theme": "housing",
+      "lifecycleStages": [
+        "family-formation",
+        "first-child",
+        "next-child"
+      ],
+      "occurrenceIds": [
+        "occ-sakhalin-rental-house-compensation-title",
+        "occ-sakhalin-rental-house-compensation-mechanism",
+        "occ-sakhalin-rental-house-compensation-eligibility",
+        "occ-sakhalin-rental-house-compensation-amount"
+      ],
+      "evidence": [
+        {
+          "kind": "fragment",
+          "field": "title",
+          "occurrenceId": "occ-sakhalin-rental-house-compensation-title",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Компенсация 50% взносов за арендное жильё",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "mechanism",
+          "occurrenceId": "occ-sakhalin-rental-house-compensation-mechanism",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Компенсация расходов по оплате ежемесячных взносов за аренду жилья в многоквартирном арендном доме.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "eligibility",
+          "occurrenceId": "occ-sakhalin-rental-house-compensation-eligibility",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "Отдельные категории семей с детьми: молодые, многодетные и семьи с детьми-инвалидами.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        },
+        {
+          "kind": "fragment",
+          "field": "amount",
+          "occurrenceId": "occ-sakhalin-rental-house-compensation-amount",
+          "relation": "supports",
+          "reviewStatus": "candidate",
+          "reviewedValue": "50% ежемесячных взносов за аренду жилья.",
+          "note": "Редакционная кандидатура; статус verified устанавливается только после явного подтверждения человеком."
+        }
+      ],
+      "reviewStatus": "candidate",
+      "regionName": "Сахалинская область",
+      "documentId": "regional-sakhalinskaia-oblast",
+      "editionLabel": "1 апреля 2025 года",
+      "sourceUrl": "https://github.com/Arseniy24RUS/family-support/blob/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-sakhalinskaia-oblast.pdf",
+      "legalCurrency": "unverified",
+      "effectiveness": "unverified",
+      "verificationNote": "Цитаты и хеши проверены автоматически. Семантические связи подготовлены ассистентом и требуют подтверждения преподавателем. Это не проверка действующего права или эффективности меры."
+    }
+  ],
+  "occurrences": [
+    {
+      "id": "occ-mordovia-kindergarten-compensation-title",
+      "documentId": "regional-respublika-mordoviia",
+      "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+      "anchor": {
+        "id": "anchor-occ-mordovia-kindergarten-compensation-title",
+        "documentId": "regional-respublika-mordoviia",
+        "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-respublika-mordoviia-p059-b003",
+            "start": 6,
+            "end": 295,
+            "exact": "1) компенсация платы, взимаемой с родителей за присмотр и уход за детьми, осваивающими образовательные\n  программы дошкольного образования в государственных и муниципальных образовательных организациях,\n  находящихся на территории Республики Мордовии, предоставляется в следующих размерах:",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 59,
+      "pageEnd": 59,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-respublika-mordoviia.pdf#page=59",
+      "sourceSha256": "991b6eaaaac8d5680c683cbabbe4eff732fd526d1c17bce595bc28ceaea87885",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-mordovia-kindergarten-compensation-mechanism",
+      "documentId": "regional-respublika-mordoviia",
+      "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+      "anchor": {
+        "id": "anchor-occ-mordovia-kindergarten-compensation-mechanism",
+        "documentId": "regional-respublika-mordoviia",
+        "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-respublika-mordoviia-p059-b003",
+            "start": 6,
+            "end": 295,
+            "exact": "1) компенсация платы, взимаемой с родителей за присмотр и уход за детьми, осваивающими образовательные\n  программы дошкольного образования в государственных и муниципальных образовательных организациях,\n  находящихся на территории Республики Мордовии, предоставляется в следующих размерах:",
+            "prefix": "      ",
+            "suffix": ""
+          },
+          {
+            "blockId": "regional-respublika-mordoviia-p059-b004",
+            "start": 5,
+            "end": 199,
+            "exact": "на первого ребенка - в размере 20 - 29% среднего размера родительской платы в государственных и\n  муниципальных образовательных организациях, но не более фактически внесенной родительской платы;",
+            "prefix": "     ",
+            "suffix": ""
+          },
+          {
+            "blockId": "regional-respublika-mordoviia-p059-b005",
+            "start": 5,
+            "end": 199,
+            "exact": "на второго ребенка - в размере 50 - 72% среднего размера родительской платы в государственных и\n  муниципальных образовательных организациях, но не более фактически внесенной родительской платы;",
+            "prefix": "     ",
+            "suffix": ""
+          },
+          {
+            "blockId": "regional-respublika-mordoviia-p059-b006",
+            "start": 6,
+            "end": 224,
+            "exact": "на третьего ребенка и последующих детей - в размере 70 - 100% среднего размера родительской платы в\n  государственных и муниципальных образовательных организациях, но не более фактически внесенной родительской\n  платы;",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 59,
+      "pageEnd": 59,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-respublika-mordoviia.pdf#page=59",
+      "sourceSha256": "991b6eaaaac8d5680c683cbabbe4eff732fd526d1c17bce595bc28ceaea87885",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-mordovia-kindergarten-compensation-eligibility",
+      "documentId": "regional-respublika-mordoviia",
+      "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+      "anchor": {
+        "id": "anchor-occ-mordovia-kindergarten-compensation-eligibility",
+        "documentId": "regional-respublika-mordoviia",
+        "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-respublika-mordoviia-p059-b003",
+            "start": 6,
+            "end": 295,
+            "exact": "1) компенсация платы, взимаемой с родителей за присмотр и уход за детьми, осваивающими образовательные\n  программы дошкольного образования в государственных и муниципальных образовательных организациях,\n  находящихся на территории Республики Мордовии, предоставляется в следующих размерах:",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 59,
+      "pageEnd": 59,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-respublika-mordoviia.pdf#page=59",
+      "sourceSha256": "991b6eaaaac8d5680c683cbabbe4eff732fd526d1c17bce595bc28ceaea87885",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-mordovia-kindergarten-compensation-amount",
+      "documentId": "regional-respublika-mordoviia",
+      "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+      "anchor": {
+        "id": "anchor-occ-mordovia-kindergarten-compensation-amount",
+        "documentId": "regional-respublika-mordoviia",
+        "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-respublika-mordoviia-p059-b004",
+            "start": 5,
+            "end": 199,
+            "exact": "на первого ребенка - в размере 20 - 29% среднего размера родительской платы в государственных и\n  муниципальных образовательных организациях, но не более фактически внесенной родительской платы;",
+            "prefix": "     ",
+            "suffix": ""
+          },
+          {
+            "blockId": "regional-respublika-mordoviia-p059-b005",
+            "start": 5,
+            "end": 199,
+            "exact": "на второго ребенка - в размере 50 - 72% среднего размера родительской платы в государственных и\n  муниципальных образовательных организациях, но не более фактически внесенной родительской платы;",
+            "prefix": "     ",
+            "suffix": ""
+          },
+          {
+            "blockId": "regional-respublika-mordoviia-p059-b006",
+            "start": 6,
+            "end": 224,
+            "exact": "на третьего ребенка и последующих детей - в размере 70 - 100% среднего размера родительской платы в\n  государственных и муниципальных образовательных организациях, но не более фактически внесенной родительской\n  платы;",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 59,
+      "pageEnd": 59,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-respublika-mordoviia.pdf#page=59",
+      "sourceSha256": "991b6eaaaac8d5680c683cbabbe4eff732fd526d1c17bce595bc28ceaea87885",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-mordovia-student-childcare-title",
+      "documentId": "regional-respublika-mordoviia",
+      "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+      "anchor": {
+        "id": "anchor-occ-mordovia-student-childcare-title",
+        "documentId": "regional-respublika-mordoviia",
+        "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-respublika-mordoviia-p059-b008",
+            "start": 6,
+            "end": 286,
+            "exact": "3) компенсация расходов на содержание детей в муниципальных дошкольных образовательных организациях\n  студентам, имеющим детей, предоставляется в размере фактических расходов, произведенных родителями за\n  содержание ребенка в муниципальной дошкольной образовательной организации;",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 59,
+      "pageEnd": 59,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-respublika-mordoviia.pdf#page=59",
+      "sourceSha256": "991b6eaaaac8d5680c683cbabbe4eff732fd526d1c17bce595bc28ceaea87885",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-mordovia-student-childcare-mechanism",
+      "documentId": "regional-respublika-mordoviia",
+      "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+      "anchor": {
+        "id": "anchor-occ-mordovia-student-childcare-mechanism",
+        "documentId": "regional-respublika-mordoviia",
+        "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-respublika-mordoviia-p059-b008",
+            "start": 6,
+            "end": 286,
+            "exact": "3) компенсация расходов на содержание детей в муниципальных дошкольных образовательных организациях\n  студентам, имеющим детей, предоставляется в размере фактических расходов, произведенных родителями за\n  содержание ребенка в муниципальной дошкольной образовательной организации;",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 59,
+      "pageEnd": 59,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-respublika-mordoviia.pdf#page=59",
+      "sourceSha256": "991b6eaaaac8d5680c683cbabbe4eff732fd526d1c17bce595bc28ceaea87885",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-mordovia-student-childcare-eligibility",
+      "documentId": "regional-respublika-mordoviia",
+      "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+      "anchor": {
+        "id": "anchor-occ-mordovia-student-childcare-eligibility",
+        "documentId": "regional-respublika-mordoviia",
+        "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-respublika-mordoviia-p059-b008",
+            "start": 6,
+            "end": 286,
+            "exact": "3) компенсация расходов на содержание детей в муниципальных дошкольных образовательных организациях\n  студентам, имеющим детей, предоставляется в размере фактических расходов, произведенных родителями за\n  содержание ребенка в муниципальной дошкольной образовательной организации;",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 59,
+      "pageEnd": 59,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-respublika-mordoviia.pdf#page=59",
+      "sourceSha256": "991b6eaaaac8d5680c683cbabbe4eff732fd526d1c17bce595bc28ceaea87885",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-mordovia-student-childcare-amount",
+      "documentId": "regional-respublika-mordoviia",
+      "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+      "anchor": {
+        "id": "anchor-occ-mordovia-student-childcare-amount",
+        "documentId": "regional-respublika-mordoviia",
+        "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-respublika-mordoviia-p059-b008",
+            "start": 6,
+            "end": 286,
+            "exact": "3) компенсация расходов на содержание детей в муниципальных дошкольных образовательных организациях\n  студентам, имеющим детей, предоставляется в размере фактических расходов, произведенных родителями за\n  содержание ребенка в муниципальной дошкольной образовательной организации;",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 59,
+      "pageEnd": 59,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-respublika-mordoviia.pdf#page=59",
+      "sourceSha256": "991b6eaaaac8d5680c683cbabbe4eff732fd526d1c17bce595bc28ceaea87885",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-mordovia-mortgage-repayment-title",
+      "documentId": "regional-respublika-mordoviia",
+      "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+      "anchor": {
+        "id": "anchor-occ-mordovia-mortgage-repayment-title",
+        "documentId": "regional-respublika-mordoviia",
+        "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-respublika-mordoviia-p060-b008",
+            "start": 6,
+            "end": 364,
+            "exact": "Из республиканского бюджета гражданам предоставляются социальные выплаты на частичное и (или) полное\n  погашение ипотечного жилищного кредита (ипотечного займа) либо ипотечного кредита (ипотечного займа), полученного\n  в целях его рефинансирования (перекредитования), в случае рождения (усыновления) ребенка и последующих детей, а\n  также на имеющихся детей.",
+            "prefix": "      ",
+            "suffix": ""
+          },
+          {
+            "blockId": "regional-respublika-mordoviia-p060-b009",
+            "start": 6,
+            "end": 333,
+            "exact": "При рождении 1-го или 2-го ребенка после получения ипотечного кредита семья может рассчитывать на снижение\n  долга по кредиту на 10% (за каждого ребенка). В семьях, в которых появился третий ребенок, на 30% сокращается\n  остаток по ранее взятому ипотечному кредиту, при рождении четвертого ребенка кредит списывается полностью.",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 60,
+      "pageEnd": 60,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-respublika-mordoviia.pdf#page=60",
+      "sourceSha256": "991b6eaaaac8d5680c683cbabbe4eff732fd526d1c17bce595bc28ceaea87885",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-mordovia-mortgage-repayment-mechanism",
+      "documentId": "regional-respublika-mordoviia",
+      "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+      "anchor": {
+        "id": "anchor-occ-mordovia-mortgage-repayment-mechanism",
+        "documentId": "regional-respublika-mordoviia",
+        "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-respublika-mordoviia-p060-b008",
+            "start": 6,
+            "end": 364,
+            "exact": "Из республиканского бюджета гражданам предоставляются социальные выплаты на частичное и (или) полное\n  погашение ипотечного жилищного кредита (ипотечного займа) либо ипотечного кредита (ипотечного займа), полученного\n  в целях его рефинансирования (перекредитования), в случае рождения (усыновления) ребенка и последующих детей, а\n  также на имеющихся детей.",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 60,
+      "pageEnd": 60,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-respublika-mordoviia.pdf#page=60",
+      "sourceSha256": "991b6eaaaac8d5680c683cbabbe4eff732fd526d1c17bce595bc28ceaea87885",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-mordovia-mortgage-repayment-eligibility",
+      "documentId": "regional-respublika-mordoviia",
+      "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+      "anchor": {
+        "id": "anchor-occ-mordovia-mortgage-repayment-eligibility",
+        "documentId": "regional-respublika-mordoviia",
+        "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-respublika-mordoviia-p060-b009",
+            "start": 6,
+            "end": 333,
+            "exact": "При рождении 1-го или 2-го ребенка после получения ипотечного кредита семья может рассчитывать на снижение\n  долга по кредиту на 10% (за каждого ребенка). В семьях, в которых появился третий ребенок, на 30% сокращается\n  остаток по ранее взятому ипотечному кредиту, при рождении четвертого ребенка кредит списывается полностью.",
+            "prefix": "      ",
+            "suffix": ""
+          },
+          {
+            "blockId": "regional-respublika-mordoviia-p060-b010",
+            "start": 6,
+            "end": 584,
+            "exact": "Малоимущим семьям, имеющим на день обращения за социальной выплатой на иждивении двух и более детей,\n  рожденных до получения ипотечного жилищного кредита, социальные выплаты предоставляются в размере от 10 до\n  20% от суммы остатка ипотечного кредита (займа) в зависимости от количества детей, при наличии пятерых детей\n  общая сумма остатка кредита (займа) погашается полностью. При этом данная социальная выплата может\n  применяться неоднократно и последовательно до полного погашения кредита в отношении одной семьи в случае\n  рождения (усыновления) у нее последующих детей.",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 60,
+      "pageEnd": 60,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-respublika-mordoviia.pdf#page=60",
+      "sourceSha256": "991b6eaaaac8d5680c683cbabbe4eff732fd526d1c17bce595bc28ceaea87885",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-mordovia-mortgage-repayment-amount",
+      "documentId": "regional-respublika-mordoviia",
+      "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+      "anchor": {
+        "id": "anchor-occ-mordovia-mortgage-repayment-amount",
+        "documentId": "regional-respublika-mordoviia",
+        "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-respublika-mordoviia-p060-b009",
+            "start": 6,
+            "end": 333,
+            "exact": "При рождении 1-го или 2-го ребенка после получения ипотечного кредита семья может рассчитывать на снижение\n  долга по кредиту на 10% (за каждого ребенка). В семьях, в которых появился третий ребенок, на 30% сокращается\n  остаток по ранее взятому ипотечному кредиту, при рождении четвертого ребенка кредит списывается полностью.",
+            "prefix": "      ",
+            "suffix": ""
+          },
+          {
+            "blockId": "regional-respublika-mordoviia-p060-b010",
+            "start": 6,
+            "end": 584,
+            "exact": "Малоимущим семьям, имеющим на день обращения за социальной выплатой на иждивении двух и более детей,\n  рожденных до получения ипотечного жилищного кредита, социальные выплаты предоставляются в размере от 10 до\n  20% от суммы остатка ипотечного кредита (займа) в зависимости от количества детей, при наличии пятерых детей\n  общая сумма остатка кредита (займа) погашается полностью. При этом данная социальная выплата может\n  применяться неоднократно и последовательно до полного погашения кредита в отношении одной семьи в случае\n  рождения (усыновления) у нее последующих детей.",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 60,
+      "pageEnd": 60,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-respublika-mordoviia.pdf#page=60",
+      "sourceSha256": "991b6eaaaac8d5680c683cbabbe4eff732fd526d1c17bce595bc28ceaea87885",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-mordovia-flexible-work-title",
+      "documentId": "regional-respublika-mordoviia",
+      "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+      "anchor": {
+        "id": "anchor-occ-mordovia-flexible-work-title",
+        "documentId": "regional-respublika-mordoviia",
+        "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-respublika-mordoviia-p064-b007",
+            "start": 6,
+            "end": 129,
+            "exact": "для женщин (родителей), имеющих детей до 14 лет, предоставление по договоренности с работодателем гибкого\n  графика работы;",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 64,
+      "pageEnd": 64,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-respublika-mordoviia.pdf#page=64",
+      "sourceSha256": "991b6eaaaac8d5680c683cbabbe4eff732fd526d1c17bce595bc28ceaea87885",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-mordovia-flexible-work-mechanism",
+      "documentId": "regional-respublika-mordoviia",
+      "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+      "anchor": {
+        "id": "anchor-occ-mordovia-flexible-work-mechanism",
+        "documentId": "regional-respublika-mordoviia",
+        "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-respublika-mordoviia-p063-b011",
+            "start": 6,
+            "end": 658,
+            "exact": "На заседании Мордовской республиканской трехсторонней комиссии по регулированию социально-трудовых\n  отношений в июне 2023 г. в целях сохранения и поддержания семейных традиций, поддержки материнства и детства,\n  укрепления здоровья работников, развития кадрового потенциала, сплочения трудового коллектива и формирования\n  благоприятного психологического климата в организации, работодателям республики рекомендовано закреплять в\n  коллективных договорах и иных локальных актах кроме основных гарантий и льгот, предоставляемых трудовым\n  законодательством для женщин (родителей) с семейными обязанностями дополнительные социальные льготы и\n  гарантии:",
+            "prefix": "      ",
+            "suffix": ""
+          },
+          {
+            "blockId": "regional-respublika-mordoviia-p064-b007",
+            "start": 6,
+            "end": 129,
+            "exact": "для женщин (родителей), имеющих детей до 14 лет, предоставление по договоренности с работодателем гибкого\n  графика работы;",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 63,
+      "pageEnd": 64,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-respublika-mordoviia.pdf#page=63",
+      "sourceSha256": "991b6eaaaac8d5680c683cbabbe4eff732fd526d1c17bce595bc28ceaea87885",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-mordovia-flexible-work-eligibility",
+      "documentId": "regional-respublika-mordoviia",
+      "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+      "anchor": {
+        "id": "anchor-occ-mordovia-flexible-work-eligibility",
+        "documentId": "regional-respublika-mordoviia",
+        "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-respublika-mordoviia-p064-b007",
+            "start": 6,
+            "end": 129,
+            "exact": "для женщин (родителей), имеющих детей до 14 лет, предоставление по договоренности с работодателем гибкого\n  графика работы;",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 64,
+      "pageEnd": 64,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-respublika-mordoviia.pdf#page=64",
+      "sourceSha256": "991b6eaaaac8d5680c683cbabbe4eff732fd526d1c17bce595bc28ceaea87885",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-mordovia-first-child-proposal-title",
+      "documentId": "regional-respublika-mordoviia",
+      "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+      "anchor": {
+        "id": "anchor-occ-mordovia-first-child-proposal-title",
+        "documentId": "regional-respublika-mordoviia",
+        "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-respublika-mordoviia-p064-b011",
+            "start": 6,
+            "end": 443,
+            "exact": "В целях снижения возраста женщины при рождении первых детей и стимулирования рождений в возрастной группе\n  20 - 24 года предлагается введение дополнительной новой меры социальной поддержки - единовременной денежной\n  выплаты в размере 150 тыс. рублей женщине, родившей первого ребенка в возрасте до 25 лет (ожидаемый эффект -\n  увеличение числа детей, родившихся первыми у женщин в возрасте до 25 лет, не менее чем на 5 - 10% ежегодно).",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 64,
+      "pageEnd": 64,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-respublika-mordoviia.pdf#page=64",
+      "sourceSha256": "991b6eaaaac8d5680c683cbabbe4eff732fd526d1c17bce595bc28ceaea87885",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-mordovia-first-child-proposal-mechanism",
+      "documentId": "regional-respublika-mordoviia",
+      "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+      "anchor": {
+        "id": "anchor-occ-mordovia-first-child-proposal-mechanism",
+        "documentId": "regional-respublika-mordoviia",
+        "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-respublika-mordoviia-p064-b011",
+            "start": 6,
+            "end": 443,
+            "exact": "В целях снижения возраста женщины при рождении первых детей и стимулирования рождений в возрастной группе\n  20 - 24 года предлагается введение дополнительной новой меры социальной поддержки - единовременной денежной\n  выплаты в размере 150 тыс. рублей женщине, родившей первого ребенка в возрасте до 25 лет (ожидаемый эффект -\n  увеличение числа детей, родившихся первыми у женщин в возрасте до 25 лет, не менее чем на 5 - 10% ежегодно).",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 64,
+      "pageEnd": 64,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-respublika-mordoviia.pdf#page=64",
+      "sourceSha256": "991b6eaaaac8d5680c683cbabbe4eff732fd526d1c17bce595bc28ceaea87885",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-mordovia-first-child-proposal-eligibility",
+      "documentId": "regional-respublika-mordoviia",
+      "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+      "anchor": {
+        "id": "anchor-occ-mordovia-first-child-proposal-eligibility",
+        "documentId": "regional-respublika-mordoviia",
+        "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-respublika-mordoviia-p064-b011",
+            "start": 6,
+            "end": 443,
+            "exact": "В целях снижения возраста женщины при рождении первых детей и стимулирования рождений в возрастной группе\n  20 - 24 года предлагается введение дополнительной новой меры социальной поддержки - единовременной денежной\n  выплаты в размере 150 тыс. рублей женщине, родившей первого ребенка в возрасте до 25 лет (ожидаемый эффект -\n  увеличение числа детей, родившихся первыми у женщин в возрасте до 25 лет, не менее чем на 5 - 10% ежегодно).",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 64,
+      "pageEnd": 64,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-respublika-mordoviia.pdf#page=64",
+      "sourceSha256": "991b6eaaaac8d5680c683cbabbe4eff732fd526d1c17bce595bc28ceaea87885",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-mordovia-first-child-proposal-amount",
+      "documentId": "regional-respublika-mordoviia",
+      "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+      "anchor": {
+        "id": "anchor-occ-mordovia-first-child-proposal-amount",
+        "documentId": "regional-respublika-mordoviia",
+        "versionId": "regional-respublika-mordoviia@layout-canonical-v2-991b6eaaaac8-2654bfb570f5",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-respublika-mordoviia-p064-b011",
+            "start": 6,
+            "end": 443,
+            "exact": "В целях снижения возраста женщины при рождении первых детей и стимулирования рождений в возрастной группе\n  20 - 24 года предлагается введение дополнительной новой меры социальной поддержки - единовременной денежной\n  выплаты в размере 150 тыс. рублей женщине, родившей первого ребенка в возрасте до 25 лет (ожидаемый эффект -\n  увеличение числа детей, родившихся первыми у женщин в возрасте до 25 лет, не менее чем на 5 - 10% ежегодно).",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 64,
+      "pageEnd": 64,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-respublika-mordoviia.pdf#page=64",
+      "sourceSha256": "991b6eaaaac8d5680c683cbabbe4eff732fd526d1c17bce595bc28ceaea87885",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-perm-young-family-housing-title",
+      "documentId": "regional-permskii-krai",
+      "versionId": "regional-permskii-krai@layout-canonical-v2-85765469982d-693fc00e8a7b",
+      "anchor": {
+        "id": "anchor-occ-perm-young-family-housing-title",
+        "documentId": "regional-permskii-krai",
+        "versionId": "regional-permskii-krai@layout-canonical-v2-85765469982d-693fc00e8a7b",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-permskii-krai-p061-b010",
+            "start": 6,
+            "end": 726,
+            "exact": "2. На региональном уровне мероприятия по обеспечению жильем молодых семей реализуются в рамках\n  подпрограммы 1 \"Социальная поддержка семей с детьми. Профилактика социального сиротства и защита прав детей-\n  сирот\" государственной программы \"Социальная поддержка жителей Пермского края\", утвержденной постановлением\n  Правительства Пермского края от 3 октября 2013 г. N 1321-п (далее - региональное направление программы \"Молодая\n  семья\"). Молодые семьи-участники краевого направления имеют возможность получить социальную выплаты в\n  размере 10 процентов расчетной (средней) стоимости жилья. Социальная выплата представляется молодым семьям-\n  участникам в порядке очередности, приоритетных категорий не предусмотрено.",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 61,
+      "pageEnd": 61,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-permskii-krai.pdf#page=61",
+      "sourceSha256": "85765469982dd610a5c7998472ddf363b76086151d736f5362ec27f843455d1c",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-perm-young-family-housing-mechanism",
+      "documentId": "regional-permskii-krai",
+      "versionId": "regional-permskii-krai@layout-canonical-v2-85765469982d-693fc00e8a7b",
+      "anchor": {
+        "id": "anchor-occ-perm-young-family-housing-mechanism",
+        "documentId": "regional-permskii-krai",
+        "versionId": "regional-permskii-krai@layout-canonical-v2-85765469982d-693fc00e8a7b",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-permskii-krai-p061-b010",
+            "start": 6,
+            "end": 726,
+            "exact": "2. На региональном уровне мероприятия по обеспечению жильем молодых семей реализуются в рамках\n  подпрограммы 1 \"Социальная поддержка семей с детьми. Профилактика социального сиротства и защита прав детей-\n  сирот\" государственной программы \"Социальная поддержка жителей Пермского края\", утвержденной постановлением\n  Правительства Пермского края от 3 октября 2013 г. N 1321-п (далее - региональное направление программы \"Молодая\n  семья\"). Молодые семьи-участники краевого направления имеют возможность получить социальную выплаты в\n  размере 10 процентов расчетной (средней) стоимости жилья. Социальная выплата представляется молодым семьям-\n  участникам в порядке очередности, приоритетных категорий не предусмотрено.",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 61,
+      "pageEnd": 61,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-permskii-krai.pdf#page=61",
+      "sourceSha256": "85765469982dd610a5c7998472ddf363b76086151d736f5362ec27f843455d1c",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-perm-young-family-housing-eligibility",
+      "documentId": "regional-permskii-krai",
+      "versionId": "regional-permskii-krai@layout-canonical-v2-85765469982d-693fc00e8a7b",
+      "anchor": {
+        "id": "anchor-occ-perm-young-family-housing-eligibility",
+        "documentId": "regional-permskii-krai",
+        "versionId": "regional-permskii-krai@layout-canonical-v2-85765469982d-693fc00e8a7b",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-permskii-krai-p061-b010",
+            "start": 6,
+            "end": 726,
+            "exact": "2. На региональном уровне мероприятия по обеспечению жильем молодых семей реализуются в рамках\n  подпрограммы 1 \"Социальная поддержка семей с детьми. Профилактика социального сиротства и защита прав детей-\n  сирот\" государственной программы \"Социальная поддержка жителей Пермского края\", утвержденной постановлением\n  Правительства Пермского края от 3 октября 2013 г. N 1321-п (далее - региональное направление программы \"Молодая\n  семья\"). Молодые семьи-участники краевого направления имеют возможность получить социальную выплаты в\n  размере 10 процентов расчетной (средней) стоимости жилья. Социальная выплата представляется молодым семьям-\n  участникам в порядке очередности, приоритетных категорий не предусмотрено.",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 61,
+      "pageEnd": 61,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-permskii-krai.pdf#page=61",
+      "sourceSha256": "85765469982dd610a5c7998472ddf363b76086151d736f5362ec27f843455d1c",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-perm-young-family-housing-amount",
+      "documentId": "regional-permskii-krai",
+      "versionId": "regional-permskii-krai@layout-canonical-v2-85765469982d-693fc00e8a7b",
+      "anchor": {
+        "id": "anchor-occ-perm-young-family-housing-amount",
+        "documentId": "regional-permskii-krai",
+        "versionId": "regional-permskii-krai@layout-canonical-v2-85765469982d-693fc00e8a7b",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-permskii-krai-p061-b010",
+            "start": 6,
+            "end": 726,
+            "exact": "2. На региональном уровне мероприятия по обеспечению жильем молодых семей реализуются в рамках\n  подпрограммы 1 \"Социальная поддержка семей с детьми. Профилактика социального сиротства и защита прав детей-\n  сирот\" государственной программы \"Социальная поддержка жителей Пермского края\", утвержденной постановлением\n  Правительства Пермского края от 3 октября 2013 г. N 1321-п (далее - региональное направление программы \"Молодая\n  семья\"). Молодые семьи-участники краевого направления имеют возможность получить социальную выплаты в\n  размере 10 процентов расчетной (средней) стоимости жилья. Социальная выплата представляется молодым семьям-\n  участникам в порядке очередности, приоритетных категорий не предусмотрено.",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 61,
+      "pageEnd": 61,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-permskii-krai.pdf#page=61",
+      "sourceSha256": "85765469982dd610a5c7998472ddf363b76086151d736f5362ec27f843455d1c",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-perm-family-case-management-title",
+      "documentId": "regional-permskii-krai",
+      "versionId": "regional-permskii-krai@layout-canonical-v2-85765469982d-693fc00e8a7b",
+      "anchor": {
+        "id": "anchor-occ-perm-family-case-management-title",
+        "documentId": "regional-permskii-krai",
+        "versionId": "regional-permskii-krai@layout-canonical-v2-85765469982d-693fc00e8a7b",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-permskii-krai-p038-b005",
+            "start": 6,
+            "end": 312,
+            "exact": "С 2019 года на базе организаций для детей-сирот и детей, оставшихся без попечения родителей,\n  подведомственные Министерству социального развития Пермского края осуществляют деятельность отделения по\n  сопровождению семей с детьми. Офисы отделений открыты в каждом муниципальном образовании Пермского края.",
+            "prefix": "      ",
+            "suffix": ""
+          },
+          {
+            "blockId": "regional-permskii-krai-p038-b007",
+            "start": 6,
+            "end": 124,
+            "exact": "Беременным женщинам и семьям с детьми в возрасте от 0 до 1 года адресно оказываются следующие виды\n  социальных услуг:",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 38,
+      "pageEnd": 38,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-permskii-krai.pdf#page=38",
+      "sourceSha256": "85765469982dd610a5c7998472ddf363b76086151d736f5362ec27f843455d1c",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-perm-family-case-management-mechanism",
+      "documentId": "regional-permskii-krai",
+      "versionId": "regional-permskii-krai@layout-canonical-v2-85765469982d-693fc00e8a7b",
+      "anchor": {
+        "id": "anchor-occ-perm-family-case-management-mechanism",
+        "documentId": "regional-permskii-krai",
+        "versionId": "regional-permskii-krai@layout-canonical-v2-85765469982d-693fc00e8a7b",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-permskii-krai-p038-b005",
+            "start": 6,
+            "end": 312,
+            "exact": "С 2019 года на базе организаций для детей-сирот и детей, оставшихся без попечения родителей,\n  подведомственные Министерству социального развития Пермского края осуществляют деятельность отделения по\n  сопровождению семей с детьми. Офисы отделений открыты в каждом муниципальном образовании Пермского края.",
+            "prefix": "      ",
+            "suffix": ""
+          },
+          {
+            "blockId": "regional-permskii-krai-p038-b008",
+            "start": 6,
+            "end": 244,
+            "exact": "социально-бытовой патронаж (выход специалиста по месту проживания женщины до рождения ребенка,\n  выявление проблем, контроль выполнения рекомендаций, выданных ранее, динамики решения выявленных проблем,\n  оказание консультативной помощи);",
+            "prefix": "      ",
+            "suffix": ""
+          },
+          {
+            "blockId": "regional-permskii-krai-p038-b009",
+            "start": 6,
+            "end": 219,
+            "exact": "социально-психологические услуги (социально-психологическая диагностика и обследование личности, социально-\n  психологическое консультирование, проведение психокоррекционной работы в зависимости от проблем семьи);",
+            "prefix": "      ",
+            "suffix": ""
+          },
+          {
+            "blockId": "regional-permskii-krai-p038-b010",
+            "start": 6,
+            "end": 301,
+            "exact": "социально-правовые услуги (консультирование по вопросам реализации прав и законных интересов получателя\n  социальных услуг, содействие в сборе и подготовке документов для получения мер социальной поддержки, пенсий,\n  пособий и других социальных выплат, для восстановления утраченных документов).",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 38,
+      "pageEnd": 38,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-permskii-krai.pdf#page=38",
+      "sourceSha256": "85765469982dd610a5c7998472ddf363b76086151d736f5362ec27f843455d1c",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-perm-family-case-management-eligibility",
+      "documentId": "regional-permskii-krai",
+      "versionId": "regional-permskii-krai@layout-canonical-v2-85765469982d-693fc00e8a7b",
+      "anchor": {
+        "id": "anchor-occ-perm-family-case-management-eligibility",
+        "documentId": "regional-permskii-krai",
+        "versionId": "regional-permskii-krai@layout-canonical-v2-85765469982d-693fc00e8a7b",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-permskii-krai-p038-b007",
+            "start": 6,
+            "end": 124,
+            "exact": "Беременным женщинам и семьям с детьми в возрасте от 0 до 1 года адресно оказываются следующие виды\n  социальных услуг:",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 38,
+      "pageEnd": 38,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-permskii-krai.pdf#page=38",
+      "sourceSha256": "85765469982dd610a5c7998472ddf363b76086151d736f5362ec27f843455d1c",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-perm-school-goods-assistance-title",
+      "documentId": "regional-permskii-krai",
+      "versionId": "regional-permskii-krai@layout-canonical-v2-85765469982d-693fc00e8a7b",
+      "anchor": {
+        "id": "anchor-occ-perm-school-goods-assistance-title",
+        "documentId": "regional-permskii-krai",
+        "versionId": "regional-permskii-krai@layout-canonical-v2-85765469982d-693fc00e8a7b",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-permskii-krai-p065-b004",
+            "start": 6,
+            "end": 240,
+            "exact": "Также нуждающимся семьям предоставляется срочная социальная услуга в виде материальной помощи на\n  приобретение школьных товаров в размере 5000 руб. Материальная помощь оказывается один раз в учебном году\n  семьям следующих категорий:",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 65,
+      "pageEnd": 65,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-permskii-krai.pdf#page=65",
+      "sourceSha256": "85765469982dd610a5c7998472ddf363b76086151d736f5362ec27f843455d1c",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-perm-school-goods-assistance-mechanism",
+      "documentId": "regional-permskii-krai",
+      "versionId": "regional-permskii-krai@layout-canonical-v2-85765469982d-693fc00e8a7b",
+      "anchor": {
+        "id": "anchor-occ-perm-school-goods-assistance-mechanism",
+        "documentId": "regional-permskii-krai",
+        "versionId": "regional-permskii-krai@layout-canonical-v2-85765469982d-693fc00e8a7b",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-permskii-krai-p065-b004",
+            "start": 6,
+            "end": 240,
+            "exact": "Также нуждающимся семьям предоставляется срочная социальная услуга в виде материальной помощи на\n  приобретение школьных товаров в размере 5000 руб. Материальная помощь оказывается один раз в учебном году\n  семьям следующих категорий:",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 65,
+      "pageEnd": 65,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-permskii-krai.pdf#page=65",
+      "sourceSha256": "85765469982dd610a5c7998472ddf363b76086151d736f5362ec27f843455d1c",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-perm-school-goods-assistance-eligibility",
+      "documentId": "regional-permskii-krai",
+      "versionId": "regional-permskii-krai@layout-canonical-v2-85765469982d-693fc00e8a7b",
+      "anchor": {
+        "id": "anchor-occ-perm-school-goods-assistance-eligibility",
+        "documentId": "regional-permskii-krai",
+        "versionId": "regional-permskii-krai@layout-canonical-v2-85765469982d-693fc00e8a7b",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-permskii-krai-p065-b004",
+            "start": 6,
+            "end": 240,
+            "exact": "Также нуждающимся семьям предоставляется срочная социальная услуга в виде материальной помощи на\n  приобретение школьных товаров в размере 5000 руб. Материальная помощь оказывается один раз в учебном году\n  семьям следующих категорий:",
+            "prefix": "      ",
+            "suffix": ""
+          },
+          {
+            "blockId": "regional-permskii-krai-p065-b005",
+            "start": 8,
+            "end": 44,
+            "exact": "малоимущие и многодетные малоимущие;",
+            "prefix": "        ",
+            "suffix": ""
+          },
+          {
+            "blockId": "regional-permskii-krai-p065-b006",
+            "start": 5,
+            "end": 127,
+            "exact": "находящиеся в социально опасном положении (состоящие на учете в комиссиях по делам несовершеннолетних и\n  защите их прав);",
+            "prefix": "     ",
+            "suffix": ""
+          },
+          {
+            "blockId": "regional-permskii-krai-p065-b007",
+            "start": 6,
+            "end": 143,
+            "exact": "находящиеся на социальном обслуживании на дому в связи с обстоятельствами, приводящими семью к попаданию\n  в социально опасное положение;",
+            "prefix": "      ",
+            "suffix": ""
+          },
+          {
+            "blockId": "regional-permskii-krai-p065-b008",
+            "start": 6,
+            "end": 195,
+            "exact": "находящиеся в группе риска социально опасного положения (состоящие на внутриведомственном учете в\n  образовательной организации, а также на профилактическом учете в органах внутренних дел).",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 65,
+      "pageEnd": 65,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-permskii-krai.pdf#page=65",
+      "sourceSha256": "85765469982dd610a5c7998472ddf363b76086151d736f5362ec27f843455d1c",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-perm-school-goods-assistance-amount",
+      "documentId": "regional-permskii-krai",
+      "versionId": "regional-permskii-krai@layout-canonical-v2-85765469982d-693fc00e8a7b",
+      "anchor": {
+        "id": "anchor-occ-perm-school-goods-assistance-amount",
+        "documentId": "regional-permskii-krai",
+        "versionId": "regional-permskii-krai@layout-canonical-v2-85765469982d-693fc00e8a7b",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-permskii-krai-p065-b004",
+            "start": 6,
+            "end": 240,
+            "exact": "Также нуждающимся семьям предоставляется срочная социальная услуга в виде материальной помощи на\n  приобретение школьных товаров в размере 5000 руб. Материальная помощь оказывается один раз в учебном году\n  семьям следующих категорий:",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 65,
+      "pageEnd": 65,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-permskii-krai.pdf#page=65",
+      "sourceSha256": "85765469982dd610a5c7998472ddf363b76086151d736f5362ec27f843455d1c",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-tambov-newborn-payment-title",
+      "documentId": "regional-tambovskaia-oblast",
+      "versionId": "regional-tambovskaia-oblast@layout-canonical-v2-92e794ebe2d5-0975d47a9058",
+      "anchor": {
+        "id": "anchor-occ-tambov-newborn-payment-title",
+        "documentId": "regional-tambovskaia-oblast",
+        "versionId": "regional-tambovskaia-oblast@layout-canonical-v2-92e794ebe2d5-0975d47a9058",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-tambovskaia-oblast-p066-b003",
+            "start": 6,
+            "end": 570,
+            "exact": "В целях стимулирования рождаемости в регионе действует единовременная денежная выплата на каждого\n  рожденного ребенка в Тамбовской области (далее - единовременная денежная выплата) в размере 5000 рублей,\n  которая распространяется на всех детей, независимо от очередности рождения (Закон Тамбовской области от\n  03.03.2009 N 502-З \"О пособии на ребенка и единовременной денежной выплате на каждого рожденного ребенка в\n  Тамбовской области\"). Единовременная денежная выплата предоставляется на детей, родившихся в период с\n  01.10.2022 до 31.12.2025 включительно.",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 66,
+      "pageEnd": 66,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-tambovskaia-oblast.pdf#page=66",
+      "sourceSha256": "92e794ebe2d5d0ff6a2cff6584efab8c45ec539ce54fe4d6edef387614f4838e",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-tambov-newborn-payment-mechanism",
+      "documentId": "regional-tambovskaia-oblast",
+      "versionId": "regional-tambovskaia-oblast@layout-canonical-v2-92e794ebe2d5-0975d47a9058",
+      "anchor": {
+        "id": "anchor-occ-tambov-newborn-payment-mechanism",
+        "documentId": "regional-tambovskaia-oblast",
+        "versionId": "regional-tambovskaia-oblast@layout-canonical-v2-92e794ebe2d5-0975d47a9058",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-tambovskaia-oblast-p066-b003",
+            "start": 6,
+            "end": 570,
+            "exact": "В целях стимулирования рождаемости в регионе действует единовременная денежная выплата на каждого\n  рожденного ребенка в Тамбовской области (далее - единовременная денежная выплата) в размере 5000 рублей,\n  которая распространяется на всех детей, независимо от очередности рождения (Закон Тамбовской области от\n  03.03.2009 N 502-З \"О пособии на ребенка и единовременной денежной выплате на каждого рожденного ребенка в\n  Тамбовской области\"). Единовременная денежная выплата предоставляется на детей, родившихся в период с\n  01.10.2022 до 31.12.2025 включительно.",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 66,
+      "pageEnd": 66,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-tambovskaia-oblast.pdf#page=66",
+      "sourceSha256": "92e794ebe2d5d0ff6a2cff6584efab8c45ec539ce54fe4d6edef387614f4838e",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-tambov-newborn-payment-eligibility",
+      "documentId": "regional-tambovskaia-oblast",
+      "versionId": "regional-tambovskaia-oblast@layout-canonical-v2-92e794ebe2d5-0975d47a9058",
+      "anchor": {
+        "id": "anchor-occ-tambov-newborn-payment-eligibility",
+        "documentId": "regional-tambovskaia-oblast",
+        "versionId": "regional-tambovskaia-oblast@layout-canonical-v2-92e794ebe2d5-0975d47a9058",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-tambovskaia-oblast-p066-b003",
+            "start": 6,
+            "end": 570,
+            "exact": "В целях стимулирования рождаемости в регионе действует единовременная денежная выплата на каждого\n  рожденного ребенка в Тамбовской области (далее - единовременная денежная выплата) в размере 5000 рублей,\n  которая распространяется на всех детей, независимо от очередности рождения (Закон Тамбовской области от\n  03.03.2009 N 502-З \"О пособии на ребенка и единовременной денежной выплате на каждого рожденного ребенка в\n  Тамбовской области\"). Единовременная денежная выплата предоставляется на детей, родившихся в период с\n  01.10.2022 до 31.12.2025 включительно.",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 66,
+      "pageEnd": 66,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-tambovskaia-oblast.pdf#page=66",
+      "sourceSha256": "92e794ebe2d5d0ff6a2cff6584efab8c45ec539ce54fe4d6edef387614f4838e",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-tambov-newborn-payment-amount",
+      "documentId": "regional-tambovskaia-oblast",
+      "versionId": "regional-tambovskaia-oblast@layout-canonical-v2-92e794ebe2d5-0975d47a9058",
+      "anchor": {
+        "id": "anchor-occ-tambov-newborn-payment-amount",
+        "documentId": "regional-tambovskaia-oblast",
+        "versionId": "regional-tambovskaia-oblast@layout-canonical-v2-92e794ebe2d5-0975d47a9058",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-tambovskaia-oblast-p066-b003",
+            "start": 6,
+            "end": 570,
+            "exact": "В целях стимулирования рождаемости в регионе действует единовременная денежная выплата на каждого\n  рожденного ребенка в Тамбовской области (далее - единовременная денежная выплата) в размере 5000 рублей,\n  которая распространяется на всех детей, независимо от очередности рождения (Закон Тамбовской области от\n  03.03.2009 N 502-З \"О пособии на ребенка и единовременной денежной выплате на каждого рожденного ребенка в\n  Тамбовской области\"). Единовременная денежная выплата предоставляется на детей, родившихся в период с\n  01.10.2022 до 31.12.2025 включительно.",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 66,
+      "pageEnd": 66,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-tambovskaia-oblast.pdf#page=66",
+      "sourceSha256": "92e794ebe2d5d0ff6a2cff6584efab8c45ec539ce54fe4d6edef387614f4838e",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-tambov-large-family-housing-fee-title",
+      "documentId": "regional-tambovskaia-oblast",
+      "versionId": "regional-tambovskaia-oblast@layout-canonical-v2-92e794ebe2d5-0975d47a9058",
+      "anchor": {
+        "id": "anchor-occ-tambov-large-family-housing-fee-title",
+        "documentId": "regional-tambovskaia-oblast",
+        "versionId": "regional-tambovskaia-oblast@layout-canonical-v2-92e794ebe2d5-0975d47a9058",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-tambovskaia-oblast-p066-b006",
+            "start": 6,
+            "end": 461,
+            "exact": "В целях исполнения Указа Президента Российской Федерации от 23.01.2024 N 63 \"О мерах социальной поддержки\n  многодетных семей\" принят Закон Тамбовской области от 11.06.2024 N 505-З \"О мерах социальной поддержки\n  многодетных семей в Тамбовской области\" (далее Закон N 505-З), предусматривающий сохранение ранее\n  предоставляемых мер социальной поддержки и введение новой меры - компенсация расходов в размере 30 процентов\n  суммы платы за жилое помещение.",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 66,
+      "pageEnd": 66,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-tambovskaia-oblast.pdf#page=66",
+      "sourceSha256": "92e794ebe2d5d0ff6a2cff6584efab8c45ec539ce54fe4d6edef387614f4838e",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-tambov-large-family-housing-fee-mechanism",
+      "documentId": "regional-tambovskaia-oblast",
+      "versionId": "regional-tambovskaia-oblast@layout-canonical-v2-92e794ebe2d5-0975d47a9058",
+      "anchor": {
+        "id": "anchor-occ-tambov-large-family-housing-fee-mechanism",
+        "documentId": "regional-tambovskaia-oblast",
+        "versionId": "regional-tambovskaia-oblast@layout-canonical-v2-92e794ebe2d5-0975d47a9058",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-tambovskaia-oblast-p066-b006",
+            "start": 6,
+            "end": 461,
+            "exact": "В целях исполнения Указа Президента Российской Федерации от 23.01.2024 N 63 \"О мерах социальной поддержки\n  многодетных семей\" принят Закон Тамбовской области от 11.06.2024 N 505-З \"О мерах социальной поддержки\n  многодетных семей в Тамбовской области\" (далее Закон N 505-З), предусматривающий сохранение ранее\n  предоставляемых мер социальной поддержки и введение новой меры - компенсация расходов в размере 30 процентов\n  суммы платы за жилое помещение.",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 66,
+      "pageEnd": 66,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-tambovskaia-oblast.pdf#page=66",
+      "sourceSha256": "92e794ebe2d5d0ff6a2cff6584efab8c45ec539ce54fe4d6edef387614f4838e",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-tambov-large-family-housing-fee-eligibility",
+      "documentId": "regional-tambovskaia-oblast",
+      "versionId": "regional-tambovskaia-oblast@layout-canonical-v2-92e794ebe2d5-0975d47a9058",
+      "anchor": {
+        "id": "anchor-occ-tambov-large-family-housing-fee-eligibility",
+        "documentId": "regional-tambovskaia-oblast",
+        "versionId": "regional-tambovskaia-oblast@layout-canonical-v2-92e794ebe2d5-0975d47a9058",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-tambovskaia-oblast-p066-b006",
+            "start": 6,
+            "end": 461,
+            "exact": "В целях исполнения Указа Президента Российской Федерации от 23.01.2024 N 63 \"О мерах социальной поддержки\n  многодетных семей\" принят Закон Тамбовской области от 11.06.2024 N 505-З \"О мерах социальной поддержки\n  многодетных семей в Тамбовской области\" (далее Закон N 505-З), предусматривающий сохранение ранее\n  предоставляемых мер социальной поддержки и введение новой меры - компенсация расходов в размере 30 процентов\n  суммы платы за жилое помещение.",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 66,
+      "pageEnd": 66,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-tambovskaia-oblast.pdf#page=66",
+      "sourceSha256": "92e794ebe2d5d0ff6a2cff6584efab8c45ec539ce54fe4d6edef387614f4838e",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-tambov-large-family-housing-fee-amount",
+      "documentId": "regional-tambovskaia-oblast",
+      "versionId": "regional-tambovskaia-oblast@layout-canonical-v2-92e794ebe2d5-0975d47a9058",
+      "anchor": {
+        "id": "anchor-occ-tambov-large-family-housing-fee-amount",
+        "documentId": "regional-tambovskaia-oblast",
+        "versionId": "regional-tambovskaia-oblast@layout-canonical-v2-92e794ebe2d5-0975d47a9058",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-tambovskaia-oblast-p066-b006",
+            "start": 6,
+            "end": 461,
+            "exact": "В целях исполнения Указа Президента Российской Федерации от 23.01.2024 N 63 \"О мерах социальной поддержки\n  многодетных семей\" принят Закон Тамбовской области от 11.06.2024 N 505-З \"О мерах социальной поддержки\n  многодетных семей в Тамбовской области\" (далее Закон N 505-З), предусматривающий сохранение ранее\n  предоставляемых мер социальной поддержки и введение новой меры - компенсация расходов в размере 30 процентов\n  суммы платы за жилое помещение.",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 66,
+      "pageEnd": 66,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-tambovskaia-oblast.pdf#page=66",
+      "sourceSha256": "92e794ebe2d5d0ff6a2cff6584efab8c45ec539ce54fe4d6edef387614f4838e",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-tambov-student-budget-transfer-title",
+      "documentId": "regional-tambovskaia-oblast",
+      "versionId": "regional-tambovskaia-oblast@layout-canonical-v2-92e794ebe2d5-0975d47a9058",
+      "anchor": {
+        "id": "anchor-occ-tambov-student-budget-transfer-title",
+        "documentId": "regional-tambovskaia-oblast",
+        "versionId": "regional-tambovskaia-oblast@layout-canonical-v2-92e794ebe2d5-0975d47a9058",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-tambovskaia-oblast-p086-b004",
+            "start": 19,
+            "end": 724,
+            "exact": "4. Создание условий для успешного совмещения воспитания детей и получения обра\n                                                                  Действующие мероприятия\n  4.1. Перевод студенток, 02            Министерство     Поддержка молодых 30.08.2021 31.12.2027\n       обучающихся по                   образования и    студенческих семей\n       договорам об                     науки Тамбовской\n       оказании платных                 области\n       образовательных\n       услуг в организациях\n       среднего\n       профессионального\n       образования (далее -\n       СПО), родивших\n       ребенка во время\n       обучения, на\n       обучение за счет\n       средств бюджета\n       Тамбовской области",
+            "prefix": "                   ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 86,
+      "pageEnd": 86,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-tambovskaia-oblast.pdf#page=86",
+      "sourceSha256": "92e794ebe2d5d0ff6a2cff6584efab8c45ec539ce54fe4d6edef387614f4838e",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-tambov-student-budget-transfer-mechanism",
+      "documentId": "regional-tambovskaia-oblast",
+      "versionId": "regional-tambovskaia-oblast@layout-canonical-v2-92e794ebe2d5-0975d47a9058",
+      "anchor": {
+        "id": "anchor-occ-tambov-student-budget-transfer-mechanism",
+        "documentId": "regional-tambovskaia-oblast",
+        "versionId": "regional-tambovskaia-oblast@layout-canonical-v2-92e794ebe2d5-0975d47a9058",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-tambovskaia-oblast-p086-b004",
+            "start": 19,
+            "end": 724,
+            "exact": "4. Создание условий для успешного совмещения воспитания детей и получения обра\n                                                                  Действующие мероприятия\n  4.1. Перевод студенток, 02            Министерство     Поддержка молодых 30.08.2021 31.12.2027\n       обучающихся по                   образования и    студенческих семей\n       договорам об                     науки Тамбовской\n       оказании платных                 области\n       образовательных\n       услуг в организациях\n       среднего\n       профессионального\n       образования (далее -\n       СПО), родивших\n       ребенка во время\n       обучения, на\n       обучение за счет\n       средств бюджета\n       Тамбовской области",
+            "prefix": "                   ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 86,
+      "pageEnd": 86,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-tambovskaia-oblast.pdf#page=86",
+      "sourceSha256": "92e794ebe2d5d0ff6a2cff6584efab8c45ec539ce54fe4d6edef387614f4838e",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-tambov-student-budget-transfer-eligibility",
+      "documentId": "regional-tambovskaia-oblast",
+      "versionId": "regional-tambovskaia-oblast@layout-canonical-v2-92e794ebe2d5-0975d47a9058",
+      "anchor": {
+        "id": "anchor-occ-tambov-student-budget-transfer-eligibility",
+        "documentId": "regional-tambovskaia-oblast",
+        "versionId": "regional-tambovskaia-oblast@layout-canonical-v2-92e794ebe2d5-0975d47a9058",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-tambovskaia-oblast-p086-b004",
+            "start": 19,
+            "end": 724,
+            "exact": "4. Создание условий для успешного совмещения воспитания детей и получения обра\n                                                                  Действующие мероприятия\n  4.1. Перевод студенток, 02            Министерство     Поддержка молодых 30.08.2021 31.12.2027\n       обучающихся по                   образования и    студенческих семей\n       договорам об                     науки Тамбовской\n       оказании платных                 области\n       образовательных\n       услуг в организациях\n       среднего\n       профессионального\n       образования (далее -\n       СПО), родивших\n       ребенка во время\n       обучения, на\n       обучение за счет\n       средств бюджета\n       Тамбовской области",
+            "prefix": "                   ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 86,
+      "pageEnd": 86,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-tambovskaia-oblast.pdf#page=86",
+      "sourceSha256": "92e794ebe2d5d0ff6a2cff6584efab8c45ec539ce54fe4d6edef387614f4838e",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-tambov-student-family-dormitory-title",
+      "documentId": "regional-tambovskaia-oblast",
+      "versionId": "regional-tambovskaia-oblast@layout-canonical-v2-92e794ebe2d5-0975d47a9058",
+      "anchor": {
+        "id": "anchor-occ-tambov-student-family-dormitory-title",
+        "documentId": "regional-tambovskaia-oblast",
+        "versionId": "regional-tambovskaia-oblast@layout-canonical-v2-92e794ebe2d5-0975d47a9058",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-tambovskaia-oblast-p086-b005",
+            "start": 2,
+            "end": 451,
+            "exact": "4.2. Предоставление      02                                  Министерство                   Поддержка молодых                  30.08.2021 31.12.2027\n       родителям-студентам                                     образования и                  студенческих семей\n       (СПО), имеющим                                          науки Тамбовской\n       детей, комнаты в                                        области\n       студенческом\n       общежитии",
+            "prefix": "  ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 86,
+      "pageEnd": 86,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-tambovskaia-oblast.pdf#page=86",
+      "sourceSha256": "92e794ebe2d5d0ff6a2cff6584efab8c45ec539ce54fe4d6edef387614f4838e",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-tambov-student-family-dormitory-mechanism",
+      "documentId": "regional-tambovskaia-oblast",
+      "versionId": "regional-tambovskaia-oblast@layout-canonical-v2-92e794ebe2d5-0975d47a9058",
+      "anchor": {
+        "id": "anchor-occ-tambov-student-family-dormitory-mechanism",
+        "documentId": "regional-tambovskaia-oblast",
+        "versionId": "regional-tambovskaia-oblast@layout-canonical-v2-92e794ebe2d5-0975d47a9058",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-tambovskaia-oblast-p086-b005",
+            "start": 2,
+            "end": 451,
+            "exact": "4.2. Предоставление      02                                  Министерство                   Поддержка молодых                  30.08.2021 31.12.2027\n       родителям-студентам                                     образования и                  студенческих семей\n       (СПО), имеющим                                          науки Тамбовской\n       детей, комнаты в                                        области\n       студенческом\n       общежитии",
+            "prefix": "  ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 86,
+      "pageEnd": 86,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-tambovskaia-oblast.pdf#page=86",
+      "sourceSha256": "92e794ebe2d5d0ff6a2cff6584efab8c45ec539ce54fe4d6edef387614f4838e",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-tambov-student-family-dormitory-eligibility",
+      "documentId": "regional-tambovskaia-oblast",
+      "versionId": "regional-tambovskaia-oblast@layout-canonical-v2-92e794ebe2d5-0975d47a9058",
+      "anchor": {
+        "id": "anchor-occ-tambov-student-family-dormitory-eligibility",
+        "documentId": "regional-tambovskaia-oblast",
+        "versionId": "regional-tambovskaia-oblast@layout-canonical-v2-92e794ebe2d5-0975d47a9058",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-tambovskaia-oblast-p086-b005",
+            "start": 2,
+            "end": 451,
+            "exact": "4.2. Предоставление      02                                  Министерство                   Поддержка молодых                  30.08.2021 31.12.2027\n       родителям-студентам                                     образования и                  студенческих семей\n       (СПО), имеющим                                          науки Тамбовской\n       детей, комнаты в                                        области\n       студенческом\n       общежитии",
+            "prefix": "  ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 86,
+      "pageEnd": 86,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-tambovskaia-oblast.pdf#page=86",
+      "sourceSha256": "92e794ebe2d5d0ff6a2cff6584efab8c45ec539ce54fe4d6edef387614f4838e",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-sakhalin-private-childcare-title",
+      "documentId": "regional-sakhalinskaia-oblast",
+      "versionId": "regional-sakhalinskaia-oblast@layout-canonical-v2-a1eff2fec702-95fe9bf1a33d",
+      "anchor": {
+        "id": "anchor-occ-sakhalin-private-childcare-title",
+        "documentId": "regional-sakhalinskaia-oblast",
+        "versionId": "regional-sakhalinskaia-oblast@layout-canonical-v2-a1eff2fec702-95fe9bf1a33d",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-sakhalinskaia-oblast-p037-b010",
+            "start": 6,
+            "end": 643,
+            "exact": "7. Созданы условия для доступности дошкольного образования. Родителям (законными представителями) детей,\n  посещающих частные организации, осуществляющие присмотр и уход за детьми, предоставляется мера социальной\n  поддержки в виде компенсации части платы за присмотр и уход за детьми в возрасте от двух месяцев до семи лет,\n  посещающими находящиеся на территории Сахалинской области частные организации, осуществляющие присмотр и\n  уход за детьми. Компенсация предоставляется в размере 50 процентов от установленного частной организацией\n  размера платы за присмотр и уход за детьми, но не более 10000 рублей на одного ребенка в месяц.",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 37,
+      "pageEnd": 37,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-sakhalinskaia-oblast.pdf#page=37",
+      "sourceSha256": "a1eff2fec7024e38660f60c23a903c19c652c3381c23d2315b2d87288b1095b5",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-sakhalin-private-childcare-mechanism",
+      "documentId": "regional-sakhalinskaia-oblast",
+      "versionId": "regional-sakhalinskaia-oblast@layout-canonical-v2-a1eff2fec702-95fe9bf1a33d",
+      "anchor": {
+        "id": "anchor-occ-sakhalin-private-childcare-mechanism",
+        "documentId": "regional-sakhalinskaia-oblast",
+        "versionId": "regional-sakhalinskaia-oblast@layout-canonical-v2-a1eff2fec702-95fe9bf1a33d",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-sakhalinskaia-oblast-p037-b010",
+            "start": 6,
+            "end": 643,
+            "exact": "7. Созданы условия для доступности дошкольного образования. Родителям (законными представителями) детей,\n  посещающих частные организации, осуществляющие присмотр и уход за детьми, предоставляется мера социальной\n  поддержки в виде компенсации части платы за присмотр и уход за детьми в возрасте от двух месяцев до семи лет,\n  посещающими находящиеся на территории Сахалинской области частные организации, осуществляющие присмотр и\n  уход за детьми. Компенсация предоставляется в размере 50 процентов от установленного частной организацией\n  размера платы за присмотр и уход за детьми, но не более 10000 рублей на одного ребенка в месяц.",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 37,
+      "pageEnd": 37,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-sakhalinskaia-oblast.pdf#page=37",
+      "sourceSha256": "a1eff2fec7024e38660f60c23a903c19c652c3381c23d2315b2d87288b1095b5",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-sakhalin-private-childcare-eligibility",
+      "documentId": "regional-sakhalinskaia-oblast",
+      "versionId": "regional-sakhalinskaia-oblast@layout-canonical-v2-a1eff2fec702-95fe9bf1a33d",
+      "anchor": {
+        "id": "anchor-occ-sakhalin-private-childcare-eligibility",
+        "documentId": "regional-sakhalinskaia-oblast",
+        "versionId": "regional-sakhalinskaia-oblast@layout-canonical-v2-a1eff2fec702-95fe9bf1a33d",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-sakhalinskaia-oblast-p037-b010",
+            "start": 6,
+            "end": 643,
+            "exact": "7. Созданы условия для доступности дошкольного образования. Родителям (законными представителями) детей,\n  посещающих частные организации, осуществляющие присмотр и уход за детьми, предоставляется мера социальной\n  поддержки в виде компенсации части платы за присмотр и уход за детьми в возрасте от двух месяцев до семи лет,\n  посещающими находящиеся на территории Сахалинской области частные организации, осуществляющие присмотр и\n  уход за детьми. Компенсация предоставляется в размере 50 процентов от установленного частной организацией\n  размера платы за присмотр и уход за детьми, но не более 10000 рублей на одного ребенка в месяц.",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 37,
+      "pageEnd": 37,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-sakhalinskaia-oblast.pdf#page=37",
+      "sourceSha256": "a1eff2fec7024e38660f60c23a903c19c652c3381c23d2315b2d87288b1095b5",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-sakhalin-private-childcare-amount",
+      "documentId": "regional-sakhalinskaia-oblast",
+      "versionId": "regional-sakhalinskaia-oblast@layout-canonical-v2-a1eff2fec702-95fe9bf1a33d",
+      "anchor": {
+        "id": "anchor-occ-sakhalin-private-childcare-amount",
+        "documentId": "regional-sakhalinskaia-oblast",
+        "versionId": "regional-sakhalinskaia-oblast@layout-canonical-v2-a1eff2fec702-95fe9bf1a33d",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-sakhalinskaia-oblast-p037-b010",
+            "start": 6,
+            "end": 643,
+            "exact": "7. Созданы условия для доступности дошкольного образования. Родителям (законными представителями) детей,\n  посещающих частные организации, осуществляющие присмотр и уход за детьми, предоставляется мера социальной\n  поддержки в виде компенсации части платы за присмотр и уход за детьми в возрасте от двух месяцев до семи лет,\n  посещающими находящиеся на территории Сахалинской области частные организации, осуществляющие присмотр и\n  уход за детьми. Компенсация предоставляется в размере 50 процентов от установленного частной организацией\n  размера платы за присмотр и уход за детьми, но не более 10000 рублей на одного ребенка в месяц.",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 37,
+      "pageEnd": 37,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-sakhalinskaia-oblast.pdf#page=37",
+      "sourceSha256": "a1eff2fec7024e38660f60c23a903c19c652c3381c23d2315b2d87288b1095b5",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-sakhalin-kindergarten-compensation-title",
+      "documentId": "regional-sakhalinskaia-oblast",
+      "versionId": "regional-sakhalinskaia-oblast@layout-canonical-v2-a1eff2fec702-95fe9bf1a33d",
+      "anchor": {
+        "id": "anchor-occ-sakhalin-kindergarten-compensation-title",
+        "documentId": "regional-sakhalinskaia-oblast",
+        "versionId": "regional-sakhalinskaia-oblast@layout-canonical-v2-a1eff2fec702-95fe9bf1a33d",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-sakhalinskaia-oblast-p037-b011",
+            "start": 6,
+            "end": 488,
+            "exact": "Кроме этого, предусмотрено предоставление материальной поддержки воспитания и обучения детей, в том числе\n  из многодетных семей, посещающих дошкольные образовательные организации в виде выплаты компенсации\n  родителям или законным представителям: на первого ребенка в семье, посещающего образовательные организации, в\n  размере 20% среднего размера родительской платы, на второго ребенка в семье - в размере 50% и на третьего ребенка\n  и последующих детей в семье - в размере 100%.",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 37,
+      "pageEnd": 37,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-sakhalinskaia-oblast.pdf#page=37",
+      "sourceSha256": "a1eff2fec7024e38660f60c23a903c19c652c3381c23d2315b2d87288b1095b5",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-sakhalin-kindergarten-compensation-mechanism",
+      "documentId": "regional-sakhalinskaia-oblast",
+      "versionId": "regional-sakhalinskaia-oblast@layout-canonical-v2-a1eff2fec702-95fe9bf1a33d",
+      "anchor": {
+        "id": "anchor-occ-sakhalin-kindergarten-compensation-mechanism",
+        "documentId": "regional-sakhalinskaia-oblast",
+        "versionId": "regional-sakhalinskaia-oblast@layout-canonical-v2-a1eff2fec702-95fe9bf1a33d",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-sakhalinskaia-oblast-p037-b011",
+            "start": 6,
+            "end": 488,
+            "exact": "Кроме этого, предусмотрено предоставление материальной поддержки воспитания и обучения детей, в том числе\n  из многодетных семей, посещающих дошкольные образовательные организации в виде выплаты компенсации\n  родителям или законным представителям: на первого ребенка в семье, посещающего образовательные организации, в\n  размере 20% среднего размера родительской платы, на второго ребенка в семье - в размере 50% и на третьего ребенка\n  и последующих детей в семье - в размере 100%.",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 37,
+      "pageEnd": 37,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-sakhalinskaia-oblast.pdf#page=37",
+      "sourceSha256": "a1eff2fec7024e38660f60c23a903c19c652c3381c23d2315b2d87288b1095b5",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-sakhalin-kindergarten-compensation-eligibility",
+      "documentId": "regional-sakhalinskaia-oblast",
+      "versionId": "regional-sakhalinskaia-oblast@layout-canonical-v2-a1eff2fec702-95fe9bf1a33d",
+      "anchor": {
+        "id": "anchor-occ-sakhalin-kindergarten-compensation-eligibility",
+        "documentId": "regional-sakhalinskaia-oblast",
+        "versionId": "regional-sakhalinskaia-oblast@layout-canonical-v2-a1eff2fec702-95fe9bf1a33d",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-sakhalinskaia-oblast-p037-b011",
+            "start": 6,
+            "end": 488,
+            "exact": "Кроме этого, предусмотрено предоставление материальной поддержки воспитания и обучения детей, в том числе\n  из многодетных семей, посещающих дошкольные образовательные организации в виде выплаты компенсации\n  родителям или законным представителям: на первого ребенка в семье, посещающего образовательные организации, в\n  размере 20% среднего размера родительской платы, на второго ребенка в семье - в размере 50% и на третьего ребенка\n  и последующих детей в семье - в размере 100%.",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 37,
+      "pageEnd": 37,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-sakhalinskaia-oblast.pdf#page=37",
+      "sourceSha256": "a1eff2fec7024e38660f60c23a903c19c652c3381c23d2315b2d87288b1095b5",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-sakhalin-kindergarten-compensation-amount",
+      "documentId": "regional-sakhalinskaia-oblast",
+      "versionId": "regional-sakhalinskaia-oblast@layout-canonical-v2-a1eff2fec702-95fe9bf1a33d",
+      "anchor": {
+        "id": "anchor-occ-sakhalin-kindergarten-compensation-amount",
+        "documentId": "regional-sakhalinskaia-oblast",
+        "versionId": "regional-sakhalinskaia-oblast@layout-canonical-v2-a1eff2fec702-95fe9bf1a33d",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-sakhalinskaia-oblast-p037-b011",
+            "start": 6,
+            "end": 488,
+            "exact": "Кроме этого, предусмотрено предоставление материальной поддержки воспитания и обучения детей, в том числе\n  из многодетных семей, посещающих дошкольные образовательные организации в виде выплаты компенсации\n  родителям или законным представителям: на первого ребенка в семье, посещающего образовательные организации, в\n  размере 20% среднего размера родительской платы, на второго ребенка в семье - в размере 50% и на третьего ребенка\n  и последующих детей в семье - в размере 100%.",
+            "prefix": "      ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 37,
+      "pageEnd": 37,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-sakhalinskaia-oblast.pdf#page=37",
+      "sourceSha256": "a1eff2fec7024e38660f60c23a903c19c652c3381c23d2315b2d87288b1095b5",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-sakhalin-rental-house-compensation-title",
+      "documentId": "regional-sakhalinskaia-oblast",
+      "versionId": "regional-sakhalinskaia-oblast@layout-canonical-v2-a1eff2fec702-95fe9bf1a33d",
+      "anchor": {
+        "id": "anchor-occ-sakhalin-rental-house-compensation-title",
+        "documentId": "regional-sakhalinskaia-oblast",
+        "versionId": "regional-sakhalinskaia-oblast@layout-canonical-v2-a1eff2fec702-95fe9bf1a33d",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-sakhalinskaia-oblast-p037-b008",
+            "start": 5,
+            "end": 275,
+            "exact": "5. В области активно строится арендное жилье. Для отдельных категорий семей с детьми (молодые, многодетные\n  семьи, семьи с детьми-инвалидами) установлена компенсация расходов по оплате ежемесячных взносов за аренду\n  жилья в многоквартирном арендном доме в размере 50%.",
+            "prefix": "     ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 37,
+      "pageEnd": 37,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-sakhalinskaia-oblast.pdf#page=37",
+      "sourceSha256": "a1eff2fec7024e38660f60c23a903c19c652c3381c23d2315b2d87288b1095b5",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-sakhalin-rental-house-compensation-mechanism",
+      "documentId": "regional-sakhalinskaia-oblast",
+      "versionId": "regional-sakhalinskaia-oblast@layout-canonical-v2-a1eff2fec702-95fe9bf1a33d",
+      "anchor": {
+        "id": "anchor-occ-sakhalin-rental-house-compensation-mechanism",
+        "documentId": "regional-sakhalinskaia-oblast",
+        "versionId": "regional-sakhalinskaia-oblast@layout-canonical-v2-a1eff2fec702-95fe9bf1a33d",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-sakhalinskaia-oblast-p037-b008",
+            "start": 5,
+            "end": 275,
+            "exact": "5. В области активно строится арендное жилье. Для отдельных категорий семей с детьми (молодые, многодетные\n  семьи, семьи с детьми-инвалидами) установлена компенсация расходов по оплате ежемесячных взносов за аренду\n  жилья в многоквартирном арендном доме в размере 50%.",
+            "prefix": "     ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 37,
+      "pageEnd": 37,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-sakhalinskaia-oblast.pdf#page=37",
+      "sourceSha256": "a1eff2fec7024e38660f60c23a903c19c652c3381c23d2315b2d87288b1095b5",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-sakhalin-rental-house-compensation-eligibility",
+      "documentId": "regional-sakhalinskaia-oblast",
+      "versionId": "regional-sakhalinskaia-oblast@layout-canonical-v2-a1eff2fec702-95fe9bf1a33d",
+      "anchor": {
+        "id": "anchor-occ-sakhalin-rental-house-compensation-eligibility",
+        "documentId": "regional-sakhalinskaia-oblast",
+        "versionId": "regional-sakhalinskaia-oblast@layout-canonical-v2-a1eff2fec702-95fe9bf1a33d",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-sakhalinskaia-oblast-p037-b008",
+            "start": 5,
+            "end": 275,
+            "exact": "5. В области активно строится арендное жилье. Для отдельных категорий семей с детьми (молодые, многодетные\n  семьи, семьи с детьми-инвалидами) установлена компенсация расходов по оплате ежемесячных взносов за аренду\n  жилья в многоквартирном арендном доме в размере 50%.",
+            "prefix": "     ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 37,
+      "pageEnd": 37,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-sakhalinskaia-oblast.pdf#page=37",
+      "sourceSha256": "a1eff2fec7024e38660f60c23a903c19c652c3381c23d2315b2d87288b1095b5",
+      "humanReviewRequired": true
+    },
+    {
+      "id": "occ-sakhalin-rental-house-compensation-amount",
+      "documentId": "regional-sakhalinskaia-oblast",
+      "versionId": "regional-sakhalinskaia-oblast@layout-canonical-v2-a1eff2fec702-95fe9bf1a33d",
+      "anchor": {
+        "id": "anchor-occ-sakhalin-rental-house-compensation-amount",
+        "documentId": "regional-sakhalinskaia-oblast",
+        "versionId": "regional-sakhalinskaia-oblast@layout-canonical-v2-a1eff2fec702-95fe9bf1a33d",
+        "normalizationVersion": "unicode-nfc-lf-v1",
+        "spans": [
+          {
+            "blockId": "regional-sakhalinskaia-oblast-p037-b008",
+            "start": 5,
+            "end": 275,
+            "exact": "5. В области активно строится арендное жилье. Для отдельных категорий семей с детьми (молодые, многодетные\n  семьи, семьи с детьми-инвалидами) установлена компенсация расходов по оплате ежемесячных взносов за аренду\n  жилья в многоквартирном арендном доме в размере 50%.",
+            "prefix": "     ",
+            "suffix": ""
+          }
+        ]
+      },
+      "reviewStatus": "candidate",
+      "note": "Точный фрагмент сохранённой редакции. Семантическое соответствие полю ожидает проверки преподавателем.",
+      "sourceQuoteValidation": "exact-match",
+      "pageStart": 37,
+      "pageEnd": 37,
+      "sourceUrl": "https://raw.githubusercontent.com/Arseniy24RUS/family-support/5dde46ae663b7652a448ec982585e64d61a26a61/site/documents/strategies/regional/regional-sakhalinskaia-oblast.pdf#page=37",
+      "sourceSha256": "a1eff2fec7024e38660f60c23a903c19c652c3381c23d2315b2d87288b1095b5",
+      "humanReviewRequired": true
+    }
+  ],
+  "catalogComparisons": [
+    {
+      "variantId": "mordovia-kindergarten-compensation",
+      "catalogId": "sovetmam:mord-004",
+      "relation": "partial",
+      "note": "Каталог указывает только20/50/70%. Программа содержит диапазоны20–29/50–72/70–100. Не заменять диапазоны значениями каталога.",
+      "reviewStatus": "candidate",
+      "catalogSnapshot": {
+        "id": "sovetmam:mord-004",
+        "title": "Компенсация родительской платы за детский сад (Республика Мордовия)",
+        "level": "regional",
+        "region": "Республика Мордовия",
+        "category": "Образование",
+        "summary": "Родителям компенсируют часть платы за присмотр и уход за детьми в детских садах.",
+        "benefit": "20 % / 50 % / 70 % платы (на 1-го / 2-го / 3-го ребёнка)",
+        "source": "sovetmam",
+        "source_name": "Шпаргалка для родителей — Совет матерей",
+        "source_url": "https://app.sovetmam.ru/catalog/mord-004",
+        "fetched_at": "2026-10-01T06:02:44.718Z",
+        "content_hash": "62eb6206daa8e7a9e3c9cc60ebc8a5ff83ee4a0e1ab75e0be6e5a7f995305be8",
+        "detail": {
+          "id": "sovetmam:mord-004",
+          "steps": [
+            "Подать заявление в детский сад"
+          ],
+          "documents": [
+            "Паспорт",
+            "Свидетельства о рождении детей",
+            "Договор с детским садом"
+          ],
+          "notes": [
+            "Размер компенсации растёт с числом детей."
+          ],
+          "official_links": []
+        },
+        "programCitationStatus": "unverified"
+      },
+      "catalogProvenance": {
+        "repository": "Arseniy24RUS/family-support",
+        "commit": "5dde46ae663b7652a448ec982585e64d61a26a61",
+        "path": "site/data/measures.json",
+        "url": "https://github.com/Arseniy24RUS/family-support/blob/5dde46ae663b7652a448ec982585e64d61a26a61/site/data/measures.json",
+        "sha256": "e1a155a3a6d92aca8f2f4a3323503974c486e86914b378ba5edb2a899fc284f6",
+        "originalSource": "https://app.sovetmam.ru/catalog",
+        "fetchedAt": "2026-10-01T06:02:44.718Z",
+        "status": "secondary-catalog-not-verified-program-citation"
+      },
+      "notUsedAsProgramEvidence": true
+    },
+    {
+      "variantId": "mordovia-mortgage-repayment",
+      "catalogId": "sovetmam:mord-003",
+      "relation": "mechanism-only",
+      "note": "Каталог описывает общий механизм без процентов и двух групп условий; сумма и право подтверждаются только цитатами программы этой редакции.",
+      "reviewStatus": "candidate",
+      "catalogSnapshot": {
+        "id": "sovetmam:mord-003",
+        "title": "Погашение ипотеки при рождении ребёнка (Республика Мордовия)",
+        "level": "regional",
+        "region": "Республика Мордовия",
+        "category": "Жильё и ипотека",
+        "summary": "При рождении или усыновлении ребёнка и последующих детей семье помогают погасить ипотечный жилищный кредит (в том числе рефинансированный).",
+        "benefit": "Выплата на погашение ипотеки",
+        "source": "sovetmam",
+        "source_name": "Шпаргалка для родителей — Совет матерей",
+        "source_url": "https://app.sovetmam.ru/catalog/mord-003",
+        "fetched_at": "2026-10-01T06:02:44.718Z",
+        "content_hash": "3adce14e9fa026b1f106c94dcbe48585ebd01ad603613eb068e93ccbc0c3b961",
+        "detail": {
+          "id": "sovetmam:mord-003",
+          "steps": [
+            "Подать заявление в орган социальной защиты населения по месту жительства, через МФЦ или на Госуслугах"
+          ],
+          "documents": [
+            "Паспорт",
+            "Свидетельства о рождении детей",
+            "Ипотечный договор"
+          ],
+          "notes": [
+            "В том числе на уже имеющихся детей."
+          ],
+          "official_links": []
+        },
+        "programCitationStatus": "unverified"
+      },
+      "catalogProvenance": {
+        "repository": "Arseniy24RUS/family-support",
+        "commit": "5dde46ae663b7652a448ec982585e64d61a26a61",
+        "path": "site/data/measures.json",
+        "url": "https://github.com/Arseniy24RUS/family-support/blob/5dde46ae663b7652a448ec982585e64d61a26a61/site/data/measures.json",
+        "sha256": "e1a155a3a6d92aca8f2f4a3323503974c486e86914b378ba5edb2a899fc284f6",
+        "originalSource": "https://app.sovetmam.ru/catalog",
+        "fetchedAt": "2026-10-01T06:02:44.718Z",
+        "status": "secondary-catalog-not-verified-program-citation"
+      },
+      "notUsedAsProgramEvidence": true
+    },
+    {
+      "variantId": "mordovia-first-child-proposal",
+      "catalogId": "sovetmam:mord-001",
+      "relation": "different-conditions-and-amount",
+      "note": "Каталог описывает100000руб. для рождений01.07.2025–01.07.2026; фрагмент программы предлагает150000руб. до25лет. Это не взаимозаменяемые утверждения; связь лишь тематическая, назначение и редакцию надо проверить.",
+      "reviewStatus": "candidate",
+      "catalogSnapshot": {
+        "id": "sovetmam:mord-001",
+        "title": "Выплата при рождении первого ребёнка (Республика Мордовия)",
+        "level": "regional",
+        "region": "Республика Мордовия",
+        "category": "Выплаты и пособия",
+        "summary": "Женщинам, родившим первого ребёнка в период с 1 июля 2025 года по 1 июля 2026 года, выплачивают единовременную выплату.",
+        "benefit": "100 000 ₽",
+        "source": "sovetmam",
+        "source_name": "Шпаргалка для родителей — Совет матерей",
+        "source_url": "https://app.sovetmam.ru/catalog/mord-001",
+        "fetched_at": "2026-10-01T06:02:44.718Z",
+        "content_hash": "19043c59e02b4d20c2627349ce09057d712d6b5e32cb82d9ed48fddead66177b",
+        "detail": {
+          "id": "sovetmam:mord-001",
+          "steps": [
+            "Подать заявление в орган социальной защиты населения по месту жительства, через МФЦ или на Госуслугах"
+          ],
+          "documents": [
+            "Паспорт матери",
+            "Свидетельство о рождении первого ребёнка"
+          ],
+          "notes": [
+            "Для детей, рождённых с 1 июля 2025 по 1 июля 2026 года."
+          ],
+          "official_links": []
+        },
+        "programCitationStatus": "unverified"
+      },
+      "catalogProvenance": {
+        "repository": "Arseniy24RUS/family-support",
+        "commit": "5dde46ae663b7652a448ec982585e64d61a26a61",
+        "path": "site/data/measures.json",
+        "url": "https://github.com/Arseniy24RUS/family-support/blob/5dde46ae663b7652a448ec982585e64d61a26a61/site/data/measures.json",
+        "sha256": "e1a155a3a6d92aca8f2f4a3323503974c486e86914b378ba5edb2a899fc284f6",
+        "originalSource": "https://app.sovetmam.ru/catalog",
+        "fetchedAt": "2026-10-01T06:02:44.718Z",
+        "status": "secondary-catalog-not-verified-program-citation"
+      },
+      "notUsedAsProgramEvidence": true
+    },
+    {
+      "variantId": "perm-school-goods-assistance",
+      "catalogId": "sovetmam:perm-009",
+      "relation": "possibly-distinct-measure",
+      "note": "В каталоге3500руб. на школьную форму многодетным малоимущим, в программе5000руб. на школьные товары нескольким категориям. Автоматическое объединение запрещено до проверки основания.",
+      "reviewStatus": "candidate",
+      "catalogSnapshot": {
+        "id": "sovetmam:perm-009",
+        "title": "Материальная помощь на школьную форму многодетным малоимущим семьям (Пермский край)",
+        "level": "regional",
+        "region": "Пермский край",
+        "category": "Образование",
+        "summary": "Региональная единовременная выплата к учебному году на каждого школьника из многодетных малоимущих семей.",
+        "benefit": "3 500 руб. на каждого школьника (2025)",
+        "source": "sovetmam",
+        "source_name": "Шпаргалка для родителей — Совет матерей",
+        "source_url": "https://app.sovetmam.ru/catalog/perm-009",
+        "fetched_at": "2026-10-01T06:02:44.718Z",
+        "content_hash": "3806b6e9cec7ee49725efa2ff891f521b03d4b58b5bdf85f17fb8a5c5d335974",
+        "detail": {
+          "id": "sovetmam:perm-009",
+          "steps": [
+            "Подать заявление в территориальное управление Минтруда и соцразвития или через МФЦ",
+            "Подтвердить статус многодетной малоимущей семьи"
+          ],
+          "documents": [
+            "Паспорт заявителя",
+            "Удостоверение многодетной семьи",
+            "Документ о признании семьи малоимущей",
+            "Справка об обучении ребёнка"
+          ],
+          "notes": [],
+          "official_links": []
+        },
+        "programCitationStatus": "unverified"
+      },
+      "catalogProvenance": {
+        "repository": "Arseniy24RUS/family-support",
+        "commit": "5dde46ae663b7652a448ec982585e64d61a26a61",
+        "path": "site/data/measures.json",
+        "url": "https://github.com/Arseniy24RUS/family-support/blob/5dde46ae663b7652a448ec982585e64d61a26a61/site/data/measures.json",
+        "sha256": "e1a155a3a6d92aca8f2f4a3323503974c486e86914b378ba5edb2a899fc284f6",
+        "originalSource": "https://app.sovetmam.ru/catalog",
+        "fetchedAt": "2026-10-01T06:02:44.718Z",
+        "status": "secondary-catalog-not-verified-program-citation"
+      },
+      "notUsedAsProgramEvidence": true
+    },
+    {
+      "variantId": "tambov-newborn-payment",
+      "catalogId": "sovetmam:tamb-003",
+      "relation": "mechanism-only",
+      "note": "В каталоге отсутствуют сумма5000руб. и точный период рождений. Они происходят из архивной программы, а не из карточки каталога.",
+      "reviewStatus": "candidate",
+      "catalogSnapshot": {
+        "id": "sovetmam:tamb-003",
+        "title": "Выплата при рождении ребёнка (Тамбовская область)",
+        "level": "regional",
+        "region": "Тамбовская область",
+        "category": "Выплаты и пособия",
+        "summary": "При рождении ребёнка семье выплачивают единовременную выплату (на каждого рождённого ребёнка, а отдельным категориям — дополнительно).",
+        "benefit": "Единовременная выплата на каждого ребёнка",
+        "source": "sovetmam",
+        "source_name": "Шпаргалка для родителей — Совет матерей",
+        "source_url": "https://app.sovetmam.ru/catalog/tamb-003",
+        "fetched_at": "2026-10-01T06:02:44.718Z",
+        "content_hash": "16fe3a515a4f0d0179e768d4764e2ba816548bc64ce095e21c3f6706577d5e30",
+        "detail": {
+          "id": "sovetmam:tamb-003",
+          "steps": [
+            "Подать заявление в орган социальной защиты населения по месту жительства, через МФЦ или на Госуслугах"
+          ],
+          "documents": [
+            "Паспорт заявителя",
+            "Свидетельство о рождении ребёнка",
+            "Сведения о доходах семьи (при оценке нуждаемости)"
+          ],
+          "notes": [
+            "Отдельным категориям граждан — дополнительная выплата."
+          ],
+          "official_links": []
+        },
+        "programCitationStatus": "unverified"
+      },
+      "catalogProvenance": {
+        "repository": "Arseniy24RUS/family-support",
+        "commit": "5dde46ae663b7652a448ec982585e64d61a26a61",
+        "path": "site/data/measures.json",
+        "url": "https://github.com/Arseniy24RUS/family-support/blob/5dde46ae663b7652a448ec982585e64d61a26a61/site/data/measures.json",
+        "sha256": "e1a155a3a6d92aca8f2f4a3323503974c486e86914b378ba5edb2a899fc284f6",
+        "originalSource": "https://app.sovetmam.ru/catalog",
+        "fetchedAt": "2026-10-01T06:02:44.718Z",
+        "status": "secondary-catalog-not-verified-program-citation"
+      },
+      "notUsedAsProgramEvidence": true
+    },
+    {
+      "variantId": "tambov-large-family-housing-fee",
+      "catalogId": "sovetmam:zhku-mnogodetnym-tambov",
+      "relation": "different-calculation-base",
+      "note": "Карточка каталога про30% коммунальных услуг. Цитата программы про30% платы за жилое помещение. Одинаковый процент не доказывает тождество меры.",
+      "reviewStatus": "candidate",
+      "catalogSnapshot": {
+        "id": "sovetmam:zhku-mnogodetnym-tambov",
+        "title": "Компенсация 30 % ЖКУ многодетным (Тамбовская область)",
+        "level": "regional",
+        "region": "Тамбовская область",
+        "category": "Жильё и ипотека",
+        "summary": "Многодетным семьям области компенсируют 30 % платы за воду, свет, тепло, газ и водоотведение. Проверки дохода для этой льготы нет — достаточно статуса многодетной семьи.",
+        "benefit": "30 % платы за коммунальные услуги",
+        "source": "sovetmam",
+        "source_name": "Шпаргалка для родителей — Совет матерей",
+        "source_url": "https://app.sovetmam.ru/catalog/zhku-mnogodetnym-tambov",
+        "fetched_at": "2026-10-01T06:02:44.718Z",
+        "content_hash": "32bbe40805013a72b49867038daa83a06e425c3e74c6310931f6becdd6f2f636",
+        "detail": {
+          "id": "sovetmam:zhku-mnogodetnym-tambov",
+          "steps": [
+            "Получить удостоверение многодетной семьи в органе соцзащиты",
+            "Подать заявление в центр социальных услуг (соцзащиту) по месту жительства, в МФЦ или через Госуслуги",
+            "Приложить квитанции и реквизиты счёта для перечисления компенсации"
+          ],
+          "documents": [
+            "Паспорт заявителя",
+            "Удостоверение многодетной семьи",
+            "Свидетельства о рождении детей",
+            "Сведения о зарегистрированных в жилом помещении",
+            "Квитанции об оплате коммунальных услуг",
+            "Реквизиты банковского счёта"
+          ],
+          "notes": [
+            "Компенсацию считают по показаниям приборов учёта, но не больше нормативов потребления; если счётчиков нет — по нормативам",
+            "Многодетной в области считается семья с тремя и более детьми до 18 лет, постоянно проживающая в Тамбовской области",
+            "По услуге «обращение с ТКО» (вывоз мусора) льгота многодетным в области повышенная — до 70 %; уточните действующий размер в своей соцзащите",
+            "Семьям в домах без центрального отопления раз в год дают выплату на покупку твёрдого топлива (угля или дров)"
+          ],
+          "official_links": []
+        },
+        "programCitationStatus": "unverified"
+      },
+      "catalogProvenance": {
+        "repository": "Arseniy24RUS/family-support",
+        "commit": "5dde46ae663b7652a448ec982585e64d61a26a61",
+        "path": "site/data/measures.json",
+        "url": "https://github.com/Arseniy24RUS/family-support/blob/5dde46ae663b7652a448ec982585e64d61a26a61/site/data/measures.json",
+        "sha256": "e1a155a3a6d92aca8f2f4a3323503974c486e86914b378ba5edb2a899fc284f6",
+        "originalSource": "https://app.sovetmam.ru/catalog",
+        "fetchedAt": "2026-10-01T06:02:44.718Z",
+        "status": "secondary-catalog-not-verified-program-citation"
+      },
+      "notUsedAsProgramEvidence": true
+    },
+    {
+      "variantId": "sakhalin-private-childcare",
+      "catalogId": "sovetmam:sah-002",
+      "relation": "consistent-in-selected-fields",
+      "note": "Выбранные поля механизма, возраста и предела совпадают. Актуальность нормы и полный порядок назначения не проверены.",
+      "reviewStatus": "candidate",
+      "catalogSnapshot": {
+        "id": "sovetmam:sah-002",
+        "title": "Компенсация за частный детский сад (Сахалинская область)",
+        "level": "regional",
+        "region": "Сахалинская область",
+        "category": "Образование",
+        "summary": "Родителям детей 2 месяцев – 7 лет, посещающих частные детские сады, компенсируют часть платы.",
+        "benefit": "50 % платы, но не более 10 000 ₽ в месяц на ребёнка",
+        "source": "sovetmam",
+        "source_name": "Шпаргалка для родителей — Совет матерей",
+        "source_url": "https://app.sovetmam.ru/catalog/sah-002",
+        "fetched_at": "2026-10-01T06:02:44.718Z",
+        "content_hash": "95e367e048c1c64d239ac306775195e1407ae7bc8b1f5dce97b1d52e42e88134",
+        "detail": {
+          "id": "sovetmam:sah-002",
+          "steps": [
+            "Подать заявление в орган социальной защиты населения по месту жительства, через МФЦ или на Госуслугах"
+          ],
+          "documents": [
+            "Паспорт",
+            "Свидетельство о рождении ребёнка",
+            "Договор с частным детсадом"
+          ],
+          "notes": [
+            "Для частных организаций присмотра и ухода."
+          ],
+          "official_links": []
+        },
+        "programCitationStatus": "unverified"
+      },
+      "catalogProvenance": {
+        "repository": "Arseniy24RUS/family-support",
+        "commit": "5dde46ae663b7652a448ec982585e64d61a26a61",
+        "path": "site/data/measures.json",
+        "url": "https://github.com/Arseniy24RUS/family-support/blob/5dde46ae663b7652a448ec982585e64d61a26a61/site/data/measures.json",
+        "sha256": "e1a155a3a6d92aca8f2f4a3323503974c486e86914b378ba5edb2a899fc284f6",
+        "originalSource": "https://app.sovetmam.ru/catalog",
+        "fetchedAt": "2026-10-01T06:02:44.718Z",
+        "status": "secondary-catalog-not-verified-program-citation"
+      },
+      "notUsedAsProgramEvidence": true
+    },
+    {
+      "variantId": "sakhalin-kindergarten-compensation",
+      "catalogId": "sovetmam:sah-001",
+      "relation": "consistent-in-selected-fields",
+      "note": "Проценты совпадают с фрагментом программы; это не проверка всех критериев назначения и действующего размера.",
+      "reviewStatus": "candidate",
+      "catalogSnapshot": {
+        "id": "sovetmam:sah-001",
+        "title": "Компенсация родительской платы за детский сад (Сахалинская область)",
+        "level": "regional",
+        "region": "Сахалинская область",
+        "category": "Образование",
+        "summary": "Родителям компенсируют часть платы за детский сад: 20 % на первого ребёнка, 50 % на второго, 100 % на третьего и последующих.",
+        "benefit": "20 % / 50 % / 100 % платы (на 1-го / 2-го / 3-го ребёнка)",
+        "source": "sovetmam",
+        "source_name": "Шпаргалка для родителей — Совет матерей",
+        "source_url": "https://app.sovetmam.ru/catalog/sah-001",
+        "fetched_at": "2026-10-01T06:02:44.718Z",
+        "content_hash": "f7e7d984801558a2c8f2ddb18437d87ad1fe308d11eae626cccffd81df62d01d",
+        "detail": {
+          "id": "sovetmam:sah-001",
+          "steps": [
+            "Подать заявление в детский сад"
+          ],
+          "documents": [
+            "Паспорт",
+            "Свидетельства о рождении детей",
+            "Договор с детским садом"
+          ],
+          "notes": [
+            "На третьего и последующих детей — 100 % компенсации."
+          ],
+          "official_links": []
+        },
+        "programCitationStatus": "unverified"
+      },
+      "catalogProvenance": {
+        "repository": "Arseniy24RUS/family-support",
+        "commit": "5dde46ae663b7652a448ec982585e64d61a26a61",
+        "path": "site/data/measures.json",
+        "url": "https://github.com/Arseniy24RUS/family-support/blob/5dde46ae663b7652a448ec982585e64d61a26a61/site/data/measures.json",
+        "sha256": "e1a155a3a6d92aca8f2f4a3323503974c486e86914b378ba5edb2a899fc284f6",
+        "originalSource": "https://app.sovetmam.ru/catalog",
+        "fetchedAt": "2026-10-01T06:02:44.718Z",
+        "status": "secondary-catalog-not-verified-program-citation"
+      },
+      "notUsedAsProgramEvidence": true
+    }
+  ]
+}

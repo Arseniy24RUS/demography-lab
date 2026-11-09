@@ -1,0 +1,14 @@
+:root {
+  --font: Inter, 'Segoe UI', Roboto, Arial, sans-serif;
+  --ink: #142238;
+  --muted: #52647b;
+  --navy: #123c73;
+  --blue: #2e6bc3;
+  --red: #d45249;
+  --white: #fff;
+  --canvas: #f6f8fb;
+  --pale: #f1f6fd;
+  --line: #dce4ee;
+  --line-strong: #c8d3e1;
+  color-scheme: light;
+}

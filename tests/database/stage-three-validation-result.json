@@ -1,0 +1,61 @@
+{
+  "stage": 3,
+  "recordedAt": "2026-11-08T17:46:45.062887+00:00",
+  "migration": "supabase/migrations/20261108172311_stage3_regions_families_voting.sql",
+  "migrationSha256": "867e7d8d1fbbc2103092a5522a8e868f390e1a711205b9a9a25455fe837342e7",
+  "environment": {
+    "node": "v24.22.1",
+    "pglite": "0.5.15",
+    "postgres": "PostgreSQL 18.6 (PGlite 0.5.15) on wasm32-unknown-emscripten, compiled by emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.13 (e13ee988ce3d87a738dd8f3661d02223308c412a), 32-bit",
+    "supabaseCLI": "3.0.0"
+  },
+  "checks": {
+    "database": {
+      "command": "node --test tests/database/*.test.mjs",
+      "passed": 45,
+      "failed": 0,
+      "stage2": 23,
+      "stage3": 22
+    },
+    "transport": {
+      "command": "vitest run packages/workshop/schema.test.ts",
+      "passed": 6,
+      "failed": 0,
+      "ratiosRecheckedFromRawCounts": true
+    },
+    "typescript": {
+      "command": "tsc --noEmit --pretty false",
+      "exitCode": 0
+    },
+    "cumulativeUpgrade": {
+      "populatedStage2": true,
+      "allPriorSessionsBackfilled": true,
+      "publicationsPreserved": true,
+      "oldCursorsPreserved": true,
+      "existingRPCWritesAccepted": true
+    },
+    "compactUpdates": {
+      "staticVariantsOmittedForKnownRound": true,
+      "fullFallbackForUnknownRound": true,
+      "underHalfFullBytesForTwoVariantFixture": true,
+      "hostProjectionGuard": true
+    },
+    "frozenBallots": {
+      "closedRoundSqlUpdateRejected": true,
+      "physicalBallotDeletionRejected": true,
+      "withdrawalIsRevisionedNull": true
+    }
+  },
+  "advisors": {
+    "command": "supabase db advisors --type all --level warn --fail-on error",
+    "status": "not-run-connection-refused",
+    "target": "local 127.0.0.1:54322",
+    "reason": "No local Supabase Docker PostgreSQL stack; no remote target used."
+  },
+  "limits": [
+    "PGlite serializes requests on one connection; multi-connection hosted concurrency and production load were not exercised here.",
+    "No hosted SMTP/Auth/PostgREST/Realtime provider deployment was modified or validated.",
+    "All captured voters are assigned all round families; balanced packets and section-level reading assignments remain later work.",
+    "Compact transport saves network bytes; server still constructs a bounded full JSON snapshot before omitting cached material."
+  ]
+}

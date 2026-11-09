@@ -1,0 +1,57 @@
+name: Repository checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Build, source integrity and regression
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Check types and build both entry points
+        run: npm run build
+
+      - name: Run domain and client tests
+        run: npm test -- --maxWorkers=2
+
+      - name: Verify the canonical document corpus
+        run: node scripts/seed-supabase.mjs --check
+
+      - name: Verify the sealed territory and statistical dataset
+        run: npm run seed:roadmaps:check
+
+      - name: Check anonymous survey bundle isolation
+        run: npm run check:survey-bundle
+
+      - name: Check migrations and database access controls
+        run: npm run test:database
+
+      - name: Check SDK and HTTP contracts
+        run: npm run test:collaboration
+
+      - name: Check standalone release server
+        run: node --test tests/server.test.mjs

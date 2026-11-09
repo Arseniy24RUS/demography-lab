@@ -1,0 +1,37 @@
+{
+  "date": "2026-11-08",
+  "engine": "PostgreSQL 18.6 / PGlite 0.5.15",
+  "migration": "supabase/migrations/20261108131424_stage2_collaborative_sessions.sql",
+  "migrationSha256": "a70f4eeec6700bfd259a18e922d0a307340709437252a6c22bf19faee326369d",
+  "sqlSecurityTests": {
+    "passed": 23,
+    "failed": 0,
+    "command": "node --test tests/database/*.test.mjs"
+  },
+  "canonicalCheck": {
+    "editions": 80,
+    "blocks": 52390,
+    "command": "node scripts/seed-supabase.mjs --check"
+  },
+  "fullSqlImport": {
+    "sealedEditions": 80,
+    "blocks": 52390,
+    "reimportSkipped": 80,
+    "immutableRegistryUnchanged": true,
+    "realPracticeBundlesValidated": 15,
+    "realOccurrencesValidated": 56,
+    "durationMs": 5016,
+    "syntheticCorpusIncluded": false
+  },
+  "localAdvisor": {
+    "attempted": true,
+    "completed": false,
+    "reason": "Local Supabase stack is not running: ECONNREFUSED 127.0.0.1:54322"
+  },
+  "hostedServices": {
+    "mutated": false,
+    "smtpDeliveryTested": false,
+    "realPostgrestTested": false,
+    "realRealtimeTested": false
+  }
+}

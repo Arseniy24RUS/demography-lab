@@ -1,0 +1,833 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "path": "data/settlement_index.parquet",
+      "bytes": 6977673,
+      "sha256": "ce40dbf6ee5d390e05d6cdf60c75af2c158477412f66096ff205e2dcb41f3ac8",
+      "gitBlobSha": "cbe2325b8bc582b212f25c527bfdd4eebc8b1d7f",
+      "cachePath": "data/settlement_index.parquet",
+      "repository": "Arseniy24RUS/Settlements-projection-dashboard",
+      "commit": "59b778760c9efa6fe30d6ad17beec6ea622f30b5"
+    },
+    {
+      "path": "data/municipal_components_actual.parquet",
+      "bytes": 1245082,
+      "sha256": "d2c059daf8628d5879c1e8bcc4f5c703ae00e8144ac266fac4d6799bdc496bf3",
+      "gitBlobSha": "9ca91024c70fb58dee93325ac525367a5fbc696b",
+      "cachePath": "data/municipal_components_actual.parquet",
+      "repository": "Arseniy24RUS/Settlements-projection-dashboard",
+      "commit": "59b778760c9efa6fe30d6ad17beec6ea622f30b5"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/catalog.json",
+      "bytes": 143320,
+      "sha256": "f8baef5fb31d560e969ada2d66f9ebda81c508880a69b451e9844864dd58e4e5",
+      "gitBlobSha": "92b7a055d89c932f57de707d0711546007737b5f",
+      "cachePath": "rudn/catalog.json",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-0.geojson",
+      "bytes": 34699,
+      "sha256": "09cbff3077120fe614591e2e8a77a6bbc03d1e6d528d1b9a84c67f7c2c7e9784",
+      "gitBlobSha": "d8465f648b0300239c84840a6fef672b528c959d",
+      "cachePath": "rudn/subject-0.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-1.geojson",
+      "bytes": 103764,
+      "sha256": "fa2c2249e28c2fdfd18245a75bf05061b450f603e02c030a28f6a3530d28f9b4",
+      "gitBlobSha": "048ebedea00e16e1611197f7e56c9c906283f076",
+      "cachePath": "rudn/subject-1.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-102269.geojson",
+      "bytes": 96525,
+      "sha256": "6b6ced798c8030805f6223301b27e672b31d72cb69ce8280ab1dea3c7d30e23b",
+      "gitBlobSha": "4d4b77d532474c459d71a3cd064542c7624bb99a",
+      "cachePath": "rudn/subject-102269.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-103906.geojson",
+      "bytes": 139122,
+      "sha256": "9d8e223b7b38b8a69637eb64b03bd51baf5a8390085ed261cd9f3728187102a7",
+      "gitBlobSha": "1fba5e9da59d22c19029c0b5dfb7df7fad294634",
+      "cachePath": "rudn/subject-103906.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-108081.geojson",
+      "bytes": 163087,
+      "sha256": "6b1f1ab3a5cbe19822ea9ae129fbd669eb73b7188bcb786c3b6b4bfc287f2d6b",
+      "gitBlobSha": "a12a202b5ab658771b3de578374cd09f82e8799e",
+      "cachePath": "rudn/subject-108081.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-108082.geojson",
+      "bytes": 237499,
+      "sha256": "2012d18ae005665cca3b0f58165d3a09b9e049352700fd46ee8b3dae1e91ce18",
+      "gitBlobSha": "2655b17690e312ad5f7e3011cea2203c06bbdc00",
+      "cachePath": "rudn/subject-108082.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-108083.geojson",
+      "bytes": 54028,
+      "sha256": "937275e04b2eb4f7523b3b046d1a0fb0ca28efe258110e6bce12a6e62d551140",
+      "gitBlobSha": "9d88e128466e3d0978404f2f7065480626b042c7",
+      "cachePath": "rudn/subject-108083.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-109876.geojson",
+      "bytes": 325630,
+      "sha256": "53a5556e45c3213259d48051bc8793b02bc4b297f0b36c6305d0254dfa92edaf",
+      "gitBlobSha": "76bc3e3a564536bac984859892daa3bab7fe9b05",
+      "cachePath": "rudn/subject-109876.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-109877.geojson",
+      "bytes": 134485,
+      "sha256": "0085a3f7b80bb6d2f9768f3a8ba6d09ba0c8e8504c3b46c6ae2ca79af9fd299a",
+      "gitBlobSha": "ef610d89644520141bf99acfe37769aa386a5c23",
+      "cachePath": "rudn/subject-109877.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-109878.geojson",
+      "bytes": 120957,
+      "sha256": "4f55fa219886172e9db9dba1764453a5124ac7be843e540f31b45c821de87287",
+      "gitBlobSha": "ff0147cd9bb16bebf2a6fcde7daf23b52ffd39b5",
+      "cachePath": "rudn/subject-109878.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-109879.geojson",
+      "bytes": 111354,
+      "sha256": "dcda7a2d31a28b4bb0873796c17685aec540fd6d31ca6fd292db3a4064ff1223",
+      "gitBlobSha": "2f7f649372ccf34f2498f9f4fad9ff1d70055148",
+      "cachePath": "rudn/subject-109879.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-110032.geojson",
+      "bytes": 66373,
+      "sha256": "d2d3b680c6f62511024dcdb0bb7857ef9f5dd93c8e9aeaf60b05b0c8b9dfb01f",
+      "gitBlobSha": "80f537aca6849e39e38633bcb4e15774a31b043d",
+      "cachePath": "rudn/subject-110032.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-112819.geojson",
+      "bytes": 137964,
+      "sha256": "1a10d30cadcdab4667d121923acc156f47d1d0d6f4632a193b7e0b3e65bc3f5f",
+      "gitBlobSha": "27532aa9332dcbf2c1d1e3f73bcca2e397336ec0",
+      "cachePath": "rudn/subject-112819.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-115100.geojson",
+      "bytes": 254125,
+      "sha256": "5d64e54024d5a78a4b5fa162e0ba714eb5fb086d875b15010e97b6c9dd6493bd",
+      "gitBlobSha": "94f530b04bdefecde39c6f6e8af4d9f8e307ea9b",
+      "cachePath": "rudn/subject-115100.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-115106.geojson",
+      "bytes": 155294,
+      "sha256": "6ff3de4c8c26112fd87b5065f32f2f0eda2f28b9cd29fc2b19b0263e6ca98374",
+      "gitBlobSha": "95c939f0629b0bc64c5ca15fcac162a9b8d697b0",
+      "cachePath": "rudn/subject-115106.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-115114.geojson",
+      "bytes": 120341,
+      "sha256": "8e1ab4023ffa25054431aa918b12848b1b43ea4e8e066d78e868c1224a635b49",
+      "gitBlobSha": "550d0f697faf79e418dc977be7baf49eda211d56",
+      "cachePath": "rudn/subject-115114.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-115134.geojson",
+      "bytes": 194121,
+      "sha256": "3783d1580220e7c4462e6e4c8068734c9af87ded823882eb7eb32c28ff2d9204",
+      "gitBlobSha": "f39906a449443c787b15cfe2f2a0cb9ced574963",
+      "cachePath": "rudn/subject-115134.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-115135.geojson",
+      "bytes": 255784,
+      "sha256": "0c9b2bcf77bebdbaac7c9048e40cbce3ffd08b93567af84b080184154ee17882",
+      "gitBlobSha": "e6048df45386e84dc43cd18a81390331c4ea8b1b",
+      "cachePath": "rudn/subject-115135.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-115136.geojson",
+      "bytes": 70290,
+      "sha256": "16014e01975579d1b1208d501fa099e29aaf7a33f142eae6c3ed310ae64c9803",
+      "gitBlobSha": "1206784ac8ce3aeac3c914c04f5b2c245421cce4",
+      "cachePath": "rudn/subject-115136.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-140290.geojson",
+      "bytes": 130562,
+      "sha256": "21b8e5bcf236589ab72b8cdaa2602bfe87700b5b6f6c444d768cf5196b8ab15b",
+      "gitBlobSha": "5fa79e4fbe2f47b643fb436abdb4c80c8b49b96b",
+      "cachePath": "rudn/subject-140290.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-140291.geojson",
+      "bytes": 135273,
+      "sha256": "008d81cccf13c31294873e7be2ae64867191c4fdac0a9a21acc3032eb865dcb0",
+      "gitBlobSha": "fd4c719ccc8a4760777dfd6cbfcf45f340fce4ea",
+      "cachePath": "rudn/subject-140291.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-140292.geojson",
+      "bytes": 151531,
+      "sha256": "d228e0e53da6d9bd2cc0bfa433e1a0026c776b0a7fb4d359eb96d764195caa9c",
+      "gitBlobSha": "f59d9b17039444fe2cd3a6e98e54ce8cf21936c3",
+      "cachePath": "rudn/subject-140292.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-140294.geojson",
+      "bytes": 164224,
+      "sha256": "2e80e6fbcda2d68ce8870bda75c87643d86950232e40e1be1a086cda7ce7d40d",
+      "gitBlobSha": "8016a2ccb2c2a36a247fecfab0c269627e92c60b",
+      "cachePath": "rudn/subject-140294.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-140295.geojson",
+      "bytes": 94242,
+      "sha256": "4c6008e8ddbf1437e4927ed478ec1c47c319993319326ada5334de6c974505ee",
+      "gitBlobSha": "218c5fc458ba2549d8a4b351267c5dcfa88b898b",
+      "cachePath": "rudn/subject-140295.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-140296.geojson",
+      "bytes": 91438,
+      "sha256": "627a29ff6827912a0a353dc8cfa2595b0bddb3238c69e315b2abcebb65691f43",
+      "gitBlobSha": "030f6be958d00cb1d8e955b960d22ac95bd421e4",
+      "cachePath": "rudn/subject-140296.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-140337.geojson",
+      "bytes": 281380,
+      "sha256": "74d14e4cdba09321996af2bcdb1ca136ccd9ea618d48a21e81150ea6ac810991",
+      "gitBlobSha": "a840d4d5886187f61cc0116372c91beb142832d8",
+      "cachePath": "rudn/subject-140337.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-144763.geojson",
+      "bytes": 254050,
+      "sha256": "6e9c3225973f1ef03070be864488d4a25985f796e9d1a8b1edff2ff57413a30a",
+      "gitBlobSha": "a9dd30e6405f1e128342924788cb3d897267d0f3",
+      "cachePath": "rudn/subject-144763.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-144764.geojson",
+      "bytes": 276587,
+      "sha256": "d156bf9231f3966c01335e9d57f894c5f06180cef8f0c62b678f401749bc96b5",
+      "gitBlobSha": "72b13b7d776cad18ab458f6008f1e1d96d092d05",
+      "cachePath": "rudn/subject-144764.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-145194.geojson",
+      "bytes": 113195,
+      "sha256": "6ca5cbbef170843ce05dad20f6ffbd1f7dd98eb2453518e1acd9649662b889c3",
+      "gitBlobSha": "6118e30ce611cba4abc3e9d93abb9513826e1e58",
+      "cachePath": "rudn/subject-145194.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-145195.geojson",
+      "bytes": 158593,
+      "sha256": "148b920ad68c532d79261ff0ceb23754b4bd3fbae13a32af9733d07498119621",
+      "gitBlobSha": "3805610c8de8d007a7a05ea1df1e47c26ae2a571",
+      "cachePath": "rudn/subject-145195.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-145454.geojson",
+      "bytes": 294523,
+      "sha256": "b71b4ae57a4c3ce52ada35e6d8fd15c0459443e8147354ced27068aa176a100f",
+      "gitBlobSha": "ffe9c14f39c02df3c786da326a022ae631eaa8db",
+      "cachePath": "rudn/subject-145454.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-145729.geojson",
+      "bytes": 179543,
+      "sha256": "0f242a5032fea83d0abd3c48376c86c119f93489e2d52a0f257a6669581c6628",
+      "gitBlobSha": "22325b6d09a4bf352c85870c8d18ad924bd77295",
+      "cachePath": "rudn/subject-145729.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-145730.geojson",
+      "bytes": 274398,
+      "sha256": "d268e0072260160c4b343cd8a7a19ee56b7d5e798080809481edbebbe5aa9655",
+      "gitBlobSha": "bc180f43845d4406820f7b7733037ef6b94475a4",
+      "cachePath": "rudn/subject-145730.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-147166.geojson",
+      "bytes": 195155,
+      "sha256": "ee7d5328297bd5eeebc0e33c10221a60262e6eb63aecf5ba7edabaeea853832a",
+      "gitBlobSha": "42cee9da851ee60ef29ad6504d5e4a8d4e4efe1f",
+      "cachePath": "rudn/subject-147166.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-147167.geojson",
+      "bytes": 85957,
+      "sha256": "6dd310e66449b3ca48bce9e2957ee0bddeb3c081f32530ba1a645af95964512e",
+      "gitBlobSha": "2c99ebb285b8bc4c1b64e3bc974c5c7fcdf4ffb0",
+      "cachePath": "rudn/subject-147167.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-151223.geojson",
+      "bytes": 236645,
+      "sha256": "d2a7e0616dcd9a457abd82676ce554d22a2629900f05f584fce5cc2d2ba242c4",
+      "gitBlobSha": "f25bcd7a5fa908dac8bff3379618caa4adb8aeda",
+      "cachePath": "rudn/subject-151223.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-151225.geojson",
+      "bytes": 298184,
+      "sha256": "0f6a6d7c7845aed07edc69f333f97df77c760004bed3372ae7fd9f3870904d37",
+      "gitBlobSha": "9c28bf282a678da2619cbf3cb871bd14750cf58c",
+      "cachePath": "rudn/subject-151225.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-151228.geojson",
+      "bytes": 246166,
+      "sha256": "55080f949a8d3c7c7beedd4bed0599c32971801b7ad9a7c5ca47d2980e213ce2",
+      "gitBlobSha": "979db624f711911037f50eec2b01df95fa065f94",
+      "cachePath": "rudn/subject-151228.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-151231.geojson",
+      "bytes": 106716,
+      "sha256": "8f1c43ea14c605bcf2577a57689dceb5735f1850e302b89fe3e8d4069b3a443e",
+      "gitBlobSha": "5e635aa0c9c36549b4785fad7f1b70f9c1bb627c",
+      "cachePath": "rudn/subject-151231.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-151233.geojson",
+      "bytes": 140417,
+      "sha256": "6e04e28b53b323408403a57ede0a44326350ba92be2fe81e5ef4e1ab2a272681",
+      "gitBlobSha": "8e40f21a1cf9bf72ada2ef144457bf4154e634c0",
+      "cachePath": "rudn/subject-151233.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-151234.geojson",
+      "bytes": 554314,
+      "sha256": "9351aaaec5db20b4503a31a0da4c00d4119ca490a91415a846e5e2c2603be59c",
+      "gitBlobSha": "4f572b06b51d4a76423bc27b61c01fd5d7575e73",
+      "cachePath": "rudn/subject-151234.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-155262.geojson",
+      "bytes": 287061,
+      "sha256": "d59f63ad7985dd4bbcd8cd5648cd6bf23c6f5fe1ce9879c577717a406b46fdef",
+      "gitBlobSha": "7c3d195a75a7d8444772896366f3c11a76a60b97",
+      "cachePath": "rudn/subject-155262.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-176095.geojson",
+      "bytes": 245900,
+      "sha256": "7bf87eabea177f5c76da6cc774feaf67334f32f9630359ebc5d27b96b38a58d0",
+      "gitBlobSha": "60eed773e63e02b3943e9181b97e044909b32ced",
+      "cachePath": "rudn/subject-176095.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-190090.geojson",
+      "bytes": 454899,
+      "sha256": "bc17db5373e71764e8e6072e41aad9cf70930d8a74e03e7e02da3befd36a2dd2",
+      "gitBlobSha": "558a87bb072f6801685349965acfd1355d3553c0",
+      "cachePath": "rudn/subject-190090.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-190911.geojson",
+      "bytes": 116051,
+      "sha256": "acd6327f03c3caa76a55deaad9cf934ac73633b98bd9345d40b9ed6f63de1178",
+      "gitBlobSha": "c6db49ddc8a8ae740f4423eb63763d16a097b568",
+      "cachePath": "rudn/subject-190911.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-191706.geojson",
+      "bytes": 230083,
+      "sha256": "5017d3b0cef2bfdfca4013fae0ac807850c5074a019065b4f8f1496aae8a78ff",
+      "gitBlobSha": "7dfbfbd824c09c6b9b19a2ad6a600d5e45d5972a",
+      "cachePath": "rudn/subject-191706.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-2.geojson",
+      "bytes": 113955,
+      "sha256": "b74a5d7fc9150709ca01cfdbf0371c954eb82f57263260063a630c02060e953e",
+      "gitBlobSha": "7c4b3c074f21e134f1d7fb75f0332fc079cae102",
+      "cachePath": "rudn/subject-2.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-2095259.geojson",
+      "bytes": 327128,
+      "sha256": "4714a19e374a97b14ac3cd7b9a01f083859527d38fa03f72f695476ce197f555",
+      "gitBlobSha": "f922bce01498aa7c2f6e70adb7287456ed3a88da",
+      "cachePath": "rudn/subject-2095259.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-2099216.geojson",
+      "bytes": 260207,
+      "sha256": "d9324b671505120b6b873ada553cd32ff54ea758be5006e986f27dd64e09d20a",
+      "gitBlobSha": "3b235649760cfcb58f84432ff63f7a56eda59d65",
+      "cachePath": "rudn/subject-2099216.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-253252.geojson",
+      "bytes": 48788,
+      "sha256": "5546c45cfacacae3834f8a807839a25e233e28d437e07fe7a28169ff1e9ed0d0",
+      "gitBlobSha": "019d20c66e6f611a9a94efa5b64759ad66ab3356",
+      "cachePath": "rudn/subject-253252.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-253256.geojson",
+      "bytes": 71837,
+      "sha256": "5d7d0e3fbb643e6932fa51bb1f92f2ce811adf6e371d60d38857ed4527318e1b",
+      "gitBlobSha": "d1b24a6161075379fecfceb335a6b270c7800da3",
+      "cachePath": "rudn/subject-253256.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-274048.geojson",
+      "bytes": 77673,
+      "sha256": "c7157cab9006c6ff6664da1591bf9ff3b84c6db4210f4dc563d087844d9c0176",
+      "gitBlobSha": "276edf8dc037c7174725ec6ebd2bba4efc383f6f",
+      "cachePath": "rudn/subject-274048.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-3.geojson",
+      "bytes": 34071,
+      "sha256": "fb5065f21490b9fdb7f0f5f41bef2c6906df3fb2d043c6bf7be0f3020850e637",
+      "gitBlobSha": "284247dbb18940eb0f0636ff191c6f5a83228159",
+      "cachePath": "rudn/subject-3.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-337422.geojson",
+      "bytes": 86496,
+      "sha256": "693601b4542250c8a2e10602b5e72af862563fb21b03e3db8e8983d094cb274c",
+      "gitBlobSha": "c6c77cca5a79470d76550e1c95798a239ecdf341",
+      "cachePath": "rudn/subject-337422.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-3788485.geojson",
+      "bytes": 32862,
+      "sha256": "baaf28d4faf60d08b243ef2ad212ed791e63534120cb52998f1f0ae9a65d521c",
+      "gitBlobSha": "f7e96a48452646ff7dafd8eefb5d61eaab992697",
+      "cachePath": "rudn/subject-3788485.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-3795586.geojson",
+      "bytes": 150197,
+      "sha256": "e0b4505d5c6722c60a849327efc9afb8eb21bc4ccaa39b8e351abf0617391eff",
+      "gitBlobSha": "c05197df5c2cd20fb4a2eb4fcdf2ae5604d3d16e",
+      "cachePath": "rudn/subject-3795586.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-393980.geojson",
+      "bytes": 371763,
+      "sha256": "720dd2e8b2cbf6c26372afcd2dc99da2adb32b9bf1d95e009fc3738f8adcc8f3",
+      "gitBlobSha": "6d506bfe54c72cdf40e5f2877df20a6a70ffe0d3",
+      "cachePath": "rudn/subject-393980.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-394235.geojson",
+      "bytes": 241370,
+      "sha256": "83c4308ac25a9c8382b7a3bd5f96ce33e616384927d2ab2e72b3fa310cf63229",
+      "gitBlobSha": "80dbed5ac733f726458f85638e50dcef16e9eae0",
+      "cachePath": "rudn/subject-394235.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-51490.geojson",
+      "bytes": 373050,
+      "sha256": "6bce1a976bdc6bf7cc27f4ec9400665f8dad2f3a455c0172128f69c67765913e",
+      "gitBlobSha": "1f5f628d5e826303843a535ce8068991bf50933c",
+      "cachePath": "rudn/subject-51490.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-71950.geojson",
+      "bytes": 228780,
+      "sha256": "9667e64c1a3a9bba37752dbcab75745a131473549d8e69b35ff9d26d6132737a",
+      "gitBlobSha": "5a4103a597756f17620fcc0c87d64594145a2dec",
+      "cachePath": "rudn/subject-71950.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-72169.geojson",
+      "bytes": 161435,
+      "sha256": "8079a786fb4a594457fee4323d194bc887d89d094f6ba600e61a5511643e79c1",
+      "gitBlobSha": "f4f2b3f165241418661f4256c65fcd65499c2041",
+      "cachePath": "rudn/subject-72169.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-72180.geojson",
+      "bytes": 184975,
+      "sha256": "a2b284a6198b92bacf6074c5c9c43338b0886dec283d0a23b6cf36596307a73a",
+      "gitBlobSha": "e7e4c323535e0de1df297c0abe191101bc49f59c",
+      "cachePath": "rudn/subject-72180.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-72181.geojson",
+      "bytes": 192002,
+      "sha256": "fcda2cff66da1bd5b6a6c8da253fe790abb1e6489455bb122e91396159909695",
+      "gitBlobSha": "072ccac8edbed5313bf0f22f4608365e086f7682",
+      "cachePath": "rudn/subject-72181.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-72182.geojson",
+      "bytes": 222566,
+      "sha256": "47ba23be1dbf085f7ab75602dd9f1839278cdc65e9b97d0e75ba3838931c97f6",
+      "gitBlobSha": "cde48980432375bbb565664e370dd2ee9ac7cfc9",
+      "cachePath": "rudn/subject-72182.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-72192.geojson",
+      "bytes": 209717,
+      "sha256": "eed3fceef5f43e944e08a0fde2d58cbd37d5b7aa8f24cb50525ef681229bdf61",
+      "gitBlobSha": "5bcc1cbea07ecac2034c5ef6e5b1c302c1f95100",
+      "cachePath": "rudn/subject-72192.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-72193.geojson",
+      "bytes": 228303,
+      "sha256": "8232f34eb7d959f9917274e3ba3949a2cf9ac8c7e8bd4c866eca5e0f3821b5c0",
+      "gitBlobSha": "265945377916f9164da31675b2ccdb207464943b",
+      "cachePath": "rudn/subject-72193.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-72194.geojson",
+      "bytes": 260163,
+      "sha256": "39f435405127cdc88dfc4974192d7b034e8aa4acd81af27cbf7123c1b0b1435e",
+      "gitBlobSha": "f102ae9aa53548369a449f06de2ff1a863ff5944",
+      "cachePath": "rudn/subject-72194.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-72195.geojson",
+      "bytes": 350711,
+      "sha256": "b38a20ca22549d54d2320d1019eded95678f0e947f5baaa2a8365d9f8bc24003",
+      "gitBlobSha": "e2fa4cbeeef5d78c1625746c6efbfa74b88cbbb4",
+      "cachePath": "rudn/subject-72195.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-72196.geojson",
+      "bytes": 184886,
+      "sha256": "63cdba41440557f4432c3635d9a6e372ef1449ef8bf9938f5729c5375a0e6c15",
+      "gitBlobSha": "241fa0be2abcb5ca285549b7a4457e1a6d37ac55",
+      "cachePath": "rudn/subject-72196.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-72197.geojson",
+      "bytes": 169692,
+      "sha256": "6e495f765430b76e0034fa5369b45b5c8536d43e3a1a717f3d7817d918798b4f",
+      "gitBlobSha": "cb4c4bf8e9a967d1073c4033c39ac3090adedf1c",
+      "cachePath": "rudn/subject-72197.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-72223.geojson",
+      "bytes": 244337,
+      "sha256": "7ddad86d721eb39cc49d6ca965257566881c3a730e2d0b364bda264d77a7140f",
+      "gitBlobSha": "0ea17a8a9ea850665f918285f1c3cc5bc03a80ba",
+      "cachePath": "rudn/subject-72223.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-72224.geojson",
+      "bytes": 174182,
+      "sha256": "4e14be9a4b2044f17535bb915d21078fa4de95486754767ddce9d4e8ab47938f",
+      "gitBlobSha": "a38fa98d4747d8f1e8e2afa893b3a988d66fc5bb",
+      "cachePath": "rudn/subject-72224.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-77665.geojson",
+      "bytes": 218871,
+      "sha256": "3fe014315259df53af85df2f806123a073dd121d7d9795e93f95fa4093d73ea5",
+      "gitBlobSha": "bfeb3bc245206f786f29e84576194652b962c26d",
+      "cachePath": "rudn/subject-77665.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-77669.geojson",
+      "bytes": 206241,
+      "sha256": "86ccd6e560f9e90df2dfd6db226a80118d1c3344a2b06fd7524999a46f31381e",
+      "gitBlobSha": "9dc93ab251dc800c373a21e29ea6866405cc767b",
+      "cachePath": "rudn/subject-77669.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-77677.geojson",
+      "bytes": 417431,
+      "sha256": "41eaac9f871ecea7af61e2e1c003b827eca1f89a906cdcfe1c6da546519876f9",
+      "gitBlobSha": "8aaba4193e69fd24116c16154d39c228264dbd53",
+      "cachePath": "rudn/subject-77677.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-77687.geojson",
+      "bytes": 207760,
+      "sha256": "1560dbef76c252c5f7324b1a5f8739f06b5a8f4a8c806967d77dd714837999ec",
+      "gitBlobSha": "30af252305d91c15fd4de727721a483428654d7a",
+      "cachePath": "rudn/subject-77687.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-79374.geojson",
+      "bytes": 322323,
+      "sha256": "df6d88cb99bb6d079f8264a696e8e7c44165dc51d56d4c7ffe260793a8fc2291",
+      "gitBlobSha": "04377ea92e0f1879effee05f49e79109d218f097",
+      "cachePath": "rudn/subject-79374.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-79379.geojson",
+      "bytes": 276045,
+      "sha256": "05894307fede646a2eaa4145e9ce2fe73dc3589c1528032aa41c02fe4d47e6cd",
+      "gitBlobSha": "6d7084d0ee159a6c0febf88361205f08b42077af",
+      "cachePath": "rudn/subject-79379.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-80513.geojson",
+      "bytes": 174934,
+      "sha256": "7658085dfd81c4adaf446196fb14aaf3e0105793e9c3d9563ec627255686f0b0",
+      "gitBlobSha": "2ed0052097115b54c0ca104f2dd8938558a54b5f",
+      "cachePath": "rudn/subject-80513.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-81993.geojson",
+      "bytes": 220949,
+      "sha256": "2eb596f815380fa69dfecb227c726fe9032499faac5171771fce3197a3d10200",
+      "gitBlobSha": "b1d74435e4edfabf23324b96e79cbc82255c886f",
+      "cachePath": "rudn/subject-81993.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-81994.geojson",
+      "bytes": 218054,
+      "sha256": "b3b00f304b7a8dd9f5673773b6397a742c62b1c6ee9674cc0145b3dab04b3a90",
+      "gitBlobSha": "36a9adbfbed3947817c2838dea9ce52bfa58f438",
+      "cachePath": "rudn/subject-81994.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-81995.geojson",
+      "bytes": 248788,
+      "sha256": "7eab616e0428b442726e5461a3e9742fa82a7573e1874fc523b6b7fa98f7c227",
+      "gitBlobSha": "978295d9cca4fe5d9785c7086fc4cddf4308376e",
+      "cachePath": "rudn/subject-81995.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-81996.geojson",
+      "bytes": 264587,
+      "sha256": "70808133fa024e37e9c97e7ed77cddb5ddbaa59a081e7a029948f997f48e1665",
+      "gitBlobSha": "db4595c6e6b993b8fb51869572ec7778114ffef9",
+      "cachePath": "rudn/subject-81996.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-81997.geojson",
+      "bytes": 249047,
+      "sha256": "8ef246e3c988aff5382ba84f2c50dba4278a7e6b22fef008ea70c01773ae942c",
+      "gitBlobSha": "f2c65dcd84a78f945392c4ff2305113ee03db360",
+      "cachePath": "rudn/subject-81997.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-83184.geojson",
+      "bytes": 151561,
+      "sha256": "ac0776e5db0b44b0aad39ffda48be55e73c0626bed8ec0f1e87b835c1e6d0c1d",
+      "gitBlobSha": "f2048ec51a048d3bab1bafe5ef6713b7864653ac",
+      "cachePath": "rudn/subject-83184.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-85606.geojson",
+      "bytes": 240285,
+      "sha256": "8e55439c1f843d9114464b38b05029e8ccac8909ee094886890d2ac16d5627d8",
+      "gitBlobSha": "18da4121a02d9230426209234ef3b3f75ffd521a",
+      "cachePath": "rudn/subject-85606.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-85617.geojson",
+      "bytes": 189805,
+      "sha256": "cae7d2a81fcdba8f01c2679789bad0c611ab104ae27b3b45865880a7d7c9cadd",
+      "gitBlobSha": "217fa9e8e8758fc4c5cf74a0c69802ff6d1774d8",
+      "cachePath": "rudn/subject-85617.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-85963.geojson",
+      "bytes": 191620,
+      "sha256": "14dcdde5d9439232438079d16c3fd9d58b0f8cdbe1010904cb3412a6c3a4d882",
+      "gitBlobSha": "40faec69a85beae589911cacfa2287a35381f212",
+      "cachePath": "rudn/subject-85963.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    },
+    {
+      "path": "site/assets/puzzle/data/municipal/subject-89331.geojson",
+      "bytes": 143553,
+      "sha256": "b058b4e4c6830432e74b65f47cd0f5f5d3d923ace72a315eec14de5b040c9846",
+      "gitBlobSha": "3fc91c9f0ae6508ad06bab22e0d9479d36d629df",
+      "cachePath": "rudn/subject-89331.geojson",
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+    }
+  ]
+}

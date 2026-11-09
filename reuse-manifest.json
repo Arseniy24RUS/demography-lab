@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-08T23:40:11.236128+00:00",
+  "sources": [
+    {
+      "repository": "Arseniy24RUS/family-support",
+      "commit": "5dde46ae663b7652a448ec982585e64d61a26a61",
+      "rootLicense": "not-present",
+      "agentsFile": "not-found-in-complete-tree",
+      "permissionContext": "User requested reuse of their platform and corpus for this educational project.",
+      "codeAndDataLicenseNotInferred": true
+    },
+    {
+      "repository": "Arseniy24RUS/RUDN",
+      "commit": "08c68f1fe1c812ed059b0b124b25c26c6fdd374f",
+      "rootLicense": "not-present",
+      "agentsFile": "not-found-in-complete-tree",
+      "dataImportedByThisModule": true,
+      "reuseMode": "Stages 1–4 architecture reference; Stage 5 versioned municipal catalog and geometry import. Upstream geometry rights retained."
+    },
+    {
+      "repository": "Arseniy24RUS/Settlements-projection-dashboard",
+      "commit": "59b778760c9efa6fe30d6ad17beec6ea622f30b5",
+      "rootLicense": "MIT for code; CC BY 4.0 for author data/documentation subject to primary provider terms",
+      "dataImportedByThisModule": true,
+      "reuseMode": "Seven source-preserving municipal indicators from actual; not the age-structured model projections."
+    }
+  ],
+  "assets": [
+    {
+      "sourceRepository": "Arseniy24RUS/family-support",
+      "sourceCommit": "5dde46ae663b7652a448ec982585e64d61a26a61",
+      "sourcePath": "site/data/strategies.json",
+      "sourceSha256": "cf20089decfbdd508eb7887ab4d17ea9f841dd4e2fe2e0e32dc05ea13b92eb4a",
+      "target": "public/data/corpus/index.json",
+      "operation": "Regional group filtering and provenance-preserving manifest conversion",
+      "records": 89
+    },
+    {
+      "sourceRepository": "Arseniy24RUS/family-support",
+      "sourceCommit": "5dde46ae663b7652a448ec982585e64d61a26a61",
+      "sourcePath": "site/documents/strategies/regional/*.pdf",
+      "target": "public/data/corpus/documents/*.json",
+      "operation": "Poppler layout text extraction, NFC LF normalization, immutable block segmentation",
+      "files": 80,
+      "pages": 6340,
+      "blocks": 52390,
+      "sourceHashes": "public/data/corpus/index.json documents[].source.sha256",
+      "binaryCopiesBundled": false
+    },
+    {
+      "sourceRepository": "Arseniy24RUS/family-support",
+      "sourceCommit": "5dde46ae663b7652a448ec982585e64d61a26a61",
+      "sourcePath": "site/data/measures.json;site/data/details/[00..31].json",
+      "sourceSha256": "e1a155a3a6d92aca8f2f4a3323503974c486e86914b378ba5edb2a899fc284f6",
+      "target": "public/data/corpus/family-catalog.json",
+      "operation": "Join secondary catalog with detail shards",
+      "records": 2274,
+      "originalProvider": "https://app.sovetmam.ru/catalog",
+      "programCitationStatus": "unverified",
+      "partnerLogoCopied": false
+    },
+    {
+      "sourceRepository": "Arseniy24RUS/family-support",
+      "sourceCommit": "5dde46ae663b7652a448ec982585e64d61a26a61",
+      "sourcePath": "site/data/ru-regions.geojson",
+      "sourceSha256": "d2df6dd31e440be1cd9bb6edc76b9c7e7b9096ec42c9dbb92bcaa5b6f8e2b4ce",
+      "target": "public/data/regions.geojson",
+      "operation": "Unmodified file copy",
+      "features": 89,
+      "license": "unspecified-upstream",
+      "joinBasis": "name aliases, not official code crosswalk"
+    },
+    {
+      "source": "Canonical document versions and explicitly listed secondary catalog snapshots",
+      "target": "public/data/corpus/practices.json",
+      "operation": "Assistant-curated source-exact candidates with field-level spans; human semantic review pending",
+      "variants": 15,
+      "fieldOccurrences": 56,
+      "catalogComparisons": 8,
+      "fabricatedHumanApproval": false
+    },
+    {
+      "sourceRepositories": [
+        "Arseniy24RUS/Settlements-projection-dashboard",
+        "Arseniy24RUS/RUDN"
+      ],
+      "sourceCommits": [
+        "59b778760c9efa6fe30d6ad17beec6ea622f30b5",
+        "08c68f1fe1c812ed059b0b124b25c26c6fdd374f"
+      ],
+      "target": "public/data/territories",
+      "operation": "Versioned type-preserving crosswalk, local projected SVG geometry, seven source-preserving municipal series and exact fingerprints",
+      "editionId": "territories-v1-rudn-08c68f1fe1c8-spd-59b778760c9e",
+      "regions": 89,
+      "geographicUnits": 2381,
+      "municipalities": 2325,
+      "matchedStatistics": 1729,
+      "availableStatistics": 1725,
+      "sourceManifest": "public/data/territories/index.json sources[]; scripts/territories-source-lock.json",
+      "licenses": "Author statistical data CC BY 4.0 subject to underlying provider terms; municipal geometry upstream license not established; educational reuse requested by owner",
+      "primaryProvenance": "incomplete",
+      "geographyComparability": "not_verified",
+      "currentOfficialOKTMOAsserted": false
+    },
+    {
+      "source": "DejaVu fonts distributed by the runtime OS",
+      "target": "public/fonts",
+      "files": [
+        {
+          "path": "public/fonts/DejaVuSans-Bold.ttf",
+          "sha256": "5c1247acef7f2b8522a31742c76d6adcb5569bacc0be7ceaa4dc39dd252ce895"
+        },
+        {
+          "path": "public/fonts/DejaVuSans.ttf",
+          "sha256": "ae7b7855e115a5966d8b1b3f80f254ccc117ec86f9965e202ee2940453837280"
+        },
+        {
+          "path": "public/fonts/LICENSE-DejaVu.txt",
+          "sha256": "72d37aeb165ea171421f0cdae09e20f80d4a5303018be6abeb15ac77d40220a2"
+        }
+      ],
+      "licenseFile": "public/fonts/LICENSE-DejaVu.txt",
+      "operation": "Unmodified local font and license copy; embedded Cyrillic PDF font; no remote font requests"
+    }
+  ],
+  "rightsNotes": [
+    "No root license was inferred from component or vendor licenses.",
+    "Normative source copies retain original document notices in extracted text.",
+    "Catalogue and region boundary source rights remain distinct from newly authored platform code.",
+    "Municipal geography and source statistics retain their separate upstream rights; ownership of the educational project does not establish a public license for every primary provider."
+  ],
+  "normalizationVersion": "unicode-nfc-lf-v1",
+  "anchorOffsets": "unicode-code-points",
+  "canonicalIdentity": {
+    "algorithm": "layout-canonical-v2",
+    "sourceIdentity": "SHA-256 of pinned original PDF",
+    "representationIdentity": "SHA-256 of representation/normalization/segmentation versions, ordered exact blocks with page bounds, and page mappings/text hashes",
+    "versionIdPattern": "{documentId}@layout-canonical-v2-{sourceSha256prefix12}-{canonicalHashprefix12}",
+    "capturedAtExcluded": true
+  }
+}
