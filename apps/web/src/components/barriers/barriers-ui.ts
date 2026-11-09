@@ -31,6 +31,7 @@ export interface BarrierActions {
   exportResearch(surveyId: string): Promise<void>;
 }
 export interface BarrierAreaProps {
+  surveyOnly?: boolean;
   session: SessionSummary;
   snapshot: BarriersSnapshot | null;
   userId: string;

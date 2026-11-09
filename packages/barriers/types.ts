@@ -89,6 +89,12 @@ export interface SurveySummary extends SurveyPublicManifest {
   /** Null means suppressed: fewer than five current, non-withdrawn responses or no raw data available. */
   responseCount: number | null;
 }
+/** Shared launch metadata. The invitation token identifies the form, never a respondent. */
+export interface WorkshopSurveyEntry {
+  sessionId: string;
+  survey: SurveySummary;
+  invitationToken: string | null;
+}
 export interface SurveyConfigInput {
   surveyId: string | null; expectedRevision: number; title: string; purpose: string;
   organizerContact: string; retentionUntil: string; questionBarrier: string; questionSupport: string;

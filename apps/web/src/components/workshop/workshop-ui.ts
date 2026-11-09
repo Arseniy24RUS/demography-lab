@@ -53,6 +53,8 @@ export interface WorkshopAreaProps {
   view?: WorkshopView;
   onViewChange?: (view: WorkshopView) => void;
   hideNavigation?: boolean;
+  /** The installation's current, continuously available collaborative board. */
+  sharedWorkspace?: boolean;
 }
 
 export type ReadyWorkshopProps = Omit<WorkshopAreaProps, 'snapshot'> & {

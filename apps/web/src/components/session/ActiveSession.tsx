@@ -6,7 +6,6 @@ import { Modal } from '@/components/Modal';
 import type {
   SessionAreaActions,
   SessionAreaState,
-  SessionPhase,
   SessionRegionOption,
   SessionSnapshot,
   SharedSubmission,
@@ -19,10 +18,8 @@ import { useResponsiveDisclosure } from './useResponsiveDisclosure';
 import {
   dateLabel,
   messageFromError,
-  phaseLabels,
   roleLabels,
   scopeLabels,
-  statusLabels,
   timeLabel,
 } from './session-ui';
 
@@ -34,6 +31,8 @@ export function ActiveSession({
   renderWorkshop,
   renderBarriers,
   renderRoadmaps,
+  renderSurvey,
+  renderLiveVotes,
 }: {
   state: SessionAreaState;
   snapshot: SessionSnapshot;
@@ -42,6 +41,8 @@ export function ActiveSession({
   renderWorkshop?: (view: WorkshopView) => ReactNode;
   renderBarriers?: () => ReactNode;
   renderRoadmaps?: () => ReactNode;
+  renderSurvey?: (onContinue: () => void) => ReactNode;
+  renderLiveVotes?: () => ReactNode;
 }) {
   const id = useId();
   const { session, submissions, members } = snapshot;
@@ -51,7 +52,7 @@ export function ActiveSession({
   const [error, setError] = useState('');
   const [working, setWorking] = useState(false);
   const [contextOpen, setContextOpen] = useResponsiveDisclosure();
-  const [workspaceView, setWorkspaceView] = useState<'board' | 'barriers' | 'roadmaps' | WorkshopView>('board');
+  const [workspaceView, setWorkspaceView] = useState<'survey' | 'board' | 'barriers' | 'roadmaps' | WorkshopView>(renderSurvey ? 'survey' : 'board');
   const sceneNavigation = useRef<HTMLElement>(null);
   function selectWorkspace(next: typeof workspaceView) {
     setWorkspaceView(next);
@@ -62,7 +63,7 @@ export function ActiveSession({
   const disabled = state.busy !== null || working;
   const isHost = session.role === 'host';
   const canContribute =
-    session.role !== 'observer' && session.status === 'open' && session.phase !== 'discussion';
+    session.role !== 'observer';
   const regionNames = new Map([
     ...regions.map((region) => [region.id, region.name] as const),
     ['federal', 'Федеральный уровень'],
@@ -105,48 +106,28 @@ export function ActiveSession({
   return (
     <>
       <div className="session-workspace-toolbar">
-        <button
-          className="button button-quiet"
-          onClick={actions.closeSessionView}
-          disabled={disabled}
-        >
-          <ArrowLeft size={16} />
-          Все занятия
-        </button>
+        <p className="workspace-territory">
+          {session.regionId ? regionNames.get(session.regionId) ?? session.regionId : 'Российская Федерация'}
+          <span> · {scopeLabels[session.scope]} уровень</span>
+        </p>
         <div className="session-action-row">
           <button className="button button-secondary" onClick={actions.openLocalWork}>
             <BookOpen size={16} />
             Работать с документами
           </button>
-          {isHost ? (
-            <button className="button button-primary" onClick={actions.openProjector}>
-              <Monitor size={17} />
-              Экран проектора
-            </button>
-          ) : null}
+          <button className="button button-primary" onClick={actions.openProjector}>
+            <Monitor size={17} />
+            Экран проектора
+          </button>
         </div>
       </div>
       {isHost ? (
         <HostControls
           session={session}
-          invitation={state.invitation}
           busy={disabled}
           actions={actions}
-          compact={workspaceView === 'barriers' || workspaceView === 'roadmaps'}
+          regions={regions}
         />
-      ) : null}
-      {session.status !== 'open' ? (
-        <p className="session-message" data-tone="warning">
-          {session.status === 'paused'
-            ? 'Преподаватель приостановил публикацию и изменение работ. Используйте это время для общего обсуждения или продолжите чтение документов.'
-            : 'Занятие завершено. Опубликованные материалы доступны для чтения.'}
-        </p>
-      ) : null}
-      {session.status === 'open' && session.phase === 'discussion' && workspaceView !== 'roadmaps' ? (
-        <p className="session-message">
-          Идёт общее обсуждение. Новые публикации и изменение карточек будут доступны, когда
-          преподаватель вернёт группу к чтению или сопоставлению практик.
-        </p>
       ) : null}
       {session.role === 'observer' ? (
         <p className="session-message">
@@ -167,11 +148,12 @@ export function ActiveSession({
         >
           {(
             [
-              ['board', 'Доска карточек'],
-              ['regions', 'Карта программ'],
-              ['families', 'Семейства практик'],
-              ['voting', 'Оценивание'],
-              ...(renderBarriers ? ([['barriers', 'Барьеры и решения']] as const) : []),
+              ...(renderSurvey ? ([['survey', 'Опрос']] as const) : []),
+              ...(renderBarriers ? ([['barriers', 'Барьеры']] as const) : []),
+              ['regions', 'Программы'],
+              ['board', 'Практики'],
+              ['families', 'Группировка'],
+              ['voting', 'Рейтинг'],
               ...(renderRoadmaps ? ([['roadmaps', 'Дорожные карты']] as const) : []),
             ] as const
           ).map(([key, label]) => (
@@ -186,16 +168,20 @@ export function ActiveSession({
           ))}
         </nav>
       ) : null}
-      {workspaceView === 'roadmaps'
+      {workspaceView === 'survey'
+        ? renderSurvey?.(() => selectWorkspace('barriers'))
+        : workspaceView === 'roadmaps'
         ? renderRoadmaps?.()
         : workspaceView === 'barriers'
         ? renderBarriers?.()
-        : renderWorkshop && workspaceView !== 'board'
+        : workspaceView === 'voting' && renderLiveVotes
+          ? renderLiveVotes()
+          : renderWorkshop && workspaceView !== 'board'
           ? renderWorkshop(workspaceView)
           : null}
       <div
         className="session-workspace"
-        hidden={Boolean(renderWorkshop && workspaceView !== 'board')}
+        hidden={workspaceView !== 'board'}
       >
         <aside className="session-sidebar" aria-label="Контекст занятия">
           <details
@@ -206,21 +192,6 @@ export function ActiveSession({
             <summary>Контекст и участники</summary>
             <div>
               <section className="session-sidebar-section">
-                <h2>Работа группы</h2>
-                <div className="session-phase-path">
-                  {(Object.keys(phaseLabels) as SessionPhase[]).map((phase, index) => (
-                    <div
-                      className="session-phase-item"
-                      aria-current={session.phase === phase ? 'step' : undefined}
-                      key={phase}
-                    >
-                      <span aria-hidden="true">{index + 1}</span>
-                      <span>{phaseLabels[phase]}</span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-              <section className="session-sidebar-section">
                 <h2>Контекст</h2>
                 <p>
                   {scopeLabels[session.scope]} уровень
@@ -229,15 +200,11 @@ export function ActiveSession({
                     : ' · Российская Федерация'}
                 </p>
                 <p className="session-form-footer">
-                  Ваша роль: {roleLabels[session.role].toLocaleLowerCase('ru')}.{' '}
-                  {statusLabels[session.status]}.
+                  Ваша роль: {roleLabels[session.role].toLocaleLowerCase('ru')}.
                 </p>
               </section>
               <SessionParticipants
                 members={members}
-                host={isHost}
-                busy={disabled}
-                actions={actions}
               />
               <section className="session-sidebar-section">
                 <h2>Материалы обсуждения</h2>

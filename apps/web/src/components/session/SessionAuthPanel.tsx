@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, BookOpen, LoaderCircle, LogIn } from 'lucide-react';
+import { ArrowLeft, ArrowRight, LoaderCircle, LogIn } from 'lucide-react';
 import type { SessionAreaActions, SessionAreaState } from '../../../../../packages/collaboration/types';
 import { messageFromError } from './session-ui';
 
@@ -49,7 +49,7 @@ export function SessionAuthPanel({ state, actions }: {
   }
 
   return (
-    <section className="session-access" aria-label="Вход в совместную работу">
+    <section className="session-access session-access-compact" aria-label="Вход в совместную работу">
       <div className="session-access-main">
         {checking ? (
           <div className="session-loading" role="status">
@@ -67,10 +67,7 @@ export function SessionAuthPanel({ state, actions }: {
           </>
         ) : (
           <>
-            <h2>{profileEmail ? 'Как к вам обращаться?' : 'Войти в занятие'}</h2>
-            <p>{profileEmail
-              ? 'Укажите ФИО для своих работ. При следующих входах достаточно будет email.'
-              : 'Введите свой email, чтобы открыть занятия и продолжить сохранённую работу.'}</p>
+            <h2>{profileEmail ? 'Как к вам обращаться?' : 'Вход'}</h2>
             <form onSubmit={(event) => {
               event.preventDefault();
               if (!disabled) void identify();
@@ -80,8 +77,7 @@ export function SessionAuthPanel({ state, actions }: {
                 <input ref={emailInput} id={`${id}-email`} className="session-input" type="email" inputMode="email"
                   autoComplete="email" autoCapitalize="none" spellCheck={false} required maxLength={254}
                   value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@example.ru"
-                  disabled={disabled} aria-describedby={`${id}-email-hint${error ? ` ${id}-error` : ''}`} />
-                <p id={`${id}-email-hint`} className="session-hint">Используйте тот же email, чтобы продолжить свою работу в следующий раз.</p>
+                  disabled={disabled} aria-describedby={error ? `${id}-error` : undefined} />
               </div> : <>
               <div className="session-entry-email">
                 <strong>{profileEmail}</strong>
@@ -96,7 +92,7 @@ export function SessionAuthPanel({ state, actions }: {
                   maxLength={200} value={fullName} onChange={(event) => setFullName(event.target.value)}
                   placeholder="Иванов Иван Иванович" disabled={disabled}
                   aria-describedby={`${id}-name-hint${error ? ` ${id}-error` : ''}`} />
-                <p id={`${id}-name-hint`} className="session-hint">Отчество — при наличии. ФИО будет подписывать ваши работы.</p>
+                <p id={`${id}-name-hint`} className="session-hint">Отчество — при наличии.</p>
               </div>
               </>}
               {error ? <p id={`${id}-error`} className="session-form-error" role="alert">{error}</p> : null}
@@ -109,14 +105,6 @@ export function SessionAuthPanel({ state, actions }: {
           </>
         )}
       </div>
-      <aside className="session-access-context">
-        <BookOpen size={38} strokeWidth={1.6} aria-hidden="true" />
-        <h3>От документа — к общему решению</h3>
-        <p>Находите практики в региональных программах, сохраняйте их точные основания и предлагайте группе для обсуждения. Каждая опубликованная карточка сохраняет связь с цитатами и редакцией источника.</p>
-        {state.configured ? <button className="button button-secondary" onClick={actions.openLocalWork}>
-          Продолжить локальную работу <ArrowRight size={16} />
-        </button> : null}
-      </aside>
     </section>
   );
 }

@@ -217,13 +217,11 @@ export function ParticipantSurvey(props: ParticipantSurveyProps) {
           <div>
             <strong>Ответ не связывается с вашим учебным профилем.</strong>
             <p>
-              Не указывайте имена, адреса и другие узнаваемые подробности. Текст сам по себе может
-              быть узнаваемым; технические журналы инфраструктуры ведутся отдельно. Открытые ответы
-              видит преподаватель, на общий экран они не передаются.
+              Не указывайте имена и другие узнаваемые подробности. Ответы видит преподаватель;
+              на общий экран выводятся только обобщения.
             </p>
             <p>
-              Можно пропускать вопросы и отказаться от участия. Для удаления после отправки
-              сохраните личный ключ.
+              Участие добровольное. Один из вопросов можно пропустить.
             </p>
             {manifest ? (
               <p className="barrier-muted">
@@ -234,7 +232,7 @@ export function ParticipantSurvey(props: ParticipantSurveyProps) {
             ) : null}
           </div>
         </section>
-        {props.loading ? <Busy>Проверяем приглашение и сохранённый ответ…</Busy> : null}
+        {props.loading ? <Busy>Загружаем опрос…</Busy> : null}
         <TaskMessage error={props.error} />
         {readOnlyReason ? (
           <p className="barrier-feedback" role="status">
@@ -556,7 +554,7 @@ export function ParticipantSurvey(props: ParticipantSurveyProps) {
             {saved && !dirty ? (
               <p className="survey-saved" role="status">
                 <Check size={19} />
-                Ответ сохранён. Сохраните личный ключ ниже, чтобы управлять им с другого устройства.
+                Ответ сохранён.
               </p>
             ) : null}
             {canEdit ? (
@@ -573,7 +571,8 @@ export function ParticipantSurvey(props: ParticipantSurveyProps) {
             ) : null}
           </form>
         ) : null}
-        <section className="survey-receipt">
+        <details className="survey-receipt" open={!manifest || !manifest.canRespond}>
+          <summary>Управление моим ответом</summary>
           <div className="survey-receipt-heading">
             <KeyRound size={23} />
             <div>
@@ -672,7 +671,7 @@ export function ParticipantSurvey(props: ParticipantSurveyProps) {
             <RefreshCw size={15} />
             Обновить состояние
           </button>
-        </section>
+        </details>
         <footer className="survey-footer">
           Опрос отражает опыт этой аудитории. Он не устанавливает причинный эффект мер и не
           представляет всё население.

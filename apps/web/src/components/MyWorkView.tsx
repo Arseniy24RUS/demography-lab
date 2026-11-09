@@ -138,7 +138,7 @@ export function MyWorkView({
             </p>
             {signedIn ? (
               <p className="form-hint" style={{ marginTop: 14 }}>
-                Чтобы изменить имя, нажмите «Изменить ФИО» рядом со своим профилем в шапке.
+                Чтобы изменить имя, нажмите на своё ФИО в шапке.
               </p>
             ) : (
               <button className="button button-primary block" onClick={onOpenSession}

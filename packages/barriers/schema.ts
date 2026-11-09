@@ -3,7 +3,7 @@ import { bundleSchema } from '../collaboration/schema';
 import { lifeStages } from './types';
 import type {
   BarrierEvidence, BarriersProjection, BarriersSnapshot, SurveyHostState,
-  SurveyOwnResponse, SurveyPublicManifest, SurveyResearchExport, SurveyInvitationState,
+  SurveyOwnResponse, SurveyPublicManifest, SurveyResearchExport, SurveyInvitationState, WorkshopSurveyEntry,
 } from './types';
 
 const uuid = z.uuid();
@@ -191,3 +191,9 @@ export const parseSurveyOwnResponse = (v: unknown) => parse<SurveyOwnResponse>(o
 export const parseSurveyHostState = (v: unknown) => parse<SurveyHostState>(hostState, v);
 export const parseSurveyInvitationState = (v: unknown) => parse<SurveyInvitationState>(invitationState, v);
 export const parseSurveyResearchExport = (v: unknown) => parse<SurveyResearchExport>(researchExport, v);
+
+export const parseWorkshopSurveyEntry = (value: unknown): WorkshopSurveyEntry => z.strictObject({
+  sessionId: uuid,
+  survey: summary,
+  invitationToken: fingerprint.nullable(),
+}).refine((v) => !v.survey.canRespond || v.invitationToken !== null).parse(value);

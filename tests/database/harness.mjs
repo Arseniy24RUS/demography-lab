@@ -58,6 +58,11 @@ export async function asUser(db, userId, run) {
 
 /** Fixed allowlist/signatures prevent dynamically executing caller-provided SQL. */
 export const rpcArguments = Object.freeze({
+  dw_enter_workspace: ['p_operation_id'],
+  dw_configure_workspace: ['p_operation_id', 'p_session_id', 'p_expected_revision', 'p_input'],
+  dw_workspace_votes: ['p_session_id'],
+  dw_workspace_votes_projection: ['p_session_id'],
+  dw_workspace_vote: ['p_operation_id', 'p_session_id', 'p_family_id', 'p_value', 'p_expected_revision', 'p_expected_fingerprint'],
   dw_roadmaps_index: ['p_session_id'],
   dw_roadmaps_cursor: ['p_session_id'],
   dw_roadmap_snapshot: ['p_session_id', 'p_roadmap_id'],

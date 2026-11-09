@@ -9,6 +9,7 @@ import {
 import { SurveyApi } from '../lib/survey-api';
 import {
   createSurveyReceipt,
+  surveyReceiptText,
   keepSecret,
   newSurveySecret,
   readSecret,
@@ -203,25 +204,11 @@ export function ParticipantSurveyContainer() {
   function receipt() {
     if (!configuration?.survey || !secret.current || !route) return;
     const data = createSurveyReceipt(route.surveyId, secret.current, configuration.survey.url);
-    const blob = new Blob(
-      [
-        JSON.stringify(
-          {
-            ...data,
-            restoreUrl: `${data.surveyUrl}#survey=${data.surveyId}`,
-            instruction:
-              'Храните файл у себя. Личный ключ позволяет читать и отзывать ваш ответ. Не передавайте файл преподавателю и не публикуйте его.',
-          },
-          null,
-          2,
-        ),
-      ],
-      { type: 'application/json' },
-    );
+    const blob = new Blob([surveyReceiptText(data)], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob),
       a = document.createElement('a');
     a.href = url;
-    a.download = 'survey-personal-receipt.json';
+    a.download = 'survey-personal-receipt.txt';
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }

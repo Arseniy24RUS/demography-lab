@@ -138,6 +138,9 @@ export interface SessionAreaActions {
   openSession(id: string): Promise<void>;
   closeSessionView(): void;
   updateSession(patch: SessionPatch, expectedRevision: number): Promise<void>;
+  configureWorkspace?(input: {
+    title: string; scope: SessionScope; regionId: string | null;
+  }, expectedRevision: number): Promise<void>;
   rotateInvitation(expectedRevision: number): Promise<void>;
   refresh(): Promise<void>;
   publish(

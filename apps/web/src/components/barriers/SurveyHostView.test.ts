@@ -126,13 +126,12 @@ describe('host survey response isolation across survey replacement', () => {
   it('removes explicitly reviewed raw text when the board jumps directly to a newly created survey', async () => {
     const read = vi.fn(async () => hostState(oldId, 'Личный ответ только первого опроса.'));
     const first = context(oldId, read);
-    const props: BarrierAreaProps = first;
+    const props: BarrierAreaProps = { ...first, surveyOnly: true };
     const view = render(createElement(BarrierArea, props));
-    fireEvent.click(screen.getByRole('tab', { name: 'Опрос' }));
     expect(read).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Просмотреть ответы' }));
     await screen.findByText('Личный ответ только первого опроса.', { exact: true });
-    view.rerender(createElement(BarrierArea, context(newId, read)));
+    view.rerender(createElement(BarrierArea, { ...context(newId, read), surveyOnly: true }));
     expect(screen.queryByText('Личный ответ только первого опроса.', { exact: true })).toBeNull();
     expect(screen.getByRole('button', { name: 'Просмотреть ответы' })).toBeTruthy();
     expect(read).toHaveBeenCalledTimes(1);

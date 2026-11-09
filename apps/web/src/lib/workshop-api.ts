@@ -1,12 +1,30 @@
 import { parseWorkshopSnapshot, parseWorkshopProjection, parseVotingRound } from '../../../../packages/workshop/schema';
 import type { CastVoteInput, FrozenVariant, OpenRoundInput, RegionWorkInput, SaveFamilyInput, VotingRound, WorkshopProjection, WorkshopSnapshot } from '../../../../packages/workshop/types';
 import type { SessionApi } from './session-api';
+import { parseWorkspaceVotes, parseWorkspaceVotesProjection, type WorkspaceVoteInput, type WorkspaceVotesProjection } from '../../../../packages/workshop/live-votes';
 
 /** Reuses the authenticated Stage 2 client; never creates a second Auth session. */
 export class WorkshopApi {
   private materials = new Map<string, Map<string, FrozenVariant[]>>();
   private knownRound = new Map<string, string>();
   constructor(readonly transport: SessionApi) {}
+  private parseLive<T extends WorkspaceVotesProjection>(id: string, value: unknown, parse: (value: unknown) => T): T {
+    const result = parse(value);
+    if (result.sessionId !== id) throw new Error('Ответ голосования относится к другой мастерской.');
+    return result;
+  }
+  liveVotes(id: string) {
+    return this.transport.rpc('dw_workspace_votes', { p_session_id: id }, (value) => this.parseLive(id, value, parseWorkspaceVotes));
+  }
+  liveVotesProjection(id: string) {
+    return this.transport.rpc('dw_workspace_votes_projection', { p_session_id: id }, (value) => this.parseLive(id, value, parseWorkspaceVotesProjection));
+  }
+  voteLive(id: string, input: WorkspaceVoteInput) {
+    return this.transport.mutate('dw_workspace_vote', {
+      p_session_id: id, p_family_id: input.familyId, p_value: input.value,
+      p_expected_revision: input.expectedRevision, p_expected_fingerprint: input.expectedFingerprint,
+    }, (value) => this.parseLive(id, value, parseWorkspaceVotes));
+  }
   private hint(id: string) {
     const roundId = this.knownRound.get(id);
     return roundId && this.materials.has(roundId) ? roundId : null;

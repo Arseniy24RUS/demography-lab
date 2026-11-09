@@ -2171,3 +2171,28 @@
   stroke: var(--navy);
   stroke-width: 5;
 }
+
+/* Shared workshop: the opening survey is one visible step, with no invitation workflow. */
+.workshop-survey-start{max-width:1100px;margin:0 auto;padding:clamp(18px,3vw,34px);border:1px solid var(--border,#dce3eb);border-radius:22px;background:var(--surface,#fff)}
+.workshop-survey-heading{display:flex;align-items:flex-start;gap:18px;margin-bottom:26px}
+.workshop-survey-symbol{display:grid;place-items:center;flex:none;width:62px;height:62px;border-radius:18px;color:#315b8a;background:#edf4fb}
+.workshop-survey-heading h2{margin:5px 0 8px;font-size:clamp(1.5rem,3vw,2rem)}
+.workshop-survey-heading p,.workshop-survey-caption{color:var(--muted,#596b7e);line-height:1.65;margin:0}
+.workshop-survey-prompts{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.workshop-survey-prompts article{position:relative;padding:24px;border-radius:18px;background:#f5f8fc;border:1px solid #e4ebf3}
+.workshop-survey-prompts article>span{font-size:.8rem;font-weight:800;color:#557ca8;letter-spacing:.1em}
+.workshop-survey-prompts h3{margin:12px 0 9px;font-size:1.18rem}
+.workshop-survey-prompts p{margin:0;color:#43566a;line-height:1.7}
+.workshop-survey-caption{margin-top:20px;font-size:.92rem}
+.workshop-survey-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:22px}
+.workshop-survey-count{margin-left:auto;font-size:.92rem;color:#44627f}
+.workshop-survey-analysis{margin-top:30px;border-top:1px solid #e3e9f0;padding-top:18px}
+.workshop-survey-analysis>summary{cursor:pointer;font-weight:650;color:#315b8a;padding:8px 0}
+.workshop-survey-analysis .barrier-survey-host{margin-top:20px}
+.survey-receipt>summary{cursor:pointer;list-style-position:inside;font-weight:650;padding:10px 0}
+@media(max-width:640px){.workshop-survey-prompts{grid-template-columns:1fr;gap:12px}.workshop-survey-heading{gap:12px}.workshop-survey-symbol{width:45px;height:45px;border-radius:12px}.workshop-survey-prompts article{padding:18px}.workshop-survey-actions>.button{width:100%;justify-content:center}.workshop-survey-count{margin-left:0}.workshop-survey-start{border-radius:16px;padding:18px}}
+
+.barrier-survey-host.is-compact>.barrier-section-heading,.barrier-survey-host.is-compact .barrier-survey-invite,.barrier-survey-host.is-compact .barrier-survey-questions{display:none}
+.barrier-survey-host.is-compact .barrier-survey-overview{display:block;padding:14px 18px;margin:0 0 18px}
+.barrier-survey-host.is-compact .barrier-survey-overview>summary{cursor:pointer;color:var(--muted);font-size:.88rem}
+.barrier-survey-host.is-compact .barrier-survey-overview[open]>div{margin-top:18px}

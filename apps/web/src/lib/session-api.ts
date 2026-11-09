@@ -43,10 +43,12 @@ const messages: Record<string, string> = {
   RATE_LIMITED: 'Слишком много попыток. Повторите ввод после окончания защитного интервала.',
   IDENTITY_CHANGED: 'Вход уже изменён в другом окне.',
   REGION_UNAVAILABLE: 'Для этого региона ещё нет подготовленного текста на сервере.',
+  CONTEXT_IN_USE: 'В мастерской уже созданы дорожные карты. Их территориальный контекст сохраняется; название можно изменить.',
   REGION_TAKEN: 'Программу уже взял другой участник. Обновите карту и выберите свободный регион.',
   COMPLETION_NOTE_REQUIRED:
     'Добавьте практику с цитатой из этого региона или объясните результат отбора (не менее 10 знаков).',
   LEASE_EXPIRED: 'Срок назначения истёк. Обновите карту и снова возьмите программу в работу.',
+  WORKSPACE_LIVE_VOTING: 'В общей мастерской оценки доступны сразу, без отдельных раундов.',
   ROUND_OPEN:
     'Состав практик зафиксирован на время голосования. Изменения доступны после закрытия раунда.',
   ROUND_CLOSED: 'Приём оценок завершён. Голос не был применён задним числом.',
@@ -264,6 +266,17 @@ export class SessionApi {
   }
   bootstrap() {
     return this.rpc('dw_bootstrap', {}, parseBootstrap);
+  }
+  enterWorkspace() {
+    return this.mutate('dw_enter_workspace', {}, parseSnapshot);
+  }
+  configureWorkspace(id: string, expectedRevision: number, input: {
+    title: string; scope: SessionScope; regionId: string | null;
+  }) {
+    return this.mutate('dw_configure_workspace', {
+      p_session_id: id, p_expected_revision: expectedRevision,
+      p_input: { ...input, title: input.title.trim() },
+    }, parseSnapshot);
   }
   availableSessions() {
     return this.rpc('dw_available_sessions', {}, (value): AvailableSession[] => {

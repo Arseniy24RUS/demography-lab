@@ -20,8 +20,8 @@ export function BarrierArea(props: BarrierAreaProps) {
   const [focusBarrier, setFocusBarrier] = useState<string | null>(null);
   const id = useId();
   const isHost = props.session.role === 'host';
-  const available = tabs.filter((item) => item.id !== 'survey' || isHost);
-  const selected = available.some((item) => item.id === tab) ? tab : 'path';
+  const available = tabs.filter((item) => props.surveyOnly ? item.id === 'survey' && isHost : item.id !== 'survey');
+  const selected = props.surveyOnly && isHost ? 'survey' : available.some((item) => item.id === tab) ? tab : 'path';
   const context: BarrierBoardContext | null = props.snapshot
     ? {
         ...props,
@@ -32,7 +32,7 @@ export function BarrierArea(props: BarrierAreaProps) {
     : null;
   return (
     <div className="barrier-area">
-      <div className="barrier-navigation" role="tablist" aria-label="Разделы барьеров и решений">
+      {!props.surveyOnly ? <div className="barrier-navigation" role="tablist" aria-label="Разделы барьеров и решений">
         {available.map((item, index) => (
           <button
             key={item.id}
@@ -61,7 +61,7 @@ export function BarrierArea(props: BarrierAreaProps) {
             {item.label}
           </button>
         ))}
-      </div>
+      </div> : null}
       <TaskMessage error={props.error} />
       {props.loading && !context ? <Busy>Загружаем совместную доску…</Busy> : null}
       {!context && !props.loading ? (
@@ -79,7 +79,8 @@ export function BarrierArea(props: BarrierAreaProps) {
         <div
           id={`${id}-panel`}
           role="tabpanel"
-          aria-labelledby={`${id}-${selected}`}
+          aria-labelledby={props.surveyOnly ? undefined : `${id}-${selected}`}
+          aria-label={props.surveyOnly ? "Ответы и обобщения" : undefined}
           className="barrier-panel"
         >
           {!context.editable ? (
@@ -104,7 +105,7 @@ export function BarrierArea(props: BarrierAreaProps) {
           ) : selected === 'solutions' ? (
             <SolutionWorkbench context={context} />
           ) : (
-            <SurveyHostView key={context.snapshot.survey?.id ?? 'none'} context={context} />
+            <SurveyHostView key={context.snapshot.survey?.id ?? 'none'} context={context} compact={props.surveyOnly} />
           )}
         </div>
       ) : null}

@@ -1,0 +1,53 @@
+.live-votes { max-width: 1160px; margin: 0 auto; }
+.live-votes-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin: 26px 0; }
+.live-votes-heading h2 { margin: 0 0 8px; font-size: clamp(21px, 3vw, 29px); letter-spacing: -.03em; }
+.live-votes-heading p { margin: 0; color: #64748b; }
+.live-votes-heading label { display: flex; align-items: center; gap: 8px; }
+.live-votes-heading select { min-height: 44px; max-width: 100%; border: 1px solid #d7e1ed; border-radius: 9px; padding: 8px; background: #fff; color: #334155; font: inherit; font-size: 13px; }
+.live-vote-list { display: grid; gap: 15px; }
+.live-vote-card { background: #fff; border: 1px solid #d7e1ed; border-radius: 17px; padding: 23px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; box-shadow: 0 5px 20px #23395d05; }
+.live-vote-card-main { display: flex; gap: 16px; min-width: 0; }
+.live-vote-position { display: grid; place-items: center; flex: 0 0 36px; height: 36px; border-radius: 50%; background: #edf3fa; color: #2b568a; font-weight: 700; font-size: 17px; }
+.live-vote-card h3 { margin: 4px 0 8px; font-size: 18px; line-height: 1.4; overflow-wrap: anywhere; }
+.live-vote-card-main p { margin: 0 0 8px; line-height: 1.6; color: #526173; overflow-wrap: anywhere; }
+.live-vote-variant-count { color: #64748b; font-size: 12px; }
+.live-vote-controls { display: flex; align-items: flex-start; gap: 7px; }
+.live-vote-button { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; min-width: 68px; border: 1px solid #dce5ed; border-radius: 11px; background: #f9fbfd; cursor: pointer; font: inherit; font-weight: 700; }
+.live-vote-button.positive { color: #196c54; }
+.live-vote-button.negative { color: #b14b49; }
+.live-vote-button.positive[aria-pressed=true] { background: #d5f0e5; border-color: #258768; }
+.live-vote-button.negative[aria-pressed=true] { background: #f8e1df; border-color: #c2605b; }
+.live-vote-button:focus-visible { outline: 3px solid #7eb4ff; outline-offset: 3px; }
+.live-vote-button:disabled { opacity: .6; cursor: progress; }
+.live-vote-score { min-width: 34px; padding-top: 12px; text-align: center; font-weight: 700; color: #334f70; }
+.live-vote-review, .live-vote-sources { grid-column: 1 / -1; margin: 0; font-size: 13px; }
+.live-vote-review { padding: 10px 14px; border-radius: 8px; color: #765612; background: #fff7df; }
+.live-vote-sources { border-top: 1px solid #e8edf4; padding-top: 12px; }
+.live-vote-sources summary { cursor: pointer; min-height: 30px; color: #426183; }
+.live-vote-source { padding: 12px 0; border-bottom: 1px solid #e8edf4; }
+.live-vote-source h4, .live-vote-source p { margin: 0 0 6px; }
+.live-vote-method { margin: 18px 0; color: #64748b; font-size: 12px; line-height: 1.7; }
+.live-ranking { max-width: 1350px; margin: 20px auto; }
+.live-ranking-legend { display: flex; gap: 24px; justify-content: flex-end; margin-bottom: 20px; }
+.live-ranking-legend span { display: inline-flex; align-items: center; gap: 8px; }
+.live-ranking-legend span:first-child { color: #196c54; }
+.live-ranking-legend span:last-child { color: #b14b49; }
+.live-ranking-row { display: grid; grid-template-columns: 50px minmax(0,1fr) 70px; align-items: center; gap: 24px; padding: 24px 0; border-bottom: 1px solid #dce5ed; }
+.live-ranking-position { color: #8195ae; font-size: 30px; font-weight: 700; }
+.live-ranking-row h2 { font-size: clamp(20px, 2.6vw, 32px); margin: 0 0 14px; line-height: 1.3; overflow-wrap: anywhere; }
+.live-ranking-row p { color: #60748c; margin: 8px 0 0; font-size: 14px; }
+.live-ranking-bars { display: flex; height: 14px; border-radius: 6px; overflow: hidden; background: #e9eef4; }
+.live-ranking-bars .positive { background: #309078; }
+.live-ranking-bars .negative { background: #c96a61; }
+.live-ranking-score { font-size: clamp(26px, 4vw, 46px); color: #2b568a; text-align: right; }
+@media (max-width: 650px) {
+ .live-votes-heading { align-items: flex-start; flex-direction: column; gap: 12px; }
+ .live-vote-card { grid-template-columns: 1fr; padding: 17px; gap: 14px; }
+ .live-vote-card-main { gap: 11px; }
+ .live-vote-card h3 { font-size: 16px; }
+ .live-vote-controls { justify-content: flex-end; }
+ .live-ranking-row { grid-template-columns: 24px minmax(0,1fr) 45px; gap: 10px; padding: 18px 0; }
+ .live-ranking-position { font-size: 19px; }
+ .live-ranking-row p { font-size: 12px; }
+}
+@media (prefers-reduced-motion: no-preference) { .live-vote-card { transition: border-color 150ms; } }

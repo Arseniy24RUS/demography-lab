@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { LoaderCircle, LogIn, LogOut, Pencil } from 'lucide-react';
+import { LoaderCircle, LogIn, LogOut } from 'lucide-react';
 import type { SessionAreaActions, SessionAreaState } from '../../../../../packages/collaboration/types';
 import { ProfileEditor } from './ProfileEditor';
 
@@ -47,7 +47,6 @@ export function AccountControls({ state, actions, onOpenEntry, onSignedOut, onEr
               <strong className="account-name">{name}</strong>
               <span className="account-meta">
                 <span className="account-role">{profile ? role : 'Загружаем профиль…'}</span>
-                {profile ? <span className="account-edit"><Pencil size={12} aria-hidden="true" /> Изменить ФИО</span> : null}
               </span>
             </span>
           </button>

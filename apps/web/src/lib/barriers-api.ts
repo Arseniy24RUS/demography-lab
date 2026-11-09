@@ -4,6 +4,7 @@ import {
   parseBarriersSnapshot,
   parseSurveyHostState,
   parseSurveyInvitationState,
+  parseWorkshopSurveyEntry,
   parseSurveyResearchExport,
   saveBarrierInputSchema,
   barrierVoteInputSchema,
@@ -91,6 +92,11 @@ export class BarriersApi {
     while (this.evidenceCache.size > 8)
       this.evidenceCache.delete(this.evidenceCache.keys().next().value!);
     return result;
+  }
+  workshopSurvey(id: string) {
+    return this.transport.rpc('dw_workshop_survey', { p_session_id: id }, (value) =>
+      this.match(id, parseWorkshopSurveyEntry(value)),
+    );
   }
   readSurvey(id: string, surveyId: string) {
     return this.transport.rpc(

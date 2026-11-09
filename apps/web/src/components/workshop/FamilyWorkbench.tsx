@@ -40,6 +40,7 @@ export function FamilyWorkbench({
   busy,
   actions,
   onOpenSource,
+  sharedWorkspace = false,
 }: ReadyWorkshopProps) {
   const id = useId();
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -54,12 +55,11 @@ export function FamilyWorkbench({
   const [comparing, setComparing] = useState<VariantView[] | null>(null);
   const task = useWorkshopTask();
   const disabled = busy || task.working;
-  const host = session.session.role === 'host';
+  const host = sharedWorkspace ? session.session.role !== 'observer' : session.session.role === 'host';
   const lockedRound = snapshot.round?.status === 'open';
   const canCurate =
     host &&
-    session.session.status === 'open' &&
-    session.session.phase !== 'discussion' &&
+    (sharedWorkspace || (session.session.status === 'open' && session.session.phase !== 'discussion')) &&
     !lockedRound;
   const submissions = useMemo(
     () => session.submissions.filter((item) => item.status === 'shared'),

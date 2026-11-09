@@ -30,7 +30,7 @@ export const connectionLabels: Record<ConnectionStatus, string> = {
   unconfigured: 'Совместная работа не подключена',
   connecting: 'Подключаемся',
   live: 'Связь установлена',
-  polling: 'Периодическое обновление',
+  polling: 'Обновляется автоматически',
   offline: 'Нет связи',
   error: 'Требуется переподключение',
 };

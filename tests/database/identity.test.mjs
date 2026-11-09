@@ -143,7 +143,8 @@ it('upgrades populated Auth-era data preserving UUIDs, memberships, non-reserved
   try{
     await old.exec(await readFile(resolve(projectRoot,'tests/database/bootstrap.sql'),'utf8'));
     const dir=resolve(projectRoot,'supabase/migrations'),files=(await readdir(dir)).filter(x=>x.endsWith('.sql')).sort();
-    for(const file of files.filter(x=>!x.includes('stage8_')))await old.exec(await readFile(resolve(dir,file),'utf8'));
+    const identityMigration=files.find(x=>x.includes('stage8_'));
+    for(const file of files.filter(x=>x<identityMigration))await old.exec(await readFile(resolve(dir,file),'utf8'));
     const teacher=id(),student=id(),mail=id()+'@example.test',teacherMail=id()+'@example.test';
     for(const [uid,email,name] of [[teacher,teacherMail,'Преподаватель'],[student,mail,'Прежний участник']]){
       await seedAuthUser(old,{id:uid,email});
@@ -154,7 +155,7 @@ it('upgrades populated Auth-era data preserving UUIDs, memberships, non-reserved
     const inv=await callRpc(old,teacher,'dw_invitation',{p_session_id:s.session.id});
     await callRpc(old,student,'dw_join_session',{p_operation_id:id(),p_code:inv.code});
     const stored=(await old.query('select row_to_json(m)::text row from public.dw_memberships m order by user_id')).rows;
-    await old.exec(await readFile(resolve(dir,files.find(x=>x.includes('stage8_'))),'utf8'));
+    await old.exec(await readFile(resolve(dir,identityMigration),'utf8'));
     assert.deepEqual((await old.query('select row_to_json(m)::text row from public.dw_memberships m order by user_id')).rows,stored);
     const login=await identify(mail,'Прежний участник',old);assert.equal(login.user.id,student);
     assert.equal((await rpc(login,'dw_bootstrap',{},old)).sessions[0].id,s.session.id);

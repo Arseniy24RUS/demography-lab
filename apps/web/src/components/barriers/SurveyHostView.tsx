@@ -26,8 +26,9 @@ import { Empty, RevisionNotice, TaskMessage, useBarrierTask } from './common';
 
 import { perspectiveLabels } from './survey-labels';
 const statuses = { draft: 'Черновик', open: 'Открыт', closed: 'Закрыт', purged: 'Ответы удалены' };
-export function SurveyHostView({ context }: { context: BarrierBoardContext }) {
+export function SurveyHostView({ context, compact = false }: { context: BarrierBoardContext; compact?: boolean }) {
   const survey = context.snapshot.survey;
+  const Overview = compact ? 'details' : 'div';
   const [editing, setEditing] = useState(false);
   const [summary, setSummary] = useState(false);
   const [privateState, setPrivateState] = useState<SurveyHostState | null>(null);
@@ -87,7 +88,7 @@ export function SurveyHostView({ context }: { context: BarrierBoardContext }) {
     );
   }
   return (
-    <section className="barrier-survey-host">
+    <section className={`barrier-survey-host${compact ? ' is-compact' : ''}`}>
       <header className="barrier-section-heading">
         <div>
           <h2>Опрос перед обсуждением</h2>
@@ -101,13 +102,13 @@ export function SurveyHostView({ context }: { context: BarrierBoardContext }) {
         ) : null}
       </header>
       {!survey || survey.status === 'purged' ? (
-        <Empty title={survey ? 'Предыдущие ответы удалены' : 'Подготовьте форму и объясните цель'}>
-          Два открытых вопроса, различение личной и профессиональной перспективы, необязательные
-          исследовательские вопросы. Приглашение появится после сохранения.
+        <Empty title={compact ? 'Загружаем опрос…' : survey ? 'Предыдущие ответы удалены' : 'Подготовьте форму и объясните цель'}>
+          {compact ? 'Обновите доску, если загрузка не завершилась.' : 'Два открытых вопроса и необязательные уточнения. Форма появится после сохранения.'}
         </Empty>
       ) : (
         <>
-          <div className="barrier-survey-overview">
+          <Overview className="barrier-survey-overview">
+            {compact ? <summary>Параметры и хранение ответов</summary> : null}
             <div>
               <span className="barrier-chip">
                 {statuses[survey.status]}
@@ -215,7 +216,7 @@ export function SurveyHostView({ context }: { context: BarrierBoardContext }) {
                 Заменить приглашение
               </button>
             </aside>
-          </div>
+          </Overview>
           <div className="barrier-survey-questions">
             <div>
               <span>Вопрос о барьерах</span>

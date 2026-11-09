@@ -12,6 +12,8 @@ import type { BarriersProjection } from '../../../../packages/barriers/types';
 import type { useBarriers } from '@/hooks/useBarriers';
 import { BarrierProjectionView } from './barriers/BarrierProjectionView';
 import { RoadmapProjection } from './roadmaps/RoadmapProjection';
+import { BarrierTopicCloud } from './barriers/BarrierTopicCloud';
+import { LivePracticeRanking } from './workshop/LivePracticeVoting';
 import '../workshop.css';
 import '../barriers.css';
 
@@ -29,8 +31,8 @@ export function ProjectorContainer({
   onExit: () => void;
 }) {
   const [mode, setMode] = useState<
-    'cards' | 'regions' | 'ranking' | 'path' | 'links' | 'solutions' | 'roadmaps'
-  >('cards');
+    'cards' | 'regions' | 'ranking' | 'topics' | 'path' | 'links' | 'solutions' | 'roadmaps'
+  >('topics');
   const [held, setHeld] = useState<WorkshopProjection | null>(null);
   const [heldBarriers, setHeldBarriers] = useState<BarriersProjection | null>(null);
   const [busy, setBusy] = useState(false);
@@ -46,8 +48,8 @@ export function ProjectorContainer({
       ? heldBarriers
       : barriers.projection
     : null;
-  const barrierScene = mode === 'path' || mode === 'links' || mode === 'solutions';
-  const frozen = barrierScene
+  const barrierScene = mode === 'topics' || mode === 'path' || mode === 'links' || mode === 'solutions';
+  const frozen = mode === 'ranking' ? false : barrierScene
     ? Boolean(heldBarriers && shownBarriers === heldBarriers)
     : Boolean(held && shown === held);
   const pending =
@@ -88,10 +90,11 @@ export function ProjectorContainer({
       <nav className="projection-mode-tabs" aria-label="Сцены проектора">
         {(
           [
+            ['topics', 'Темы'],
+            ['path', 'Барьеры'],
             ['cards', 'Карточки'],
             ['regions', 'Карта'],
             ['ranking', 'Рейтинг'],
-            ['path', 'Барьеры'],
             ['links', 'Связи'],
             ['solutions', 'Решения'],
             ['roadmaps', 'Дорожные карты'],
@@ -146,7 +149,7 @@ export function ProjectorContainer({
               </button>
             </div>
           </header>
-          <div className="projection-display-controls">
+          {mode !== 'ranking' ? <div className="projection-display-controls">
             <button
               className="button button-secondary"
               disabled={barrierScene ? !barriers.projection : !workshop.projection}
@@ -166,8 +169,10 @@ export function ProjectorContainer({
               Обновить
             </button>
             {frozen ? <span role="status">Композиция зафиксирована для обсуждения.</span> : null}
-          </div>
-          {barrierScene ? (
+          </div> : null}
+          {mode === 'ranking' ? (
+            <LivePracticeRanking api={session.api} sessionId={session.sessionId} userId={session.state.auth.userId} />
+          ) : barrierScene ? (
             <>
               {(error ?? barriers.error ?? session.state.error) ? (
                 <p className="session-message" data-tone="error" role="alert">
@@ -175,7 +180,8 @@ export function ProjectorContainer({
                 </p>
               ) : null}
               {shownBarriers ? (
-                <BarrierProjectionView snapshot={shownBarriers} mode={mode} />
+                mode === 'topics' ? <BarrierTopicCloud barriers={shownBarriers.barriers} />
+                  : <BarrierProjectionView snapshot={shownBarriers} mode={mode as 'path' | 'links' | 'solutions'} />
               ) : (
                 <p aria-busy={barriers.loading}>
                   {barriers.loading

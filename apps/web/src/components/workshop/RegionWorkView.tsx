@@ -27,6 +27,7 @@ export function RegionWorkView({
   renderMap,
   onOpenDocument,
   onOpenSource,
+  sharedWorkspace = false,
 }: ReadyWorkshopProps) {
   const id = useId();
   const [selectedId, setSelectedId] = useState<string | null>(
@@ -47,8 +48,7 @@ export function RegionWorkView({
   const host = session.session.role === 'host';
   const canWork =
     session.session.role !== 'observer' &&
-    session.session.status === 'open' &&
-    session.session.phase !== 'discussion';
+    (sharedWorkspace || (session.session.status === 'open' && session.session.phase !== 'discussion'));
   const allocation = useMemo(
     () => new Map(snapshot.regionWork.map((work) => [work.regionId, work])),
     [snapshot.regionWork],

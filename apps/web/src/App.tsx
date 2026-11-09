@@ -61,6 +61,8 @@ const ConnectedBarriers = lazy(() =>
   import('./components/ConnectedBarriers').then((m) => ({ default: m.ConnectedBarriers })),
 );
 const ConnectedRoadmaps = lazy(() => import('./components/ConnectedRoadmaps').then(m => ({ default: m.ConnectedRoadmaps })));
+const ConnectedSurveyStart = lazy(() => import('./components/ConnectedSurveyStart').then(m => ({ default: m.ConnectedSurveyStart })));
+const LivePracticeVoting = lazy(() => import('./components/workshop/LivePracticeVoting').then(m => ({ default: m.LivePracticeVoting })));
 const TerritoryExplorer = lazy(() => import('./components/roadmaps/TerritoryExplorer').then(m => ({ default: m.TerritoryExplorer })));
 const LocalAtlas = lazy(() =>
   import('./components/geography/LocalAtlas').then((m) => ({ default: m.LocalAtlas })),
@@ -88,15 +90,7 @@ export function App() {
   const [versions, setVersions] = useState<DocumentVersion[]>([]);
   const [route] = useState(() => new URLSearchParams(location.hash.slice(1)));
   const [projectorMode, setProjectorMode] = useState(() => route.get('projector') === '1');
-  const [view, setView] = useState<View>(() =>
-    route.has('session') ||
-    route.has('join') ||
-    route.has('sessions') ||
-    route.has('hostAccess') ||
-    new URLSearchParams(location.search).has('join')
-      ? 'sessions'
-      : 'documents',
-  );
+  const [view, setView] = useState<View>(() => route.has('documents') ? 'documents' : 'sessions');
   const [mobilePane, setMobilePane] = useState<MobilePane>('document');
   const [selection, setSelection] = useState<TextAnchor | null>(null);
   const [focusAnchor, setFocusAnchor] = useState<TextAnchor | null>(null);
@@ -389,16 +383,14 @@ export function App() {
     const shared = session.state.snapshot;
     if (!shared || !session.state.auth.userId) {
       setView('sessions');
-      notify('Войдите и откройте занятие. Выбранная карточка остаётся в разделе «Документы».');
+      notify('Войдите, чтобы добавить карточку на общую доску.');
       return;
     }
     if (
-      shared.session.status !== 'open' ||
-      shared.session.phase === 'discussion' ||
       shared.session.role === 'observer'
     ) {
       notify(
-        'На текущем этапе приём работ закрыт или у вас роль наблюдателя. Карточка остаётся в разделе «Моя работа».',
+        'Для этой сохранённой работы доступно только чтение.',
         true,
       );
       return;
@@ -441,7 +433,7 @@ export function App() {
         shareDraft.bundle.practice.id,
         shareDraft.expectedRevision,
       );
-      history.replaceState(null, '', `${location.pathname}#session=${shareDraft.sessionId}`);
+      history.replaceState(null, '', `${location.pathname}#sessions=1`);
       setShareDraft(null);
       setView('sessions');
       notify('Практика с цитатами сохранена в общей работе.');
@@ -504,7 +496,7 @@ export function App() {
             history.replaceState(
               null,
               '',
-              `${location.pathname}#session=${session.sessionId ?? ''}`,
+              `${location.pathname}#sessions=1`,
             );
           }}
         />
@@ -525,11 +517,11 @@ export function App() {
         <nav className="topnav" aria-label="Основная навигация">
           {(
             [
+              ['sessions', 'Мастерская'],
               ['documents', 'Документы'],
               ['practices', 'Практики'],
               ['territories', 'Территории'],
               ['work', 'Моя работа'],
-              ['sessions', 'Занятия'],
             ] as const
           ).map(([key, label]) => (
             <button
@@ -574,12 +566,7 @@ export function App() {
               <MapIcon size={17} />
               Карта программ
             </button>
-          ) : (
-            <span className="stage-label">
-              <FileText size={14} />
-              Источники и основания
-            </span>
-          )}
+          ) : null}
         </section>
       ) : null}
       {storageError ? (
@@ -683,6 +670,22 @@ export function App() {
           <SessionArea
             state={session.state}
             actions={session.actions}
+            renderSurvey={(onContinue) => session.state.snapshot && session.state.auth.userId ? (
+              <Suspense fallback={<p aria-busy="true">Открываем опрос…</p>}>
+                <ConnectedSurveyStart api={session.api} session={session.state.snapshot.session}
+                  userId={session.state.auth.userId} onContinue={onContinue}>
+                  {session.state.snapshot.session.role === 'host' ? <ConnectedBarriers
+                    state={session.state} sessionActions={session.actions} barriers={barriers}
+                    manifest={manifest} api={session.api} surveyOnly /> : null}
+                </ConnectedSurveyStart>
+              </Suspense>
+            ) : null}
+            renderLiveVotes={() => (
+              <Suspense fallback={<p aria-busy="true">Открываем рейтинг…</p>}>
+                <LivePracticeVoting state={session.state} api={session.api} workshop={workshop}
+                  onOpenSource={session.actions.openSource} manifest={manifest} />
+              </Suspense>
+            )}
             renderRoadmaps={() => (
               <Suspense fallback={<p aria-busy="true">Открываем дорожные карты…</p>}>
                 <ConnectedRoadmaps key={`${session.sessionId}:${session.state.auth.userId}`} state={session.state} sessionActions={session.actions} api={session.api} barriers={barriers} manifest={manifest} />
@@ -758,7 +761,7 @@ export function App() {
                   ? 'Работа сохраняется в вашем профиле'
                   : 'Заметки в этом браузере · войдите для сохранения в профиле'}
         </span>
-        <span className="footer-version">Версия 0.8.2</span>
+        <span className="footer-version">Версия 0.9.0</span>
       </footer>
       {dialog === 'source' ? (
         <SourceDetails entry={entry} doc={doc} onClose={() => setDialog(null)} />

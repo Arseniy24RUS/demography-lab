@@ -17,7 +17,7 @@ export function ConnectedWorkshop({ state, sessionActions, workshop, manifest, v
       : entry.extractionWarnings?.length ? 'В извлечении текста есть ограничения; проверьте паспорт источника.'
         : readable(entry) ? `${entry.pageCount} страниц в подготовленной редакции.` : 'Полный текст пока не подготовлен.',
   }));
-  return <WorkshopArea view={view} hideNavigation session={state.snapshot} snapshot={workshop.snapshot}
+  return <WorkshopArea view={view} hideNavigation sharedWorkspace session={state.snapshot} snapshot={workshop.snapshot}
     currentUserId={state.auth.userId} regions={regions} busy={workshop.busy || state.busy !== null}
     loading={workshop.loading} error={workshop.error} actions={workshop.actions}
     onOpenSource={sessionActions.openSource} onOpenDocument={onOpenDocument}

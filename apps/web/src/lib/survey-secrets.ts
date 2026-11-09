@@ -56,3 +56,21 @@ export function createSurveyReceipt(
   url.search = '';
   return { format: 'demography-survey-receipt-1', surveyId, responseSecret, surveyUrl: url.href };
 }
+
+/** A readable personal note; the response secret is deliberately absent from its URL. */
+export function surveyReceiptText(receipt: SurveyReceipt): string {
+  return [
+    'Демографическая мастерская — мой ответ на опрос',
+    '',
+    'Страница ответа:',
+    `${receipt.surveyUrl}#survey=${receipt.surveyId}`,
+    '',
+    'Личный ключ:',
+    receipt.responseSecret,
+    '',
+    'Чтобы посмотреть или удалить ответ с другого устройства, откройте страницу выше,',
+    'раскройте «Управление моим ответом» и выберите восстановление по личному ключу.',
+    'Храните эту памятку у себя. Ключ не следует передавать преподавателю или другим участникам.',
+    '',
+  ].join('\n');
+}

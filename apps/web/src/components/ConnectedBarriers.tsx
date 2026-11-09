@@ -12,6 +12,7 @@ import {
 } from '../lib/survey-secrets';
 import { surveyLink } from '../lib/survey-deployment';
 import type { SessionApi } from '../lib/session-api';
+import { BarriersApi } from '../lib/barriers-api';
 import type { useBarriers } from '../hooks/useBarriers';
 import type {
   SessionAreaActions,
@@ -26,12 +27,14 @@ export function ConnectedBarriers({
   barriers,
   manifest,
   api,
+  surveyOnly = false,
 }: {
   state: SessionAreaState;
   sessionActions: SessionAreaActions;
   barriers: ReturnType<typeof useBarriers>;
   manifest: CorpusManifest;
   api: SessionApi | null;
+  surveyOnly?: boolean;
 }) {
   const [invitationUrl, setInvitationUrl] = useState<string | null>(null),
     [invitationError, setInvitationError] = useState<string | null>(null);
@@ -59,6 +62,16 @@ export function ConnectedBarriers({
       return;
     }
     const surveyId = survey.id;
+    if (surveyOnly) {
+      void new BarriersApi(api).workshopSurvey(current.id).then((entry) => {
+        if (!active) return;
+        if (entry.invitationToken && entry.survey.canRespond)
+          setInvitationUrl(surveyLink(api.config.survey!, entry.survey.id, entry.invitationToken));
+      }).catch((cause: unknown) => {
+        if (active) setInvitationError(cause instanceof Error ? cause.message : 'Не удалось загрузить форму.');
+      });
+      return () => { active = false; };
+    }
     void invitationRef
       .current(surveyId)
       .then(async (host) => {
@@ -114,7 +127,7 @@ export function ConnectedBarriers({
     return () => {
       active = false;
     };
-  }, [key, api, current?.role, survey?.id, survey?.revision]);
+  }, [key, api, current?.role, current?.id, survey?.id, survey?.revision, surveyOnly]);
   if (!current || !userId || !api || !key) return null;
   function candidate(attempt: string) {
     let token: string | null = null;
@@ -162,6 +175,7 @@ export function ConnectedBarriers({
   }));
   return (
     <BarrierArea
+      surveyOnly={surveyOnly}
       session={current}
       snapshot={barriers.snapshot}
       userId={userId}

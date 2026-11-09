@@ -43,8 +43,7 @@ export function OfflineSeminarPanel({ state, actions }: { state: SessionAreaStat
     if (selectedHost && status) selectLocalShareAddress(local.instanceId, { host: selectedHost, joinCode: status.joinCode });
   }, [selectedHost, status?.joinCode, local.instanceId]);
   const link = selectedHost && status ? new URL(`http://${selectedHost}:${status.port}/`) : null;
-  if (link && status) link.hash = new URLSearchParams(state.snapshot
-    ? { session: state.snapshot.session.id } : { sessions: '1' }).toString();
+  if (link && status) link.hash = 'sessions=1';
   async function refresh(backup = false) {
     const expected = identityRef.current;
     setWorking(true); setError('');

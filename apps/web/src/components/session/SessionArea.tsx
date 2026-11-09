@@ -7,10 +7,8 @@ import type {
   SessionRegionOption,
 } from '../../../../../packages/collaboration/types';
 import { SessionAuthPanel } from './SessionAuthPanel';
-import { SessionLobby } from './SessionLobby';
 import { SessionConnection } from './SessionConnection';
 import { ActiveSession } from './ActiveSession';
-import { phaseLabels } from './session-ui';
 import { OfflineSeminarPanel } from './OfflineSeminarPanel';
 
 export function SessionArea({
@@ -20,6 +18,8 @@ export function SessionArea({
   renderWorkshop,
   renderBarriers,
   renderRoadmaps,
+  renderSurvey,
+  renderLiveVotes,
 }: {
   state: SessionAreaState;
   actions: SessionAreaActions;
@@ -27,18 +27,15 @@ export function SessionArea({
   renderWorkshop?: (view: WorkshopView) => ReactNode;
   renderBarriers?: () => ReactNode;
   renderRoadmaps?: () => ReactNode;
+  renderSurvey?: (onContinue: () => void) => ReactNode;
+  renderLiveVotes?: () => ReactNode;
 }) {
   const ready = state.auth.status === 'signed-in' && state.bootstrap?.profile;
   return (
     <main id="main-content" className="session-page">
       <header className="session-heading">
         <div>
-          <h1>{ready && state.snapshot ? state.snapshot.session.title : 'Совместная работа'}</h1>
-          <p>
-            {ready && state.snapshot
-              ? phaseLabels[state.snapshot.session.phase]
-              : 'Практики регионов, точные цитаты и общее обсуждение.'}
-          </p>
+          <h1>{ready && state.snapshot ? state.snapshot.session.title : 'Мастерская'}</h1>
         </div>
         <div className="session-heading-actions">
           {ready && state.snapshot ? (
@@ -46,7 +43,11 @@ export function SessionArea({
           ) : null}
         </div>
       </header>
-      {state.offline && ready ? <OfflineSeminarPanel state={state} actions={actions} /> : null}
+      {state.offline && ready && state.bootstrap?.canCreateSession ? (
+        <details className="workspace-settings"><summary>Локальная сеть</summary>
+          <OfflineSeminarPanel state={state} actions={actions} />
+        </details>
+      ) : null}
       {state.testEnvironment ? (
         <p className="session-message" data-tone="warning">
           Испытательный режим. Учебные аккаунты и данные находятся на локальном проверочном сервере.
@@ -108,9 +109,13 @@ export function SessionArea({
           renderWorkshop={renderWorkshop}
           renderBarriers={renderBarriers}
           renderRoadmaps={renderRoadmaps}
+          renderSurvey={renderSurvey}
+          renderLiveVotes={renderLiveVotes}
         />
       ) : (
-        <SessionLobby state={state} actions={actions} regions={regions} />
+        <div className="session-workspace-loading" role="status" aria-busy={!state.error}>
+          {state.error ? 'Мастерская пока недоступна.' : 'Подключаемся к общей мастерской…'}
+        </div>
       )}
     </main>
   );

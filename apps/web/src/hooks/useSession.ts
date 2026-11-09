@@ -157,28 +157,16 @@ export function useSession(options: {
     if (!api || !state.auth.userId) return;
     let active = true;
     const identity = state.auth.userId;
-    void Promise.all([api.bootstrap(), api.availableSessions()])
-      .then(async ([bootstrap, availableSessions]) => {
+    void api.bootstrap()
+      .then(async (bootstrap) => {
         if (!active) return;
-        setState((s) => ({ ...s, bootstrap, availableSessions, error: null }));
+        setState((s) => ({ ...s, bootstrap, error: null }));
         if (!bootstrap.profile || enteredIdentity.current === identity) return;
-        enteredIdentity.current = identity;
-        const parameters = new URLSearchParams(location.hash.slice(1));
-        const requested = parameters.get('session') ?? options.initialSessionId;
-        const invitation = readJoin();
         try {
-          if (requested && uuidPattern.test(requested)) {
-            const snapshot = bootstrap.sessions.some((item) => item.id === requested)
-              ? await api.snapshot(requested) : await api.joinOpenSession(requested);
-            if (active) enter(snapshot);
-          } else if (invitation) {
-            const snapshot = await api.joinSession(invitation);
-            if (active) enter(snapshot);
-          } else if (!bootstrap.canCreateSession && availableSessions.length === 1) {
-            const only = availableSessions[0];
-            const snapshot = bootstrap.sessions.some((item) => item.id === only.id)
-              ? await api.snapshot(only.id) : await api.joinOpenSession(only.id);
-            if (active) enter(snapshot);
+          const snapshot = await api.enterWorkspace();
+          if (active) {
+            enteredIdentity.current = identity;
+            enter(snapshot);
           }
         } catch (cause) {
           if (active) setState((s) => ({ ...s, error: errorText(cause) }));
@@ -393,11 +381,11 @@ export function useSession(options: {
     selected.current = snapshot.session.id;
     setSessionId(snapshot.session.id);
     applySnapshot(snapshot, true);
-    setState((s) => ({ ...s, invitation: null, error: null, notice: 'Занятие открыто.' }));
+    setState((s) => ({ ...s, invitation: null, error: null, notice: null }));
     history.replaceState(
       null,
       '',
-      `${location.pathname}#session=${encodeURIComponent(snapshot.session.id)}${options.projectorMode ? '&projector=1' : ''}`,
+      `${location.pathname}#sessions=1${options.projectorMode ? '&projector=1' : ''}`,
     );
   };
   const localHostToken = async () => {
@@ -454,7 +442,7 @@ export function useSession(options: {
           invitation: null,
           availableSessions: [],
           auth: { status: 'signed-out', email: null, userId: null },
-          notice: 'Вы вышли. Чтобы продолжить работу, введите тот же email.',
+          notice: null,
         }));
       }),
     saveProfile: (fullName, expectedRevision) =>
@@ -506,6 +494,10 @@ export function useSession(options: {
       run('Сохраняем занятие', async () => {
         applySnapshot(await requireApi().updateSession(requireSession(), revision, patch));
       }),
+    configureWorkspace: (input, revision) =>
+      run('Сохраняем параметры мастерской', async () => {
+        applySnapshot(await requireApi().configureWorkspace(requireSession(), revision, input));
+      }),
     rotateInvitation: (revision) =>
       run('Обновляем приглашение', async () => {
         const id = requireSession();
@@ -517,8 +509,9 @@ export function useSession(options: {
       run('Обновляем состояние', async () => {
         if (sessionId) await refreshing.current();
         else {
-          const [bootstrap, availableSessions] = await Promise.all([requireApi().bootstrap(), requireApi().availableSessions()]);
-          setState((s) => ({ ...s, bootstrap, availableSessions }));
+          const bootstrap = await requireApi().bootstrap();
+          setState((s) => ({ ...s, bootstrap }));
+          if (bootstrap.profile) enter(await requireApi().enterWorkspace());
         }
       }),
     publish: (bundle, localKey, revision) =>
@@ -541,9 +534,9 @@ export function useSession(options: {
     openSource: (anchor) => callbacks.current.onOpenSource(anchor),
     openLocalWork: () => callbacks.current.onOpenLocalWork(),
     openProjector: () => {
-      const id = requireSession();
+      requireSession();
       window.open(
-        `${location.origin}${location.pathname}#session=${encodeURIComponent(id)}&projector=1`,
+        `${location.origin}${location.pathname}#sessions=1&projector=1`,
         '_blank',
         'noopener,noreferrer',
       );
