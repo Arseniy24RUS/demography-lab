@@ -6,7 +6,10 @@ const ACCESS_SECONDS=3600;
 const REFRESH_SECONDS=7*24*3600;
 const TOKEN=/^[A-Za-z0-9_-]{43,128}$/;
 const EMAIL=/^[^\s@\u0000-\u001f\u007f]+@[^\s@\u0000-\u001f\u007f]+\.[^\s@\u0000-\u001f\u007f]+$/u;
-// One local authority for email provenance, disabled actors and participant/operator separation.
+// The workshop owner explicitly uses the same two-field entry as every participant.
+// This is declared identification, not proof of mailbox ownership.
+export const TEACHER_EMAIL='omnistat@yandex.ru';
+// One local authority for email provenance, disabled actors and role eligibility.
 const ACCOUNT_SAFE='private.dw_actor_eligible(u.id)';
 const normalizeEmail=email=>email.trim().normalize('NFC').toLowerCase();
 const receiptKey=operator=>Buffer.from(sha256('demography-lab:refresh-receipt:v1:'+operator.tokenSigningSecret),'hex');
@@ -71,6 +74,59 @@ export async function authenticate(runtime,accessToken) {
 function fields(input,allowed) {
   if(!object(input)||Object.keys(input).some(k=>!allowed.includes(k)))throw new HttpError(400,'INVALID_INPUT');
 }
+
+/** Preserve the declared email's UUID; otherwise reuse the existing local cabinet. */
+async function teacherAccount(tx,email,fullName) {
+  const oldHost=(await tx.query(`select u.*,a.kind,actor.disabled_at,f.revoked_at
+    from offline.accounts a join auth.users u on u.id=a.user_id
+    join private.dw_actors actor on actor.id=u.id
+    left join private.facilitators f on f.user_id=u.id where a.kind='host'`)).rows[0];
+  let row=(await tx.query(`select u.*,a.kind,actor.disabled_at,f.revoked_at
+    from offline.email_identities e join offline.accounts a on a.user_id=e.user_id
+    join auth.users u on u.id=a.user_id join private.dw_actors actor on actor.id=u.id
+    left join private.facilitators f on f.user_id=u.id where e.normalized_email=$1`,[email])).rows[0];
+  row??=oldHost;
+  if(!row) {
+    const candidates=(await tx.query(`select u.*,a.kind,actor.disabled_at,f.revoked_at
+      from offline.accounts a join auth.users u on u.id=a.user_id
+      join private.dw_actors actor on actor.id=u.id
+      left join private.facilitators f on f.user_id=u.id
+      where a.kind='participant' and not exists(
+        select 1 from offline.email_identities e where e.user_id=u.id)
+      order by a.created_at,u.created_at,u.id`)).rows;
+    row=candidates.find(candidate=>typeof candidate.email==='string'&&normalizeEmail(candidate.email)===email);
+  }
+  if(row) {
+    // The new convenience entry must not silently undo an explicit account disable/revocation.
+    if(row.disabled_at!==null || row.revoked_at!=null || row.raw_app_meta_data?.offline!==true
+        || row.email_confirmed_at!==null || row.is_anonymous!==false)
+      throw new HttpError(403,'TEACHER_IDENTITY_UNAVAILABLE');
+    const kind=oldHost && oldHost.id!==row.id?'teacher':'host';
+    await tx.query('update offline.accounts set kind=$2,recovery_hash=null where user_id=$1',[row.id,kind]);
+  } else {
+    row=(await tx.query(`insert into auth.users(id,email,raw_user_meta_data,raw_app_meta_data)
+      values($1,$2,$3::jsonb,'{"offline":true,"provider":"offline","email_verified":false}'::jsonb) returning *`,
+      [randomUUID(),email,JSON.stringify({full_name:fullName,claimed_email:email,email_verified:false})])).rows[0];
+    await tx.query("insert into offline.accounts(user_id,kind) values($1,'host')",[row.id]);
+  }
+  await tx.query('insert into private.facilitators(user_id) values($1) on conflict(user_id) do nothing',[row.id]);
+  // A pre-existing email pointer always wins; no history or author/voter identity is rewritten.
+  await tx.query(`insert into offline.email_identities(normalized_email,user_id) values($1,$2)
+    on conflict(normalized_email) do update set last_identified_at=now()`,[email,row.id]);
+  return {row,oldHostId:oldHost?.disabled_at===null && oldHost.revoked_at==null?oldHost?.id:null};
+}
+
+async function inheritLocalCabinet(tx,userId,oldHostId) {
+  if(!oldHostId || oldHostId===userId)return;
+  const memberships=(await tx.query(`insert into public.dw_memberships(session_id,user_id,role)
+    select session_id,$1,'host' from public.dw_memberships
+      where user_id=$2 and role='host' and revoked_at is null
+    on conflict(session_id,user_id) do update set role='host',revision=dw_memberships.revision+1
+      where dw_memberships.revoked_at is null and dw_memberships.role<>'host'
+    returning session_id,revision`,[userId,oldHostId])).rows;
+  for(const member of memberships)await tx.query('select private.dw_event($1,$2,$3,$4,$5)',[
+    member.session_id,randomUUID(),member.revision===1?'member.joined':'member.role_changed',userId,member.revision]);
+}
 export async function identify(runtime,input) {
   fields(input,['email','fullName']);
   if(typeof input.email!=='string' || input.email.length>512 || typeof input.fullName!=='string'
@@ -82,10 +138,12 @@ export async function identify(runtime,input) {
     throw new HttpError(400,'INVALID_INPUT');
   return runtime.db.transaction(async tx=>{
     await tx.query('select pg_advisory_xact_lock(hashtextextended($1,0))',['offline-email:'+email]);
-    let row=(await tx.query(`select u.*,a.kind,(${ACCOUNT_SAFE}) as participant_safe
+    const isTeacher=email===TEACHER_EMAIL;
+    const teacher=isTeacher?await teacherAccount(tx,email,fullName):null;
+    let row=isTeacher?teacher.row:(await tx.query(`select u.*,a.kind,(${ACCOUNT_SAFE}) as participant_safe
       from offline.email_identities e join offline.accounts a on a.user_id=e.user_id
       join auth.users u on u.id=e.user_id where e.normalized_email=$1`,[email])).rows[0];
-    if(row && (row.kind!=='participant'||!row.participant_safe))throw new HttpError(403,'PARTICIPANT_IDENTITY_UNAVAILABLE');
+    if(!isTeacher && row && (row.kind!=='participant'||!row.participant_safe))throw new HttpError(403,'PARTICIPANT_IDENTITY_UNAVAILABLE');
     if(!row) {
       // Before 0.8 devices with the same claimed email could have separate accounts.
       // Select the earliest eligible identity without moving/deleting any historical work.
@@ -104,13 +162,14 @@ export async function identify(runtime,input) {
       }
       await tx.query('insert into offline.email_identities(normalized_email,user_id) values($1,$2)',[email,row.id]);
     }
+    await tx.query("select set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true)",
+      [row.id,JSON.stringify({sub:row.id,role:'authenticated',app_metadata:{offline:true,provider:'offline'}})]);
     const profile=(await tx.query('select full_name,revision from public.dw_profiles where user_id=$1',[row.id])).rows[0];
     if(!profile || profile.full_name!==fullName) {
       // Reuse the normal revision/event path so account attribution and session cursors stay coherent.
-      await tx.query("select set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true)",
-        [row.id,JSON.stringify({sub:row.id,role:'authenticated',app_metadata:{offline:true,provider:'offline'}})]);
       await tx.query('select private.dw_save_profile($1,$2,$3)',[randomUUID(),profile?.revision??0,fullName]);
     }
+    if(teacher)await inheritLocalCabinet(tx,row.id,teacher.oldHostId);
     row=(await tx.query(`update auth.users set email=$2,raw_user_meta_data=raw_user_meta_data||$3::jsonb,
       updated_at=now() where id=$1 returning *`,[row.id,email,JSON.stringify({full_name:fullName,claimed_email:email,email_verified:false})])).rows[0];
     await tx.query('update offline.email_identities set last_identified_at=now() where normalized_email=$1',[email]);

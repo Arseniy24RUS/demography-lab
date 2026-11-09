@@ -1,5 +1,5 @@
 import { useId, useState } from 'react';
-import { ArrowRight, BookOpen, Laptop, LoaderCircle, LogIn } from 'lucide-react';
+import { ArrowRight, BookOpen, LoaderCircle, LogIn } from 'lucide-react';
 import type { SessionAreaActions, SessionAreaState } from '../../../../../packages/collaboration/types';
 import { messageFromError } from './session-ui';
 
@@ -44,7 +44,7 @@ export function SessionAuthPanel({ state, actions }: {
         ) : (
           <>
             <h2>Войти в занятие</h2>
-            <p>Представьтесь, чтобы преподаватель видел ваши результаты и мог обращаться к вам по имени.</p>
+            <p>Введите email и ФИО, чтобы открыть свои занятия и продолжить сохранённую работу.</p>
             <form onSubmit={(event) => {
               event.preventDefault();
               void perform(() => actions.identify({ email: email.trim(), fullName: fullName.trim() }));
@@ -72,12 +72,6 @@ export function SessionAuthPanel({ state, actions }: {
                 Войти
               </button>
             </form>
-            {state.offline?.hostAvailable && actions.localHost ? (
-              <button className="button button-quiet session-form-footer" disabled={disabled}
-                onClick={() => void perform(() => actions.localHost!(fullName.trim() || undefined))}>
-                <Laptop size={17} /> Кабинет преподавателя на этом Mac
-              </button>
-            ) : null}
           </>
         )}
       </div>

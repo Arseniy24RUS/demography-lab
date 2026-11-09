@@ -160,7 +160,7 @@ export async function startServer({runtime,host=process.env.DW_OFFLINE_HOST??'0.
     if(sameSecret(token,runtime.operator.hostKey))return;
     const identity=await authenticate(runtime,token);
     const permitted=(await runtime.db.query(`select 1 from offline.accounts a join private.facilitators f on f.user_id=a.user_id
-      where a.user_id=$1 and a.kind='host' and f.revoked_at is null`,[identity.user.id])).rows.length===1;
+      where a.user_id=$1 and a.kind in ('host','teacher') and f.revoked_at is null`,[identity.user.id])).rows.length===1;
     if(!permitted)throw new HttpError(403,'HOST_REQUIRED');
   }
   async function handle(request,response,isSurvey) {

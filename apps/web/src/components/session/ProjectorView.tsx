@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
-  BookOpen,
   ChevronLeft,
   ChevronRight,
   Maximize2,
@@ -145,7 +144,8 @@ export function ProjectorView({
       <header className="projector-header">
         <div>
           <div className="projector-brand">
-            <BookOpen size={27} strokeWidth={1.7} aria-hidden="true" />
+            <img src={`${import.meta.env.BASE_URL}favicon.svg`} width={32} height={32}
+              alt="Институт социальной демографии ФНИСЦ РАН" />
             Демографическая мастерская
           </div>
           <p className="projector-session">{projection?.title ?? 'Подключение к занятию'}</p>

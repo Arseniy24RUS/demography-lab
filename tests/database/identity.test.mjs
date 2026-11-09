@@ -63,7 +63,7 @@ it('restores independently, logs out only one device, and rejects expired or for
   await fail(restore(b),'AUTH_REQUIRED');
 });
 
-it('keeps operator identity separate, denies email-based privilege elevation, and expires a promoted participant token',async()=>{
+it('keeps non-reserved operator emails separate and expires a promoted participant token',async()=>{
   const teacher=id(),mail='teacher-'+id()+'@example.test';
   await seedAuthUser(db,{id:teacher,email:mail});
   await callRpc(db,teacher,'dw_save_profile',{p_operation_id:id(),p_expected_revision:0,p_full_name:'Настоящий преподаватель'});
@@ -135,7 +135,7 @@ it('includes declared learners and protected operators in a real frozen voting r
   assert.equal((await db.query('select count(*) n from auth.users where id=any($1::uuid[])',[[a.user.id,host.user.id]])).rows[0].n,0);
 });
 
-it('upgrades a populated Auth-era installation preserving UUIDs, memberships, teacher exclusion and earliest learner entry',async()=>{
+it('upgrades populated Auth-era data preserving UUIDs, memberships, non-reserved teacher exclusion and earliest learner entry',async()=>{
   const old=new PGlite();
   try{
     await old.exec(await readFile(resolve(projectRoot,'tests/database/bootstrap.sql'),'utf8'));

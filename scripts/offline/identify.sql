@@ -1,6 +1,9 @@
 -- Local-only evolution from device/recovery identification to the explicit email/name flow.
--- Historical identities and contributions remain intact; a map selects one participant per email.
+-- Historical identities and contributions remain intact; a map selects one identity per email.
 alter table offline.accounts drop constraint if exists accounts_check;
+-- 0.8.1 can promote an existing email identity while retaining the separate historical host.
+alter table offline.accounts drop constraint if exists accounts_kind_check;
+alter table offline.accounts add constraint accounts_kind_check check(kind in ('participant','host','teacher'));
 do $$ begin
   if not exists(select 1 from pg_constraint where conrelid='offline.accounts'::regclass
       and conname='offline_accounts_host_has_no_recovery') then

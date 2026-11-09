@@ -8,7 +8,7 @@ language sql stable security definer set search_path='' as $$
     where u.id=p_user_id and u.raw_app_meta_data->>'offline'='true'
       and u.email_confirmed_at is null and u.is_anonymous=false
       and u.email is not null and u.email<>''
-      and (a.kind='host' or (a.kind='participant'
+      and (a.kind in ('host','teacher') or (a.kind='participant'
         and not exists(select 1 from private.facilitators f where f.user_id=u.id)
         and not exists(select 1 from public.dw_memberships m where m.user_id=u.id and m.role='host'))))
 $$;

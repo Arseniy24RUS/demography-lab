@@ -86,7 +86,7 @@ describe('Production offline runtime: simple identities, domain RPC, isolation a
     assert.equal((await stat(join(dataDir,'operator.json'))).mode&0o777,0o600);
   });
 
-  it('creates host only on explicit same-origin loopback bootstrap and supports the real Supabase SDK',async()=>{
+  it('retains the legacy same-origin loopback host bootstrap and supports the real Supabase SDK',async()=>{
     const result=await request('/offline/auth/host-bootstrap',{origin:base,headers:{'X-Offline-Host-Bootstrap':'1'}});
     assert.equal(result.status,200);hostSession=result.body.session;
     assert.equal(hostSession.user.email_confirmed_at,null);assert.equal(hostSession.user.app_metadata.email_verified,false);
@@ -126,7 +126,7 @@ describe('Production offline runtime: simple identities, domain RPC, isolation a
     assert.equal(confirmed,0);
   });
 
-  it('never obtains a host or facilitator identity by entering its email',async()=>{
+  it('does not obtain non-reserved host or facilitator identities by their email aliases',async()=>{
     const result=await request('/offline/auth/identify',{json:{email:hostSession.user.email,fullName:'Обычный слушатель'}});
     assert.equal(result.status,200);assert.notEqual(result.body.session.user.id,hostSession.user.id);
     const token=result.body.session.access_token;

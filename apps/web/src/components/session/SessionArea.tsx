@@ -1,4 +1,4 @@
-import { Info, LogOut, RefreshCw, X } from 'lucide-react';
+import { Info, RefreshCw, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { WorkshopView } from '../workshop/workshop-ui';
 import type {
@@ -43,19 +43,6 @@ export function SessionArea({
         <div className="session-heading-actions">
           {ready && state.snapshot ? (
             <SessionConnection connection={state.connection} lastSyncedAt={state.lastSyncedAt} />
-          ) : null}
-          {ready ? (
-            <div className="session-profile-summary">
-              <strong>{state.bootstrap!.profile!.fullName}</strong>
-              <button
-                className="button button-quiet"
-                disabled={state.busy !== null}
-                onClick={() => void actions.signOut().catch(() => undefined)}
-              >
-                <LogOut size={15} />
-                Выйти
-              </button>
-            </div>
           ) : null}
         </div>
       </header>

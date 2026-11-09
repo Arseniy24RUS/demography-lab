@@ -73,10 +73,19 @@ it('upgrades the actual five-migration 0.7 schema with existing memberships, aut
     assert.equal(restored.barriers[0].authorId,previous.barriers[0].authorId);
     assert.equal(restored.barriers[0].createdAt,previous.barriers[0].createdAt);
     assert.equal((await runtime.db.query('select full_name from public.dw_profiles where user_id=$1',[ids[1]])).rows[0].full_name,'Прежний слушатель 1');
+    // The common email form adopts the existing 0.7 host cabinet, keeping its lesson and UUID.
+    const teacher=await runtime.enqueue(()=>identify(runtime,{email:' OMNISTAT@YANDEX.RU ',fullName:'Преподаватель после обновления'}));
+    assert.equal(teacher.session.user.id,host.user.id);
+    const teacherIdentity=await runtime.enqueue(()=>authenticate(runtime,teacher.session.access_token));
+    const teacherBoot=await runtime.enqueue(()=>invokeRpc(runtime.db,runtime.catalogue,'dw_bootstrap',{},teacherIdentity,false));
+    assert.equal(teacherBoot.canCreateSession,true);assert.equal(teacherBoot.sessions[0].id,lesson.id);
+    assert.equal(teacherBoot.sessions[0].role,'host');
+    assert.equal((await runtime.db.query('select owner_id from public.dw_sessions where id=$1',[lesson.id])).rows[0].owner_id,host.user.id);
     await runtime.close();runtime=null;
     runtime=await openRuntime({dataDir,testSeed:async()=>({fixture:true})});
     const repeated=await runtime.enqueue(()=>identify(runtime,{email:'LEGACY@EXAMPLE.TEST',fullName:'Уточнённое ФИО'}));
     assert.equal(repeated.session.user.id,ids[0]);
+    assert.equal((await runtime.enqueue(()=>identify(runtime,{email:'omnistat@yandex.ru',fullName:'Преподаватель после обновления'}))).session.user.id,host.user.id);
   } finally {
     await runtime?.close();await db?.close();await rm(dataDir,{recursive:true,force:true});
   }

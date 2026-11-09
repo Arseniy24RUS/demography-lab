@@ -73,7 +73,7 @@ async function identify(page, email, fullName) {
   const result = await response.json();
   expect(Object.keys(result)).toEqual(['session']);
   expect(result.session.user.email_confirmed_at).toBeNull();
-  await expect(page.locator('.session-profile-summary strong')).toHaveText(fullName);
+  await expect(page.locator('.header-account .account-name')).toHaveText(fullName);
   await expect(page.getByRole('button', { name: 'Сохранить ключ доступа', exact: true })).toHaveCount(0);
   return result.session.user.id;
 }
@@ -97,13 +97,29 @@ async function statisticsHistory(page, editor) {
 const teacher = await context();
 const student = await context(true);
 const studentName = 'Слушатель автономной репетиции';
-let invitation, studentId, sessionUrl, sessionId, returning;
+let invitation, studentId, teacherId, sessionUrl, sessionId, returning;
 try {
-  await step('Local teacher bootstrap, real profile and complete database', teacher.page, async () => {
+  await step('Common teacher entry works on LAN, header survives reload and document navigation, and logout works globally', teacher.page, async () => {
+    await teacher.page.goto('http://192.168.50.10:8787/#sessions');
+    await expect(teacher.page.locator('.topbar').getByRole('button', { name: 'Войти', exact: true })).toBeVisible();
+    await expect(teacher.page.locator('.institute-logo')).toBeVisible();
+    teacherId = await identify(teacher.page, 'omnistat@yandex.ru', 'Преподаватель локальной репетиции');
+    await expect(teacher.page.locator('.header-account .account-role')).toHaveText('Преподаватель');
+    await teacher.page.reload();
+    await expect(teacher.page.locator('.header-account .account-name')).toHaveText('Преподаватель локальной репетиции');
+    await expect(teacher.page.locator('.header-account .account-role')).toHaveText('Преподаватель');
+    await teacher.page.getByRole('button', { name: 'Документы', exact: true }).click();
+    await expect(teacher.page.locator('.header-account .account-name')).toHaveText('Преподаватель локальной репетиции');
+    await snapshot(teacher.page);
+    await teacher.page.locator('.header-account').getByRole('button', { name: 'Выйти', exact: true }).click();
+    await expect(teacher.page.getByRole('heading', { name: 'Войти в занятие', exact: true })).toBeVisible();
+    await expect(teacher.page.locator('.header-account .account-name')).toHaveCount(0);
+    await expect(teacher.page.locator('.topbar').getByRole('button', { name: 'Войти', exact: true })).toBeVisible();
+    // The same common form on the Mac returns exactly the same teacher identity.
+    // Only machine administration (backup/network display) requires the local Mac origin.
     await teacher.page.goto('http://127.0.0.1:8787/#sessions');
-    await teacher.page.getByLabel('Фамилия, имя, отчество', { exact: true }).fill('Преподаватель локальной репетиции');
-    await teacher.page.getByRole('button', { name: 'Кабинет преподавателя на этом Mac', exact: true }).click();
-    await expect(teacher.page.locator('.session-profile-summary strong')).toHaveText('Преподаватель локальной репетиции');
+    expect(await identify(teacher.page, 'OMNISTAT@YANDEX.RU', 'Преподаватель локальной репетиции')).toBe(teacherId);
+    await expect(teacher.page.getByRole('button', { name: 'Кабинет преподавателя на этом Mac', exact: true })).toHaveCount(0);
     await expect(teacher.page.getByText('80 документов · 2 471 территорий', { exact: false })).toBeVisible();
     await snapshot(teacher.page);
   });
@@ -135,6 +151,8 @@ try {
     expect(await student.page.evaluate(() => typeof crypto.subtle)).toBe('undefined');
     await expect(student.page.getByRole('button', { name: 'Кабинет преподавателя на этом Mac', exact: true })).toHaveCount(0);
     studentId = await identify(student.page, 'local-student@example.test', studentName);
+    await expect(student.page.locator('.header-account .account-role')).toHaveText('Участник');
+    await expect(student.page.locator('.header-account').getByRole('button', { name: 'Выйти', exact: true })).toBeVisible();
     await expect(student.page.getByRole('heading', { name: 'Автономная репетиция Мордовия', exact: true })).toBeVisible();
     expect(new URLSearchParams(new URL(student.page.url()).hash.slice(1)).get('session')).toBe(sessionId);
     expect(await student.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
@@ -267,7 +285,7 @@ try {
   });
   await step('Logout and the same email on a fresh device resume the sole open seminar and preserved authorship', student.page, async () => {
     await student.page.goto(invitation);
-    await expect(student.page.locator('.session-profile-summary strong')).toHaveText(studentName);
+    await expect(student.page.locator('.header-account .account-name')).toHaveText(studentName);
     await student.page.getByRole('button', { name: 'Выйти', exact: true }).click();
     await expect(student.page.getByRole('heading', { name: 'Войти в занятие', exact: true })).toBeVisible();
     // A new browser has neither previous tokens nor a session ID in its address.

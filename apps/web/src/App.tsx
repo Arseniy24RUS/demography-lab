@@ -43,12 +43,14 @@ import { Modal } from './components/Modal';
 import { CardEditor } from './components/CardEditor';
 import type { CardForm } from './components/CardEditor';
 import { SourceDetails } from './components/SourceDetails';
+import { AccountControls } from './components/session/AccountControls';
 import { useSession } from './hooks/useSession';
 import { useWorkshop } from './hooks/useWorkshop';
 import { useBarriers } from './hooks/useBarriers';
 import { prepareSharedPractice } from './lib/shared-practice';
 import type { SharedPracticeBundle } from '../../../packages/collaboration/types';
 import './session.css';
+import './account.css';
 const SessionArea = lazy(() =>
   import('./components/session/SessionArea').then((m) => ({ default: m.SessionArea })),
 );
@@ -539,7 +541,8 @@ export function App() {
       </a>
       <header className="topbar">
         <div className="brand">
-          <BookOpen size={34} strokeWidth={1.8} />
+          <img className="institute-logo" src={`${import.meta.env.BASE_URL}favicon.svg`}
+            width={48} height={48} alt="Институт социальной демографии ФНИСЦ РАН" />
           <span>Демографическая мастерская</span>
         </div>
         <nav className="topnav" aria-label="Основная навигация">
@@ -579,6 +582,16 @@ export function App() {
             <span className="export-label">Сохранить архив</span>
           </button>
         </div>
+        <AccountControls state={session.state} actions={session.actions}
+          onOpenEntry={() => {
+            setView('sessions');
+            history.replaceState(null, '', `${location.pathname}#sessions=1`);
+          }}
+          onSignedOut={() => {
+            setView('sessions');
+            history.replaceState(null, '', `${location.pathname}#sessions=1`);
+          }}
+          onError={fail} />
       </header>
       {view !== 'sessions' ? (
         <section className="page-intro">
@@ -777,7 +790,7 @@ export function App() {
                 ? 'Локальная тетрадь сохраняется на этом устройстве'
                 : 'Работа сохраняется на этом устройстве'}
         </span>
-        <span className="footer-version">Версия 0.8 · локальная ревизия {snapshot.revision}</span>
+        <span className="footer-version">Версия 0.8.1 · локальная ревизия {snapshot.revision}</span>
       </footer>
       <input
         ref={fileInput}
