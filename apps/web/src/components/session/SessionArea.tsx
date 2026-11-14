@@ -98,7 +98,20 @@ export function SessionArea({
         </p>
       ) : null}
       {!state.configured || !ready ? (
-        <SessionAuthPanel state={state} actions={actions} />
+        <div className={state.configured && !state.offline ? 'session-entry-layout' : undefined}>
+          <SessionAuthPanel state={state} actions={actions} />
+          {state.configured && !state.offline ? (
+            <aside className="session-entry-qr" aria-label="Вход в мастерскую с телефона">
+              <a className="session-entry-qr-link"
+                href="https://xn----7sbabangicd2azeshy9ajmfct0b3e8kka.xn--p1ai/"
+                aria-label="Открыть Демографическую мастерскую на телефоне">
+                <img src={`${import.meta.env.BASE_URL}images/portal-qr.svg`}
+                  width="400" height="400" alt="QR-код для входа в Демографическую мастерскую" />
+              </a>
+              <p>Откройте мастерскую на телефоне</p>
+            </aside>
+          ) : null}
+        </div>
       ) : state.snapshot ? (
         <ActiveSession
           key={state.snapshot.session.id}
