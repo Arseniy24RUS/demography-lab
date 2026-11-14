@@ -358,7 +358,7 @@ test('the host projector uses the restricted projection response and updates foc
       });
     });
     const popup = page.context().waitForEvent('page');
-    await page.getByRole('link', { name: 'Экран проектора', exact: true }).click();
+    await page.getByRole('link', { name: 'Экран проектора', exact: true }).click({ modifiers: ['ControlOrMeta'] });
     projector = await popup;
     await expect(projector).toHaveURL(`${BASE_URL}/#session=${sessionId}&projector=1`);
     await expect(

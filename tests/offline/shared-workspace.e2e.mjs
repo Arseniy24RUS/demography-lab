@@ -238,8 +238,8 @@ try {
   });
   await stage('Public barrier words appear on the projector and update from the second participant', a.page, async () => {
     await barrier(a.page, 'Дорогая аренда жилья', 'Жильё съёмное. Жильё требует больших расходов; трудно планировать семейный бюджет.');
-    const popup = a.page.waitForEvent('popup');
-    await a.page.getByRole('link', { name: 'Экран проектора', exact: true }).click();
+    const popup = a.page.context().waitForEvent('page');
+    await a.page.getByRole('link', { name: 'Экран проектора', exact: true }).click({ modifiers: ['ControlOrMeta'] });
     projector = await popup; watch(projector); lastPage = projector;
     await expect(projector.getByRole('region', { name: 'Флипчарт на проекторе', exact: true })).toBeVisible();
     await projector.getByRole('button', { name: 'Темы', exact: true }).click();

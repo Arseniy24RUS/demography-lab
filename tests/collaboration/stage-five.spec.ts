@@ -270,7 +270,7 @@ test('desktop and touch accounts share one map, capture a fact, plan an activity
       opened.on('response', response => { if (response.url().endsWith('/dw_roadmaps_projector_snapshot') && response.ok()) projectorPayloads.push(response.json()); });
     });
     const opened = page.context().waitForEvent('page');
-    await page.getByRole('link', { name: 'Экран проектора', exact: true }).click();
+    await page.getByRole('link', { name: 'Экран проектора', exact: true }).click({ modifiers: ['ControlOrMeta'] });
     projector = await opened;
     await projector.getByRole('navigation', { name: 'Сцены проектора', exact: true }).getByRole('button', { name: 'Дорожные карты', exact: true }).click();
     await expect(projector.getByRole('combobox', { name: 'Дорожная карта для проектора', exact: true })).toBeVisible();

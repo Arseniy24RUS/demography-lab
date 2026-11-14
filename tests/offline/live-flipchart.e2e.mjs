@@ -192,8 +192,16 @@ try {
     await screenshot(b.page, 'flipchart-four-ideas-mobile.png');
   });
   await stage('The projector opens anonymous phrases and animates a new thesis from an independent phone', a.page, async () => {
-    const popup = a.page.waitForEvent('popup');
+    const draft = 'Несохранённый черновик перед проектором';
+    await a.page.getByRole('textbox', { name: 'Короткий тезис', exact: true }).fill(draft);
     await a.page.getByRole('link', { name: 'Экран проектора', exact: true }).click();
+    await expect(projection(a.page)).toBeVisible();
+    await expect(a.page.getByRole('navigation', { name: 'Сцены проектора', exact: true }).getByRole('button')).toHaveCount(9);
+    await a.page.getByRole('button', { name: 'К занятию', exact: true }).click();
+    await expect(a.page.getByRole('textbox', { name: 'Короткий тезис', exact: true })).toHaveValue(draft);
+    await a.page.getByRole('textbox', { name: 'Короткий тезис', exact: true }).fill('');
+    const popup = a.page.context().waitForEvent('page');
+    await a.page.getByRole('link', { name: 'Экран проектора', exact: true }).click({ modifiers: ['ControlOrMeta'] });
     projector = await popup; lastPage = projector;
     await expect(projector).toHaveURL(`${new URL(url).origin}/#sessions=1&projector=1`);
     await expect(projector.getByRole('navigation', { name: 'Сцены проектора', exact: true }).getByRole('button')).toHaveCount(9);

@@ -117,7 +117,13 @@ export function ActiveSession({
             <span className="workspace-action-short" aria-hidden="true">Документы</span>
           </button>
           <a className="button button-primary" href={`${location.pathname}#sessions=1&projector=1`}
-            target="_blank" rel="noopener noreferrer" aria-label="Экран проектора">
+            target="_blank" rel="noopener noreferrer" aria-label="Экран проектора"
+            title="Проектор; Ctrl/⌘ + щелчок — отдельная вкладка"
+            onClick={(event) => {
+              if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+              event.preventDefault();
+              actions.openProjector();
+            }}>
             <Monitor size={17} />
             <span className="workspace-action-full" aria-hidden="true">Экран проектора</span>
             <span className="workspace-action-short" aria-hidden="true">Проектор</span>

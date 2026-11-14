@@ -152,6 +152,7 @@ export interface SessionAreaActions {
   setMemberRole(userId: string, revision: number, role: 'participant' | 'observer'): Promise<void>;
   revokeMember(userId: string, revision: number): Promise<void>;
   openSource(anchor: TextAnchor): void;
+  openProjector(): void;
   openLocalWork(): void;
   clearError(): void;
 }

@@ -364,7 +364,7 @@ test('touch corrections are shared, historical scenarios stay pinned and exporte
       });
     });
     const opened = page.context().waitForEvent('page');
-    await page.getByRole('link', { name: 'Экран проектора', exact: true }).click();
+    await page.getByRole('link', { name: 'Экран проектора', exact: true }).click({ modifiers: ['ControlOrMeta'] });
     projector = await opened;
     await projector
       .getByRole('navigation', { name: 'Сцены проектора', exact: true })

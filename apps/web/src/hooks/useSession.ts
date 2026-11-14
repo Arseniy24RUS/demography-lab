@@ -43,6 +43,7 @@ const uuidPattern = /^[a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12}$/i
 export function useSession(options: {
   onOpenSource: (anchor: TextAnchor) => void;
   onOpenLocalWork: () => void;
+  onOpenProjector?: () => void;
   initialSessionId?: string | null;
   projectorMode: boolean;
 }) {
@@ -520,6 +521,10 @@ export function useSession(options: {
       }),
     openSource: (anchor) => callbacks.current.onOpenSource(anchor),
     openLocalWork: () => callbacks.current.onOpenLocalWork(),
+    openProjector: () => {
+      requireSession();
+      callbacks.current.onOpenProjector?.();
+    },
     clearError: () => setState((s) => ({ ...s, error: null, notice: null })),
   };
   return { state, actions, projection, sessionId, api };

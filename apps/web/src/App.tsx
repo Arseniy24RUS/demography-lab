@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Activity, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   BookOpen,
   HelpCircle,
@@ -118,6 +118,10 @@ export function App() {
       void openAnchor(anchor);
     },
     onOpenLocalWork: () => setView('documents'),
+    onOpenProjector: () => {
+      setProjectorMode(true);
+      history.replaceState(null, '', `${location.pathname}#sessions=1&projector=1`);
+    },
     initialSessionId: route.get('session'),
     projectorMode,
   });
@@ -478,12 +482,12 @@ export function App() {
       'Исследуйте документы, представляйте практики и обсуждайте основания',
     ],
   };
-  if (
+  const showProjector = Boolean(
     projectorMode &&
     session.state.auth.status === 'signed-in' &&
     session.state.bootstrap?.profile
-  ) {
-    return (
+  );
+  const projector = showProjector ? (
       <Suspense fallback={sessionLoading}>
         <ProjectorContainer
           session={session}
@@ -501,9 +505,11 @@ export function App() {
           }}
         />
       </Suspense>
-    );
-  }
+    ) : null;
   return (
+    <>
+    {projector}
+    <Activity mode={showProjector ? 'hidden' : 'visible'}>
     <div className="app">
       <a className="skip-link" href="#main-content">
         Перейти к рабочей области
@@ -942,5 +948,7 @@ export function App() {
         </div>
       ) : null}
     </div>
+    </Activity>
+    </>
   );
 }
