@@ -619,7 +619,7 @@ test('private survey review requires a new generalized barrier, projector payloa
       });
     });
     const opening = page.context().waitForEvent('page');
-    await page.getByRole('button', { name: 'Экран проектора', exact: true }).click();
+    await page.getByRole('link', { name: 'Экран проектора', exact: true }).click();
     projector = await opening;
     await expect(projector).toHaveURL(new RegExp(`session=${sessionId}.*projector=1`));
     await projector.getByRole('button', { name: 'Барьеры', exact: true }).click();

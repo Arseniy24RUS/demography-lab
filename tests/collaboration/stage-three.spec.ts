@@ -259,7 +259,7 @@ test('a blinded round preserves neutral and withdrawn answers, reveals a denomin
       });
     });
     const opened = page.context().waitForEvent('page');
-    await page.getByRole('button', { name: 'Экран проектора', exact: true }).click();
+    await page.getByRole('link', { name: 'Экран проектора', exact: true }).click();
     projector = await opened;
     await expect(projector).toHaveURL(new RegExp(`session=${sessionId}.*projector=1`));
     await projector.getByRole('button', { name: 'Рейтинг', exact: true }).click();

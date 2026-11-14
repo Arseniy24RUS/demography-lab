@@ -116,11 +116,12 @@ export function ActiveSession({
             <span className="workspace-action-full" aria-hidden="true">Работать с документами</span>
             <span className="workspace-action-short" aria-hidden="true">Документы</span>
           </button>
-          <button className="button button-primary" onClick={actions.openProjector} aria-label="Экран проектора">
+          <a className="button button-primary" href={`${location.pathname}#sessions=1&projector=1`}
+            target="_blank" rel="noopener noreferrer" aria-label="Экран проектора">
             <Monitor size={17} />
             <span className="workspace-action-full" aria-hidden="true">Экран проектора</span>
             <span className="workspace-action-short" aria-hidden="true">Проектор</span>
-          </button>
+          </a>
         </div>
       </div>
       {isHost ? (

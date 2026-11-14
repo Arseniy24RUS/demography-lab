@@ -193,8 +193,13 @@ try {
   });
   await stage('The projector opens anonymous phrases and animates a new thesis from an independent phone', a.page, async () => {
     const popup = a.page.waitForEvent('popup');
-    await a.page.getByRole('button', { name: 'Экран проектора', exact: true }).click();
+    await a.page.getByRole('link', { name: 'Экран проектора', exact: true }).click();
     projector = await popup; lastPage = projector;
+    await expect(projector).toHaveURL(`${new URL(url).origin}/#sessions=1&projector=1`);
+    await expect(projector.getByRole('navigation', { name: 'Сцены проектора', exact: true }).getByRole('button')).toHaveCount(9);
+    expect(await projector.evaluate(() => window.opener === null)).toBe(true);
+    await projector.reload();
+    await expect(projection(projector)).toBeVisible();
     await projector.setViewportSize({ width: 1920, height: 1080 });
     await expect(projection(projector)).toBeVisible();
     await expect(projection(projector).getByRole('article')).toHaveCount(4);

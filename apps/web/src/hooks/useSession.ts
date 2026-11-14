@@ -520,14 +520,6 @@ export function useSession(options: {
       }),
     openSource: (anchor) => callbacks.current.onOpenSource(anchor),
     openLocalWork: () => callbacks.current.onOpenLocalWork(),
-    openProjector: () => {
-      requireSession();
-      window.open(
-        `${location.origin}${location.pathname}#sessions=1&projector=1`,
-        '_blank',
-        'noopener,noreferrer',
-      );
-    },
     clearError: () => setState((s) => ({ ...s, error: null, notice: null })),
   };
   return { state, actions, projection, sessionId, api };
