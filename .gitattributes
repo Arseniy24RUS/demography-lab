@@ -1,0 +1,2 @@
+# Upstream reader modules are byte-pinned, including original line endings.
+/packages/rudn-reader/site/** -text
