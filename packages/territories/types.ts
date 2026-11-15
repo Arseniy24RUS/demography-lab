@@ -47,7 +47,7 @@ export interface TerritorySource {
   id: string;
   title: string;
   repository: string;
-  commit: string;
+  commit: string | null;
   sourcePath: string;
   url: string;
   sha256: string;
@@ -97,6 +97,7 @@ export interface MunicipalAnnualSeries {
   territoryKey: string;
   sourceMunicipalityKey: string;
   rows: MunicipalAnnualRow[];
+  bdmo?: { sourceId: string; oktmo: string; added: Array<[year: number, metricMask: number]> };
 }
 export interface RegionStatisticsPack {
   schemaVersion: 1;
@@ -145,7 +146,7 @@ export interface CanonicalMunicipalSeries {
   sourceUrl: string;
   sourcePath: string;
   sourceSha256: string;
-  sourceCommit: string;
+  sourceCommit: string | null;
   sourceKind: 'source_reported' | 'calculated';
   provenanceStatus: 'incomplete_primary';
   sourceMunicipalityKey: string;

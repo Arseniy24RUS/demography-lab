@@ -66,7 +66,7 @@ export const territoryRegistrySchema = z.strictObject({
   });
 
 const source = z.strictObject({
-  id, title: text(500, 1), repository: text(300, 1), commit, sourcePath: text(500, 1), url: httpsUrl, sha256: hash,
+  id, title: text(500, 1), repository: text(300, 1), commit: commit.nullable(), sourcePath: text(500, 1), url: httpsUrl, sha256: hash,
   license: text(2000, 1), vintage: text(100, 1).nullable(), provenanceStatus: z.enum(['incomplete_primary', 'owner_supplied_geography', 'corpus_scope']), note: text(3000, 1),
 });
 const regionManifest = z.strictObject({
@@ -108,8 +108,16 @@ const annualRow = z.tuple([year, nullableAmount, nullableAmount, nullableAmount,
   else if (natural !== births - deaths) return false;
   return arrivals === null || departures === null || migration === null || migration === arrivals - departures;
 });
-const annualSeries = z.strictObject({ territoryKey: id, sourceMunicipalityKey: id, rows: z.array(annualRow).min(1).max(201) })
-  .refine((value) => value.rows.every((row, i) => i === 0 || row[0] > value.rows[i - 1][0]));
+const annualSeries = z.strictObject({
+  territoryKey: id, sourceMunicipalityKey: id, rows: z.array(annualRow).min(1).max(201),
+  bdmo: z.strictObject({ sourceId: id, oktmo: z.string().regex(/^\d{8}$/u),
+    added: z.array(z.tuple([year, z.number().int().min(1).max(127)])).min(1).max(201) }).optional(),
+}).refine((value) => value.rows.every((row, i) => i === 0 || row[0] > value.rows[i - 1][0]))
+  .refine(({ rows, bdmo }) => !bdmo || bdmo.added.every(([year, mask], i) => {
+    const row = rows.find((entry) => entry[0] === year);
+    return row && (i === 0 || year > bdmo.added[i - 1][0]) &&
+      row.slice(1).every((amount, j) => !(mask & (1 << j)) || amount !== null);
+  }));
 
 export const regionStatisticsPackSchema = z.strictObject({
   schemaVersion: z.literal(1), editionId: id, statisticsEditionId: id, geographyEditionId: id,
@@ -138,7 +146,7 @@ export const canonicalMunicipalSeriesSchema = z.strictObject({
   id: text(400, 1), territoryKey: id, metricId, title: text(200, 1), unit: z.literal('persons'), semanticType: z.enum(['stock', 'flow']),
   valueDomain: z.enum(['nonnegative', 'signed']), aggregation: z.enum(['sum', 'none']), decimals: z.number().int().min(0).max(1),
   reference: z.enum(['annual_average', 'calendar_year']), sourceEditionId: id, sourceUrl: httpsUrl, sourcePath: text(500, 1),
-  sourceSha256: hash, sourceCommit: commit, sourceKind, provenanceStatus: z.literal('incomplete_primary'),
+  sourceSha256: hash, sourceCommit: commit.nullable(), sourceKind, provenanceStatus: z.literal('incomplete_primary'),
   sourceMunicipalityKey: id, geographyEditionId: id, geographyComparability: z.literal('not_verified'), comparabilityNote: text(5000, 1),
   fingerprint: hash, points: z.array(z.strictObject({ year, value: nullableAmount })).min(1).max(201),
 }).refine((value) => sameSemantics({ ...value, id: undefined })

@@ -42,6 +42,11 @@ export async function adaptCanonicalSeries(index, registry, pack) {
       || territory.statistics.sourceMunicipalityKey !== group.sourceMunicipalityKey
       || encountered.has(group.territoryKey)) throw new Error('Статистический ряд привязан к несовместимой территории.');
     encountered.add(group.territoryKey);
+    const bdmoSource = group.bdmo && index.sources.find((entry) => entry.id === group.bdmo.sourceId);
+    if (group.bdmo && (!bdmoSource || bdmoSource.provenanceStatus !== 'incomplete_primary' ||
+      !/^[a-f0-9]{64}$/u.test(bdmoSource.sha256))) {
+      throw new Error('Не установлен паспорт дополнений БДМО.');
+    }
     for (const metric of index.metrics) {
       const column = pack.columns.indexOf(metric.id);
       if (column < 1) throw new Error('В статистическом наборе отсутствует объявленный показатель.');
@@ -57,17 +62,23 @@ export async function adaptCanonicalSeries(index, registry, pack) {
       const knownIssue = group.sourceMunicipalityKey === '89701000__1585ce3d' && metric.id === 'pop_mid'
         ? index.warnings.find((warning) => warning.startsWith('Саранск, pop_mid:')) ?? ''
         : '';
+      const updatedYears = group.bdmo?.added.filter(([, mask]) => mask & (1 << (column - 1))).map(([year]) => year) ?? [];
+      const onlyBdmo = updatedYears.length > 0 && updatedYears.length === points.filter((point) => point.value !== null).length;
+      const passport = onlyBdmo ? bdmoSource : source;
+      const attribution = updatedYears.length
+        ? `${onlyBdmo ? '' : 'Остальные значения — из авторского набора actual. '}БДМО, выпуск 28.09.2026, ОКТМО ${group.bdmo.oktmo}: ${updatedYears.join(', ')}. ${metric.id === 'natural_change' ? 'В этих годах БДМО использована хотя бы для одного из компонентов. ' : ''}${bdmoSource.url}. `
+        : 'Ряд из авторского набора actual. ';
       const series = {
         id: `${index.editionId}:${territory.territoryKey}:${metric.id}`,
         territoryKey: territory.territoryKey, metricId: metric.id, title: metric.label, unit: metric.unit,
         semanticType: metric.kind, valueDomain: metric.signed ? 'signed' : 'nonnegative',
         aggregation: metric.kind === 'flow' ? 'sum' : 'none', decimals: metric.id === 'pop_mid' ? 1 : 0,
-        reference: metric.reference, sourceEditionId: pack.statisticsEditionId, sourceUrl: source.url,
-        sourcePath: source.sourcePath, sourceSha256: source.sha256, sourceCommit: source.commit,
+        reference: metric.reference, sourceEditionId: pack.statisticsEditionId, sourceUrl: passport.url,
+        sourcePath: passport.sourcePath, sourceSha256: passport.sha256, sourceCommit: passport.commit,
         sourceKind: metric.sourceKind, provenanceStatus: 'incomplete_primary',
         sourceMunicipalityKey: group.sourceMunicipalityKey, geographyEditionId: pack.geographyEditionId,
         geographyComparability: 'not_verified',
-        comparabilityNote: 'Ряд из авторского набора actual. Соответствие названия и типа территории проверено; первичная выгрузка, историческое тождество границ и гармонизация ряда отдельно не подтверждены. Пропуски сохраняются. ' + metric.definition + (knownIssue ? ' ' + knownIssue : ''),
+        comparabilityNote: attribution + 'Историческое тождество границ и гармонизация ряда отдельно не подтверждены. Пропуски сохраняются. ' + metric.definition + (knownIssue ? ' ' + knownIssue : ''),
         points,
       };
       result.push({ ...series, fingerprint: await canonicalSeriesFingerprint(series) });

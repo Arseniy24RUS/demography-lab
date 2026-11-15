@@ -93,40 +93,68 @@ async function migrations(db) {
   return result;
 }
 
+const PREVIOUS_TERRITORY_RELEASE = {
+  id: 'territories-v1-rudn-08c68f1fe1c8-spd-59b778760c9e',
+  hash: '02eaef7003e77fe059a94a6a6f9dd8edeff841e0d697f77579a91ce30c9148fa',
+};
+const BDMO_TERRITORY_RELEASE_ID = 'territories-v1-rudn-08c68f1fe1c8-bdmo-20260928';
+
+async function verifyCanonicalRelease(db, release) {
+  const current = (await db.query(`select
+    (select count(*)::int from private.source_versions where sealed) as documents,
+    (select count(*)::int from private.source_blocks) as blocks,
+    (select count(*)::int from private.dw_roadmap_territories where dataset_id=$1) as territories,
+    (select count(*)::int from private.dw_roadmap_series where dataset_id=$1) as series,
+    exists(select 1 from private.dw_roadmap_datasets where id=$1 and sealed
+      and metadata->>'indexSha256'=$2 and territory_count=$3 and series_count=$4) as sealed`,
+  [release.datasetId, release.territoryIndexSha256, release.territories, release.series])).rows[0];
+  if (!current.sealed || ['documents','blocks','territories','series'].some(key => current[key] !== release[key]))
+    throw new Error('OFFLINE_CANONICAL_DATABASE_INCOMPLETE');
+}
+
 /** The normal runtime always registers the complete shipped canonical release. */
-async function seedProduction(db, progress) {
+export async function seedProduction(db, progress) {
   const bytes = await readFile(resolve(ROOT, 'public/data/corpus/index.json'));
   const corpusHash = sha256(bytes);
   const index = JSON.parse(bytes);
   const entries = index.documents.filter(x => x.versionId);
   const old = (await db.query("select value from offline.settings where key='canonical-release'")).rows[0]?.value;
-  if (old) {
-    if (old.corpusIndexSha256 !== corpusHash || old.territoryIndexSha256 !== TERRITORY_INDEX_SHA256)
-      throw new Error('OFFLINE_SOURCE_RELEASE_CHANGED_REQUIRES_EXPLICIT_MIGRATION');
-    const c = await counts(db);
-    if (c.documents !== old.documents || c.blocks !== old.blocks || c.territories !== old.territories || c.series !== old.series)
-      throw new Error('OFFLINE_CANONICAL_DATABASE_INCOMPLETE');
-    return old;
-  }
   let blocks = 0;
-  for (let i=0;i<entries.length;i++) {
-    const e = entries[i];
-    if (!/^[a-z0-9-]+$/.test(e.id)) throw new Error('OFFLINE_CORPUS_PATH_INVALID');
-    const doc = JSON.parse(await readFile(resolve(ROOT, `public/data/corpus/documents/${e.id}.json`), 'utf8'));
-    const manifest = validateCanonicalDocument(doc);
-    if (manifest.versionId !== e.versionId || manifest.canonicalHash !== e.canonicalHash)
-      throw new Error('OFFLINE_CORPUS_MANIFEST_MISMATCH');
-    await seedCanonicalDocument(db, doc);
-    blocks += manifest.blockCount;
-    if ((i+1)%10 === 0 || i+1 === entries.length) progress?.({ phase:'documents', completed:i+1, total:entries.length });
+  if (old) {
+    const unchanged = old.territoryIndexSha256 === TERRITORY_INDEX_SHA256;
+    const knownPredecessor = old.datasetId === PREVIOUS_TERRITORY_RELEASE.id
+      && old.territoryIndexSha256 === PREVIOUS_TERRITORY_RELEASE.hash;
+    if (old.corpusIndexSha256 !== corpusHash || (!unchanged && !knownPredecessor))
+      throw new Error('OFFLINE_SOURCE_RELEASE_CHANGED_REQUIRES_EXPLICIT_MIGRATION');
+    if (old.documents !== entries.length) throw new Error('OFFLINE_CANONICAL_DATABASE_INCOMPLETE');
+    await verifyCanonicalRelease(db, old);
+    if (unchanged) return old;
+    blocks = old.blocks;
+  } else {
+    for (let i=0;i<entries.length;i++) {
+      const e = entries[i];
+      if (!/^[a-z0-9-]+$/.test(e.id)) throw new Error('OFFLINE_CORPUS_PATH_INVALID');
+      const doc = JSON.parse(await readFile(resolve(ROOT, `public/data/corpus/documents/${e.id}.json`), 'utf8'));
+      const manifest = validateCanonicalDocument(doc);
+      if (manifest.versionId !== e.versionId || manifest.canonicalHash !== e.canonicalHash)
+        throw new Error('OFFLINE_CORPUS_MANIFEST_MISMATCH');
+      await seedCanonicalDocument(db, doc);
+      blocks += manifest.blockCount;
+      if ((i+1)%10 === 0 || i+1 === entries.length) progress?.({ phase:'documents', completed:i+1, total:entries.length });
+    }
   }
   progress?.({ phase:'territories', completed:0 });
   const dataset = await loadRoadmapDataset();
+  if (old && dataset.id !== BDMO_TERRITORY_RELEASE_ID)
+    throw new Error('OFFLINE_SOURCE_RELEASE_CHANGED_REQUIRES_EXPLICIT_MIGRATION');
+  // Prior rooms retain their sealed dataset foreign keys. Registration commits
+  // first and can be retried if the process stops before the marker is updated.
   const territorial = await seedRoadmapDataset(db, dataset);
   const release = { documents:entries.length, blocks, territories:territorial.territories,
     series:territorial.series, corpusIndexSha256:corpusHash, territoryIndexSha256:TERRITORY_INDEX_SHA256,
     datasetId:territorial.id, fixture:false };
-  await db.query("insert into offline.settings(key,value) values('canonical-release',$1::jsonb)", [JSON.stringify(release)]);
+  await db.query(`insert into offline.settings(key,value) values('canonical-release',$1::jsonb)
+    on conflict(key) do update set value=excluded.value`, [JSON.stringify(release)]);
   return release;
 }
 

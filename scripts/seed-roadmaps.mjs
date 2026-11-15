@@ -12,7 +12,7 @@ import {
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 export const TERRITORY_INDEX_SHA256 =
-  '02eaef7003e77fe059a94a6a6f9dd8edeff841e0d697f77579a91ce30c9148fa';
+  'c46d2d7b58c5099db0df74d93f464bae40cc13838249ba85d3b829293de4dfe2';
 const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const fail = (message) => {
   throw new Error(message);

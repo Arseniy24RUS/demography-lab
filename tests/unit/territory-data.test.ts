@@ -14,7 +14,7 @@ const ardatovId = 'rudn-mun-72196-894';
 
 describe('pinned territories and source-aware coverage', () => {
   it('retains all source geometries while distinguishing municipal and administrative units', () => {
-    expect(index.coverage).toMatchObject({ regions: 89, geographicUnits: 2381, municipalities: 2325, administrativeUnits: 56, matchedStatistics: 1729, availableStatistics: 1725, unlinkedSourceRows: 2946 });
+    expect(index.coverage).toMatchObject({ regions: 89, geographicUnits: 2381, municipalities: 2325, administrativeUnits: 56, matchedStatistics: 2088, availableStatistics: 2087, unlinkedSourceRows: 2946, observationYears: [2008, 2024] });
     expect(registry.records).toHaveLength(2471);
     expect(registry.records.filter((record) => record.level === 'region')).toHaveLength(89);
     expect(registry.records.filter((record) => record.level === 'federal')).toHaveLength(1);
@@ -41,7 +41,7 @@ describe('pinned territories and source-aware coverage', () => {
       statisticsCount += statistics.series.length;
     }
     expect(geometryCount).toBe(2381);
-    expect(statisticsCount).toBe(1725);
+    expect(statisticsCount).toBe(2087);
   });
 
   it('keeps each of the 23 reviewed Mordovia matches one-to-one', () => {
@@ -95,6 +95,7 @@ describe('pinned territories and source-aware coverage', () => {
   it('retains licenses and primary-provenance limitations and excludes upstream model outputs', () => {
     expect(index.metrics.map((metric) => metric.id)).toEqual(['births_total', 'deaths_total', 'pop_mid', 'mig_in_total', 'mig_out_total', 'mig_net_total', 'natural_change']);
     expect(index.sources.find((source) => source.id === 'spd-actual')).toMatchObject({ commit: '59b778760c9efa6fe30d6ad17beec6ea622f30b5', sha256: 'd2c059daf8628d5879c1e8bcc4f5c703ae00e8144ac266fac4d6799bdc496bf3', provenanceStatus: 'incomplete_primary' });
+    expect(index.sources.find((source) => source.id === 'bdmo-112-v20260928')).toMatchObject({ sha256: '9edaba16e1c34e4873737fbe4a496c21ede18e9a4ee0c3d1e68fc23963a00c50', license: 'Creative Commons BY 4.0', provenanceStatus: 'incomplete_primary' });
     expect(index.sources.find((source) => source.id === 'rudn-municipal-catalog')?.license).toContain('Условия исходного набора не указаны');
     expect(index.metrics.find((metric) => metric.id === 'pop_mid')).toMatchObject({ kind: 'stock', reference: 'annual_average', sourceKind: 'source_reported' });
     expect(index.metrics.find((metric) => metric.id === 'natural_change')?.sourceKind).toBe('calculated');
@@ -107,6 +108,27 @@ describe('actual counts, missing values and immutable source series', () => {
     expect(rows.find((row) => row[0] === 2014)).toEqual([2014, 253, 512, 26951.5, 651, 917, -266, -259]);
     expect(rows.find((row) => row[0] === 2023)).toEqual([2023, null, null, null, 699, 603, 96, null]);
     expect(rows.find((row) => row[0] === 2011)).toEqual([2011, null, null, null, null, null, null, null]);
+  });
+
+  it('fills Domodedovo population gaps from BDMO and preserves reported observations and provenance', async () => {
+    const territoryKey = 'rudn-mun-51490-2343';
+    const region = index.regions.find((entry) => entry.regionId === 'moskovskaia-oblast')!;
+    const statistics = parseRegionStatisticsPack(read(region.statisticsPath));
+    const group = statistics.series.find((entry) => entry.territoryKey === territoryKey)!;
+    expect(group.bdmo).toEqual({
+      sourceId: 'bdmo-112-v20260928', oktmo: '46709000',
+      added: [[2009, 4], [2010, 60], [2011, 4], [2023, 4], [2024, 4]],
+    });
+    expect(group.rows.find((row) => row[0] === 2023)).toEqual([2023, 1593, null, 224690, 11729, 7296, 4433, null]);
+    expect(group.rows.find((row) => row[0] === 2024)).toEqual([2024, null, null, 228804, null, null, null, null]);
+
+    const stock = (await adaptCanonicalSeries(index, registry, statistics)).find((entry) =>
+      entry.territoryKey === territoryKey && entry.metricId === 'pop_mid',
+    )!;
+    expect(parseCanonicalMunicipalSeries(stock)).toEqual(stock);
+    expect(stock.comparabilityNote).toContain('ОКТМО 46709000: 2009, 2010, 2011, 2023, 2024.');
+    expect(stock.comparabilityNote).toContain('Остальные значения — из авторского набора actual.');
+    expect(await verifyCanonicalSeriesFingerprint(stock)).toBe(true);
   });
 
   it('exposes separate latest valid years rather than a common last year with invented zeroes', async () => {
@@ -133,11 +155,13 @@ describe('actual counts, missing values and immutable source series', () => {
   it('keeps the known Saransk anomaly visible in the sealed series without repairing its value', async () => {
     const stock = (await adaptCanonicalSeries(index, registry, pack)).find((series) => series.territoryKey === 'rudn-mun-72196-904' && series.metricId === 'pop_mid')!;
     expect(stock.points.find((point) => point.year === 2011)?.value).toBe(27766);
-    expect(stock.points.find((point) => point.year === 2012)?.value).toBeNull();
+    expect(stock.points.find((point) => point.year === 2012)?.value).toBe(326473);
     expect(stock.points.find((point) => point.year === 2013)?.value).toBe(327477.5);
+    expect(stock.points.find((point) => point.year === 2024)?.value).toBe(338405);
     expect(index.warnings.some((warning) => warning.startsWith('Саранск, pop_mid:'))).toBe(true);
     expect(stock.comparabilityNote).toContain('Саранск, pop_mid:');
     expect(stock.comparabilityNote).toContain('2011');
+    expect(stock.comparabilityNote).toContain('ОКТМО 89701000: 2009, 2010, 2012, 2024.');
     expect(await verifyCanonicalSeriesFingerprint(stock)).toBe(true);
   });
 
