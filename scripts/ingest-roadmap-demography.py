@@ -77,6 +77,7 @@ def profile(cells):
 def pack_territory(rows):
     stocks = defaultdict(dict)
     flows = defaultdict(dict)
+    sex_flows = defaultdict(dict)
     annual = defaultdict(list)
     conflicts = 0
     for _, _, code, year, sex, age_raw, direction, place, low, high in rows:
@@ -95,8 +96,12 @@ def pack_territory(rows):
             age = exact_range(age_raw) or ((-1, -1) if age_raw == 'CD' else None)
             if age is None or (observed < 0 and code != 'Y48112023') or not isinstance(observed, int):
                 continue
-            values = flows[(year, DIRECTIONS[direction])].setdefault(age, [None, None, None])
             column = FLOWS[code]
+            if sex in SEX:
+                counts = sex_flows[(year, DIRECTIONS[direction], column)].setdefault(age, [None, None])
+                counts[SEX[sex]] = observed
+                continue
+            values = flows[(year, DIRECTIONS[direction])].setdefault(age, [None, None, None])
             if values[column] is not None and values[column] != observed:
                 # Different source totals ('CD' and 'Всего') cannot be combined.
                 values[column] = math.nan
@@ -121,7 +126,15 @@ def pack_territory(rows):
         total, ages = profile(cells)
         if ages or (total and any(v is not None for v in total)):
             migration.append([year, direction, total, ages])
-    return {'population': population, 'migration': migration, 'annual': dict(sorted(annual.items()))}, conflicts
+    migration_sex = []
+    slices = sorted({(year, direction) for year, direction, _ in sex_flows})
+    for year, direction in slices:
+        arrivals = profile(sex_flows.get((year, direction, FLOWS['Y48112021']), {}))[1]
+        departures = profile(sex_flows.get((year, direction, FLOWS['Y48112022']), {}))[1]
+        if arrivals or departures:
+            migration_sex.append([year, direction, arrivals, departures])
+    return {'population': population, 'migration': migration, 'migrationSex': migration_sex,
+            'annual': dict(sorted(annual.items()))}, conflicts
 
 
 def results(cursor):
@@ -169,7 +182,8 @@ def main():
       AND b.indicator_code=ANY(?) AND b.year BETWEEN 2005 AND 2025 AND b.indicator_value IS NOT NULL
       AND (
         (b.indicator_code=ANY(?) AND b.grup_2=ANY(?) AND b.vozr=ANY(?) AND b.indicator_period='На 1 января')
-        OR (b.indicator_code=ANY(?) AND b.grup_2='Всего' AND b.vozr=ANY(?) AND b.migr=ANY(?)
+        OR (((b.indicator_code=ANY(?) AND b.grup_2='Всего' AND b.vozr=ANY(?))
+          OR (b.indicator_code=ANY(?) AND b.grup_2=ANY(?) AND b.vozr=ANY(?))) AND b.migr=ANY(?)
           AND b.indicator_period='Значение показателя за год')
         OR (b.indicator_code=ANY(?) AND b.grup_2='CD' AND b.vozr='CD' AND b.migr='CD' AND b.mest='CD'
           AND b.indicator_period='Значение показателя за год')
@@ -180,7 +194,9 @@ def main():
     ORDER BY m.region_key,m.territory_key,b.indicator_code,b.year,b.grup_2,b.vozr,b.migr,b.mest
     """
     cursor = db.execute(query, [str(args.section31), ids, list(STOCK), list(SEX), keep_age,
-                               list(FLOWS), [*keep_age, 'CD'], list(DIRECTIONS), list(ANNUAL), list(AREAS)])
+                               list(FLOWS), [*keep_age, 'CD'],
+                               ['Y48112021', 'Y48112022'], list(SEX), keep_age[1:],
+                               list(DIRECTIONS), list(ANNUAL), list(AREAS)])
     regions = []
     conflicts = 0
     coverage = defaultdict(int)
@@ -202,7 +218,7 @@ def main():
         filename = f'{region}.json.gz'
         (directory / filename).write_bytes(packed)
         regions.append({'id': region, 'path': filename, 'sha256': sha256(packed).hexdigest(), 'count': len(territories)})
-    if not regions or not coverage['population'] or not coverage['migration']:
+    if not regions or not all(coverage[kind] for kind in ('population', 'migration', 'migrationSex')):
         raise ValueError('Missing BDMO demographic profiles')
     index = {
         'schemaVersion': 1, 'source': 'БДМО Росстата, обработка «Если быть точным»',

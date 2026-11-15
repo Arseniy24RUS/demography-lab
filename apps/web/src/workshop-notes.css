@@ -1,0 +1,63 @@
+.workshop-note {
+  position: relative;
+  min-width: 0;
+  border: 1px solid var(--note-line, #cbdbd2);
+  border-radius: 13px 0 13px 13px;
+  background: var(--note-paper, #edf7ef);
+  color: var(--navy, #153353);
+  box-shadow: 0 2px 5px #172f4610;
+  overflow-wrap: anywhere;
+}
+.workshop-note::after {
+  content: '';
+  position: absolute;
+  inset: -1px -1px auto auto;
+  width: 15px;
+  height: 15px;
+  background: linear-gradient(45deg, var(--note-fold, #c3d9c8) 0 51%, #f4f7fa 52%);
+  border-radius: 0 0 0 3px;
+  pointer-events: none;
+}
+.workshop-note-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  max-width: 100%;
+  min-width: 0;
+  padding: 0 11px;
+  border: 1px solid #c4d2e2;
+  border-radius: 8px;
+  background: #fff;
+  color: #456281;
+}
+.workshop-note-search:focus-within { border-color: #4e729d; outline: 2px solid #b7d1ee; outline-offset: 1px; }
+.workshop-note-search svg { flex: none; }
+.workshop-note-search input {
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #193958;
+  font: inherit;
+  font-size: .89rem;
+  min-width: 0;
+  width: min(240px, 100%);
+  padding: 7px 0;
+}
+.workshop-note-search input::placeholder { color: #56708c; opacity: 1; }
+
+.session-workspace .session-practice.workshop-note {
+  --note-paper: #ecf6ef;
+  --note-line: #cbded0;
+  border-color: var(--note-line);
+  border-radius: 13px 0 13px 13px;
+  background: var(--note-paper);
+}
+.session-workspace .session-practice.workshop-note .session-practice-sources { background: #ffffff88; }
+.session-practice-rated {
+  color: #175b45;
+  padding: 2px 7px;
+  border: 1px solid #b0d3be;
+  border-radius: 5px;
+  background: #f1fbf3;
+}

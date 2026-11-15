@@ -1587,6 +1587,8 @@
 .workshop-scene-tabs button { min-height: 48px; padding: 10px 20px; border: 0; border-bottom: 3px solid transparent; background: transparent; color: #33445c; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
 .workshop-scene-tabs button.active { border-bottom-color: #0758ca; color: #123c73; background: #e8f1ff; border-radius: 7px 7px 0 0; }
 .workshop-scene-tabs button:focus-visible { outline: 3px solid #7eb4ff; outline-offset: 2px; }
+.practice-board-controls { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px; }
+.practice-board-controls button { cursor: pointer; }
 @media (max-width: 600px) { .workshop-scene-tabs { display: grid; grid-template-columns: 1fr 1fr; } .workshop-scene-tabs button { padding: 10px 8px; font-size: 12px; } }
 .projection-mode-tabs { display: flex; gap: 4px; padding: 10px 24px 0; background: white; border-bottom: 1px solid #d2deee; }
 .projection-mode-tabs button { min-height: 44px; padding: 9px 22px; border: 0; border-bottom: 3px solid transparent; background: transparent; font: inherit; font-weight: 600; font-size: 15px; color: #38516f; cursor: pointer; }

@@ -1,6 +1,6 @@
-import { useId, useRef, useState } from 'react';
+import { useId, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { WorkshopView } from '../workshop/workshop-ui';
+import type { WorkshopActions, WorkshopView } from '../workshop/workshop-ui';
 import { ArrowLeft, FileText, RefreshCw } from 'lucide-react';
 import { Modal } from '@/components/Modal';
 import type {
@@ -10,6 +10,7 @@ import type {
   SessionSnapshot,
   SharedSubmission,
 } from '../../../../../packages/collaboration/types';
+import type { WorkshopSnapshot } from '../../../../../packages/workshop/types';
 import { SessionParticipants } from './SessionParticipants';
 import { SharedPracticeCard } from './SharedPracticeCard';
 import { SharedPracticeEditModal } from './SharedPracticeEditModal';
@@ -20,6 +21,14 @@ import {
   roleLabels,
   timeLabel,
 } from './session-ui';
+
+export interface PracticeGrouping {
+  snapshot: Pick<WorkshopSnapshot, 'families' | 'boardRevision' | 'round'>;
+  saveFamily: WorkshopActions['saveFamily'];
+}
+
+type SessionView = 'flipchart' | 'objective' | 'regions' | 'board' | 'barriers' | 'solutions' | 'roadmaps';
+type PracticeView = 'voting' | 'publications' | 'families';
 
 export function ActiveSession({
   state,
@@ -33,6 +42,7 @@ export function ActiveSession({
   renderFlipchart,
   renderObjectiveFactors,
   renderLiveVotes,
+  practiceGrouping,
 }: {
   state: SessionAreaState;
   snapshot: SessionSnapshot;
@@ -45,6 +55,7 @@ export function ActiveSession({
   renderFlipchart?: () => ReactNode;
   renderObjectiveFactors?: () => ReactNode;
   renderLiveVotes?: () => ReactNode;
+  practiceGrouping?: PracticeGrouping;
 }) {
   const id = useId();
   const { session, submissions, members } = snapshot;
@@ -54,10 +65,17 @@ export function ActiveSession({
   const [error, setError] = useState('');
   const [working, setWorking] = useState(false);
   const [contextOpen, setContextOpen] = useResponsiveDisclosure();
-  const [workspaceView, setWorkspaceView] = useState<'flipchart' | 'objective' | 'board' | 'barriers' | 'solutions' | 'roadmaps' | WorkshopView>(renderFlipchart ? 'flipchart' : 'board');
+  const [workspaceView, setWorkspaceView] = useState<SessionView>(renderFlipchart ? 'flipchart' : 'board');
+  const defaultPracticeView = renderLiveVotes ? 'voting' : 'publications';
+  const [practiceView, setPracticeView] = useState<PracticeView>(defaultPracticeView);
+  const showPublications = workspaceView === 'board' && practiceView === 'publications';
+  const workshopView = workspaceView === 'regions'
+    ? 'regions'
+    : workspaceView === 'board' && practiceView !== 'publications' ? practiceView : null;
   const sceneNavigation = useRef<HTMLElement>(null);
-  function selectWorkspace(next: typeof workspaceView) {
+  function selectWorkspace(next: SessionView) {
     setWorkspaceView(next);
+    if (next === 'board') setPracticeView(defaultPracticeView);
     if (state.notice && !state.error) actions.clearError();
     if (next === 'objective' || next === 'barriers' || next === 'solutions' || next === 'roadmaps')
       requestAnimationFrame(() => sceneNavigation.current?.scrollIntoView({ block: 'start' }));
@@ -66,13 +84,22 @@ export function ActiveSession({
   const isHost = session.role === 'host';
   const canContribute =
     session.role !== 'observer';
+  const families = practiceGrouping?.snapshot.families;
+  const grouped = useMemo(() => new Set(families?.flatMap((family) => family.submissionIds)), [families]);
+  const canAddToRating = canContribute && session.status === 'open' &&
+    practiceGrouping !== undefined && practiceGrouping.snapshot.round?.status !== 'open';
+  const practiceViews: ReadonlyArray<readonly [PracticeView, string]> = [
+    ['voting', 'Оценка практик'],
+    ['publications', 'Опубликованные карточки'],
+    ...(canContribute ? [['families', 'Настроить группы'] as const] : []),
+  ];
   const regionNames = new Map([
     ...regions.map((region) => [region.id, region.name] as const),
     ['federal', 'Федеральный уровень'],
     ['unknown', 'Территория не определена'],
   ]);
   const publicSubmissions = submissions.filter((item) => item.status === 'shared');
-  const visible = submissions
+  const visible = showPublications ? submissions
     .filter((item) =>
       filter === 'mine'
         ? item.authorId === state.auth.userId
@@ -80,7 +107,7 @@ export function ActiveSession({
           ? item.status === 'withdrawn'
           : item.status === 'shared',
     )
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id));
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id)) : [];
   const latest = [...submissions]
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     .slice(0, 3);
@@ -103,6 +130,24 @@ export function ActiveSession({
     } finally {
       setWorking(false);
     }
+  }
+
+  function addToRating(submission: SharedSubmission) {
+    if (!practiceGrouping || !canAddToRating || grouped.has(submission.id) || disabled) return;
+    const title = submission.bundle.practice.title.trim();
+    const mechanism = submission.bundle.practice.mechanism.trim();
+    if (!title || !mechanism || Array.from(title).length > 300 || Array.from(mechanism).length > 4000) {
+      setPracticeView('families');
+      return;
+    }
+    void perform(() => practiceGrouping.saveFamily({
+      familyId: null,
+      expectedBoardRevision: practiceGrouping.snapshot.boardRevision,
+      title,
+      mechanism,
+      rationale: 'Отдельная опубликованная карточка.',
+      submissionIds: [submission.id],
+    }));
   }
 
   return (
@@ -131,8 +176,6 @@ export function ActiveSession({
               ...(renderBarriers ? ([['barriers', 'Барьеры']] as const) : []),
               ['regions', 'Программы'],
               ['board', 'Практики'],
-              ['families', 'Группировка'],
-              ['voting', 'Рейтинг'],
               ...(renderSolutions ? ([['solutions', 'Решения']] as const) : []),
               ...(renderRoadmaps ? ([['roadmaps', 'Дорожные карты']] as const) : []),
             ] as const
@@ -148,6 +191,21 @@ export function ActiveSession({
           ))}
         </nav>
       ) : null}
+      {workspaceView === 'board' && renderWorkshop ? (
+        <div className="practice-board-controls" role="group" aria-label="Виды практик">
+          {practiceViews.map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              className="session-board-filter"
+              aria-pressed={practiceView === key}
+              onClick={() => setPracticeView(key)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      ) : null}
       {workspaceView === 'flipchart'
         ? renderFlipchart?.()
         : workspaceView === 'objective'
@@ -158,14 +216,12 @@ export function ActiveSession({
         ? renderBarriers?.()
         : workspaceView === 'solutions'
         ? renderSolutions?.()
-        : workspaceView === 'voting' && renderLiveVotes
+        : workshopView === 'voting' && renderLiveVotes
           ? renderLiveVotes()
-          : renderWorkshop && workspaceView !== 'board'
-          ? renderWorkshop(workspaceView)
-          : null}
+          : workshopView ? renderWorkshop?.(workshopView) : null}
       <div
         className="session-workspace"
-        hidden={workspaceView !== 'board'}
+        hidden={!showPublications}
       >
         <aside className="session-sidebar" aria-label="Контекст занятия">
           <details
@@ -268,6 +324,7 @@ export function ActiveSession({
             const own = submission.authorId === state.auth.userId;
             const shared = submission.status === 'shared';
             const fromCatalog = Boolean(submission.bundle.catalogSource);
+            const inRating = shared && grouped.has(submission.id);
             return (
               <SharedPracticeCard
                 key={submission.id}
@@ -310,6 +367,12 @@ export function ActiveSession({
                     : undefined
                 }
                 onEdit={own && canContribute && shared && !fromCatalog ? () => setEditing(submission) : undefined}
+                inRating={inRating}
+                onAddToRating={
+                  shared && !fromCatalog && canAddToRating && !inRating
+                    ? () => addToRating(submission)
+                    : undefined
+                }
               />
             );
           })}

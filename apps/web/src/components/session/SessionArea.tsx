@@ -7,7 +7,7 @@ import type {
   SessionRegionOption,
 } from '../../../../../packages/collaboration/types';
 import { SessionAuthPanel } from './SessionAuthPanel';
-import { ActiveSession } from './ActiveSession';
+import { ActiveSession, type PracticeGrouping } from './ActiveSession';
 import { OfflineSeminarPanel } from './OfflineSeminarPanel';
 
 export function SessionArea({
@@ -22,6 +22,7 @@ export function SessionArea({
   renderFlipchart,
   renderObjectiveFactors,
   renderLiveVotes,
+  practiceGrouping,
 }: {
   state: SessionAreaState;
   actions: SessionAreaActions;
@@ -34,6 +35,7 @@ export function SessionArea({
   renderFlipchart?: () => ReactNode;
   renderObjectiveFactors?: () => ReactNode;
   renderLiveVotes?: () => ReactNode;
+  practiceGrouping?: PracticeGrouping;
 }) {
   const ready = state.auth.status === 'signed-in' && state.bootstrap?.profile;
   const active = Boolean(ready && state.snapshot);
@@ -123,6 +125,7 @@ export function SessionArea({
           renderFlipchart={renderFlipchart}
           renderObjectiveFactors={renderObjectiveFactors}
           renderLiveVotes={renderLiveVotes}
+          practiceGrouping={practiceGrouping}
         />
       ) : (
         <div className="session-workspace-loading" role="status" aria-busy={!state.error}>

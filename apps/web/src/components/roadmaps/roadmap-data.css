@@ -111,6 +111,14 @@
 .rm-pyramid i { display: block; height: 15px; }
 .rm-pyramid-men i { justify-self: end; border-radius: 3px 0 0 3px; background: #407db8; }
 .rm-pyramid-women i { justify-self: start; border-radius: 0 3px 3px 0; background: #21877f; }
+.rm-migration-pyramids {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 21rem), 1fr));
+  gap: 18px 26px;
+  margin-bottom: 14px;
+}
+.rm-migration-pyramids section { min-width: 0; }
+.rm-migration-pyramids h4 { margin: 2px 0 7px; color: #153860; }
 .rm-data-table-scroll {
   overflow-x: auto;
   border: 1px solid #dce6f1;

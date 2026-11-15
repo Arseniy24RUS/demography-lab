@@ -2,10 +2,12 @@ import { useState } from 'react';
 import {
   ChevronDown,
   ChevronUp,
+  Check,
   ExternalLink,
   MapPin,
   Monitor,
   Pencil,
+  Plus,
   RotateCcw,
   X,
 } from 'lucide-react';
@@ -14,6 +16,7 @@ import { anchorQuote, fieldLabels, fieldValue } from '@/lib/workspace-domain';
 import type { SharedSubmission } from '../../../../../packages/collaboration/types';
 import { dateLabel, initials } from './session-ui';
 import { CatalogPracticeSource } from '../workshop/CatalogPracticeSource';
+import '../../workshop-notes.css';
 
 export function SharedPracticeCard({
   submission,
@@ -25,6 +28,8 @@ export function SharedPracticeCard({
   onWithdraw,
   onRestore,
   onEdit,
+  inRating,
+  onAddToRating,
 }: {
   submission: SharedSubmission;
   regionName: string;
@@ -35,6 +40,8 @@ export function SharedPracticeCard({
   onWithdraw?: () => void;
   onRestore?: () => void;
   onEdit?: () => void;
+  inRating?: boolean;
+  onAddToRating?: () => void;
 }) {
   const [expandedQuotes, setExpandedQuotes] = useState<Set<string>>(new Set());
   const { bundle } = submission;
@@ -51,7 +58,7 @@ export function SharedPracticeCard({
 
   return (
     <article
-      className="session-practice"
+      className="session-practice workshop-note"
       aria-labelledby={`shared-practice-${submission.id}`}
       data-submission-id={submission.id}
     >
@@ -62,6 +69,9 @@ export function SharedPracticeCard({
             {regionName}
           </span>
           {submission.status === 'withdrawn' ? <span>Снята с доски</span> : null}
+          {inRating && submission.status === 'shared' ? <span className="session-practice-rated">
+            <Check size={14} aria-hidden="true" />В рейтинге
+          </span> : null}
           {focused ? (
             <span>
               <Monitor size={13} aria-hidden="true" />
@@ -228,6 +238,11 @@ export function SharedPracticeCard({
           </div>
         </div>
         <div className="session-action-row">
+          {onAddToRating ? (
+            <button type="button" className="button button-primary" disabled={busy} onClick={onAddToRating}>
+              <Plus size={15} aria-hidden="true" />В рейтинг
+            </button>
+          ) : null}
           {onEdit ? (
             <button className="button button-quiet" disabled={busy} onClick={onEdit}>
               <Pencil size={15} />

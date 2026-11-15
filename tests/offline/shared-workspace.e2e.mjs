@@ -267,13 +267,27 @@ try {
     await expect(scenes(a.page).getByRole('button', { name: 'Программы', exact: true })).toHaveAttribute('aria-current', 'page');
     await scene(a.page, 'Практики');
     await scene(b.page, 'Практики');
+    await expect(a.page.getByRole('region', { name: 'Рейтинг практик', exact: true })).toBeVisible();
+    await expect(scenes(a.page).getByRole('button', { name: 'Рейтинг', exact: true })).toHaveCount(0);
+    await expect(scenes(a.page).getByRole('button', { name: 'Группировка', exact: true })).toHaveCount(0);
+    for (const page of [a.page, b.page]) await page.getByRole('button', { name: 'Опубликованные карточки', exact: true }).click();
     await expect(b.page.getByRole('article', { name: PRACTICE, exact: true })).toBeVisible();
   });
-  await stage('An ordinary participant creates a family retaining the published source variant', a.page, async () => {
-    await scene(a.page, 'Группировка');
-    await a.page.getByRole('checkbox', { name: `Выбрать практику «${PRACTICE}»`, exact: true }).check();
-    await a.page.getByRole('button', { name: 'Создать семейство', exact: true }).click();
-    const editor = a.page.getByRole('dialog', { name: 'Создать семейство практик', exact: true });
+  await stage('An ordinary participant sends a publication to the rating and edits its group when needed', a.page, async () => {
+    const publication = a.page.getByRole('article', { name: PRACTICE, exact: true });
+    const adding = rpc(a.page, 'dw_save_family');
+    await publication.getByRole('button', { name: 'В рейтинг', exact: true }).click();
+    const added = await adding;
+    expect(added.status(), await added.text()).toBe(200);
+    await expect(publication.getByText('В рейтинге', { exact: true })).toBeVisible();
+    await expect(b.page.getByRole('article', { name: PRACTICE, exact: true }).getByText('В рейтинге', { exact: true })).toBeVisible();
+    await a.page.getByRole('button', { name: 'Настроить группы', exact: true }).click();
+    await expect(scenes(a.page).getByRole('button', { name: 'Практики', exact: true })).toHaveAttribute('aria-current', 'page');
+    const family = a.page.getByRole('article', { name: PRACTICE, exact: true });
+    const expand = family.getByRole('button', { name: /Региональных вариантов: 1/u });
+    if ((await expand.getAttribute('aria-expanded')) === 'false') await expand.click();
+    await family.getByRole('button', { name: `Редактировать семейство «${PRACTICE}»`, exact: true }).click();
+    const editor = a.page.getByRole('dialog', { name: 'Редактировать семейство', exact: true });
     await editor.getByLabel('Название семейства', { exact: true }).fill(FAMILY);
     await editor.getByLabel('Общий механизм', { exact: true }).fill('Возмещение части платы за уход и присмотр в дошкольной организации.');
     await editor.getByLabel('Обоснование объединения', { exact: true }).fill('Сохранены точные условия и цитата региональной программы.');
@@ -286,7 +300,7 @@ try {
     await screenshot(a.page, 'shared-family-participant-desktop.png');
   });
   await stage('Likes, dislikes and withdrawal update on the independent phone without opening a voting round', a.page, async () => {
-    await scene(a.page, 'Рейтинг'); await scene(b.page, 'Рейтинг');
+    await scene(a.page, 'Практики'); await scene(b.page, 'Практики');
     const positiveA = a.page.getByRole('button', { name: `Поддержать: ${FAMILY}`, exact: true });
     const positiveB = b.page.getByRole('button', { name: `Поддержать: ${FAMILY}`, exact: true });
     const negativeA = a.page.getByRole('button', { name: `Не поддержать: ${FAMILY}`, exact: true });
@@ -366,6 +380,7 @@ try {
     expect(invitationRequests).toEqual([]);
     await screenshot(teacher.page, 'shared-teacher-first-flipchart.png');
     await scene(teacher.page, 'Практики');
+    await teacher.page.getByRole('button', { name: 'Опубликованные карточки', exact: true }).click();
     const publication = teacher.page.getByRole('article', { name: PRACTICE, exact: true });
     await expect(publication).toBeVisible();
     // A profile edit emits a session change and exercises the changed-cursor host path.
@@ -420,7 +435,7 @@ try {
     await expect(sharedCard.getByRole('button', { name: 'Мера отобрана' })).toBeVisible();
     await select(b.page, await findCard(b.page, 'Архангельская область', arkhangelsk));
     await select(a.page, await findCard(a.page, 'Федеральные меры', federal));
-    for (const page of [a.page, b.page]) await scene(page, 'Рейтинг');
+    for (const page of [a.page, b.page]) await scene(page, 'Практики');
 
     const group = ranking(a.page).getByRole('article', { name: familyName, exact: true });
     await expect(group).toHaveCount(1);
@@ -497,9 +512,21 @@ try {
     await expect(imported).toHaveCount(1);
     await expect(imported).toContainText('Второй ребёнок');
     await expect(lifecycle(a.page).getByRole('list', { name: 'Этапы, связанные с первым ребёнком' })).toContainText('Зачатие');
+    const search = lifecycle(a.page).getByRole('searchbox', { name: 'Поиск по барьерам' });
+    await search.fill(red);
+    await expect(lifecycle(a.page).getByRole('article')).toHaveCount(1);
+    const barrierVote = rpc(a.page, 'dw_barrier_vote');
+    await imported.getByRole('button', { name: 'Значимый барьер: 0', exact: true }).click();
+    expect((await barrierVote).status()).toBe(200);
+    await expect(lifecycle(b.page).getByRole('article', { name: red, exact: true })
+      .getByRole('button', { name: 'Значимый барьер: 1', exact: true })).toBeVisible();
+    await search.clear();
+    await noOverflow(b.page, 390);
+    await screenshot(a.page, 'barriers-stickers-desktop.png');
+    await screenshot(b.page, 'barriers-stickers-mobile.png');
 
     const steps = await scenes(a.page).getByRole('button').allTextContents();
-    expect(steps.map(name => name.trim()).slice(-3)).toEqual(['Рейтинг', 'Решения', 'Дорожные карты']);
+    expect(steps.map(name => name.trim()).slice(-3)).toEqual(['Практики', 'Решения', 'Дорожные карты']);
     await scene(a.page, 'Решения');
     await expect(solutions(a.page).getByRole('region', { name: 'Барьеры без решений' })).toContainText(red);
     await expect(solutions(a.page).getByRole('region', { name: 'Меры без связей' })).toContainText(green);
@@ -568,8 +595,24 @@ try {
     await metrics.getByRole('button', { name: 'Миграция по возрасту', exact: true }).click();
     const age = b.page.getByRole('region', { name: 'Миграция по возрасту', exact: true });
     await age.getByRole('combobox', { name: /^Год/u }).selectOption('2023');
+    const arrivals = age.getByRole('figure', { name: 'Прибывшие по полу и возрасту за 2023 год', exact: true });
+    const departures = age.getByRole('figure', { name: 'Выбывшие по полу и возрасту за 2023 год', exact: true });
+    const children = chart => chart.locator('.rm-pyramid-row').filter({
+      has: b.page.getByText('0–4', { exact: true }),
+    });
+    await expect(children(arrivals).locator('.rm-pyramid-men > span')).toHaveText('13');
+    await expect(children(arrivals).locator('.rm-pyramid-women > span')).toHaveText('14');
+    await expect(children(departures).locator('.rm-pyramid-men > span')).toHaveText('15');
+    await expect(children(departures).locator('.rm-pyramid-women > span')).toHaveText('10');
     const young = age.getByRole('row').filter({ has: b.page.getByRole('rowheader', { name: '0–4', exact: true }) });
     await expect(young.getByRole('cell')).toHaveText(['27', '25', '2']);
+    await age.getByRole('combobox', { name: /^Направление/u }).selectOption('interregional');
+    await expect(children(arrivals).locator('.rm-pyramid-men > span')).toHaveText('8');
+    await expect(children(arrivals).locator('.rm-pyramid-women > span')).toHaveText('7');
+    await expect(children(departures).locator('.rm-pyramid-men > span')).toHaveText('7');
+    await expect(children(departures).locator('.rm-pyramid-women > span')).toHaveText('3');
+    await noOverflow(b.page, 390);
+    await screenshot(b.page, 'roadmap-migration-pyramids-mobile.png');
 
     await metrics.getByRole('button', { name: 'Направления миграции', exact: true }).click();
     const migration = b.page.getByRole('region', { name: 'Направления миграции', exact: true });

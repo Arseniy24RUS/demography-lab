@@ -8,11 +8,13 @@ export type MigrationValues = [arrivals: Count, departures: Count, balance: Coun
 export type MigrationAge = [from: number, to: number | null, ...MigrationValues];
 export type MigrationDirection = 'all' | 'within_region' | 'interregional' | 'international' |
   'within_russia' | 'outside_region' | 'cis' | 'other_international' | 'urban_destinations';
+export type MigrationSex = [year: number, direction: MigrationDirection, arrivals: AgeSex[], departures: AgeSex[]];
 export type AnnualMetric = 'population_january_all' | 'population_january_urban' | 'population_january_rural' |
   'natural_reported' | 'birth_rate' | 'death_rate' | 'natural_rate';
 export interface RoadmapDemography {
   population: Array<[year: number, residence: Residence, total: [Count, Count] | null, rows: AgeSex[]]>;
   migration: Array<[year: number, direction: MigrationDirection, total: MigrationValues | null, rows: MigrationAge[]]>;
+  migrationSex?: MigrationSex[];
   annual: Partial<Record<AnnualMetric, [year: number, value: number][]>>;
 }
 interface Index {

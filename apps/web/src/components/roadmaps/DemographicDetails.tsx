@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import type { TerritoryRecord } from '../../../../../packages/territories/types';
 import {
   loadRoadmapDemography,
-  type AnnualMetric, type MigrationDirection, type MigrationValues, type RoadmapDemography, type Residence,
+  type AgeSex, type AnnualMetric, type MigrationDirection, type MigrationSex, type MigrationValues,
+  type RoadmapDemography, type Residence,
 } from '@/lib/roadmap-demography';
 import { ageLabel, formatPeople, PopulationPyramid } from './PopulationPyramid';
 import './roadmap-data.css';
@@ -95,19 +96,48 @@ function Structure({ items }: { items: RoadmapDemography['population'] }) {
   </>;
 }
 
-function Migration({ items, byAge }: { items: RoadmapDemography['migration']; byAge: boolean }) {
+function MigrationPyramids({ entry, year }: { entry?: MigrationSex; year: number }) {
+  if (!entry) return <p className="rm-demography-summary">Половозрастная разбивка для этого года и направления отсутствует.</p>;
+  const [, , arrivals, departures] = entry;
+  const rows = [...arrivals, ...departures];
+  const maximum = Math.max(1, ...rows.flatMap(row => [row[2] ?? 0, row[3] ?? 0]));
+  const band = ([from, to]: AgeSex) => ageLabel(from, to);
+  const bands = [...new Map(rows.map(row => [band(row), row])).values()].sort((a, b) => a[0] - b[0]);
+  const compatible = bands.every(([from], index) => index === 0 || (bands[index - 1][1] ?? Infinity) < from);
+  const align = (profile: AgeSex[]): AgeSex[] => {
+    if (!compatible || !profile.length) return profile;
+    const observed = new Map(profile.map(row => [band(row), row]));
+    return bands.map(row => observed.get(band(row)) ?? [row[0], row[1], null, null]);
+  };
+  return <div className="rm-migration-pyramids">
+    {([{ title: 'Прибывшие', rows: align(arrivals) }, { title: 'Выбывшие', rows: align(departures) }]).map(({ title, rows }) =>
+      <section key={title} aria-label={title}>
+        <h4>{title}</h4>
+        {rows.length > 0
+          ? <PopulationPyramid label={`${title} по полу и возрасту за ${year} год`} rows={rows} maximum={maximum} />
+          : <p className="rm-demography-summary">Половозрастная разбивка отсутствует.</p>}
+      </section>
+    )}
+  </div>;
+}
+
+function Migration({ items, sexItems = [], byAge }: {
+  items: RoadmapDemography['migration']; sexItems?: readonly MigrationSex[]; byAge: boolean;
+}) {
   const [selectedDirection, setDirection] = useState<MigrationDirection>('all');
   const [selectedYear, setYear] = useState<number | null>(null);
   const relevant = items.filter(item => byAge ? item[3].length > 0 : item[2] !== null);
-  const available = recent(relevant.map(item => item[1]));
+  const profileSelections = byAge ? [...relevant, ...sexItems] : relevant;
+  const available = recent(profileSelections.map(item => item[1]));
   const direction = available.includes(selectedDirection) ? selectedDirection : available[0];
-  const subset = byAge ? relevant.filter(item => item[1] === direction) : relevant;
-  const years = yearsDescending(subset.map(item => item[0]));
+  const years = yearsDescending(profileSelections.filter(item => !byAge || item[1] === direction).map(item => item[0]));
   const year = selectedYear !== null && years.includes(selectedYear) ? selectedYear : years[0];
   if (year === undefined) return <p className="rm-demography-empty">{empty}</p>;
-  const yearEntries = subset.filter(item => item[0] === year);
+  const yearEntries = relevant.filter(item => item[0] === year);
+  const sexProfile = byAge ? sexItems.find(item => item[0] === year && item[1] === direction) : undefined;
+  const ageRows = yearEntries.find(item => item[1] === direction)?.[3] ?? [];
   const rows: Array<[string, MigrationValues]> = byAge
-    ? yearEntries[0][3].map(([from, to, ...values]) => [ageLabel(from, to), values])
+    ? ageRows.map(([from, to, ...values]) => [ageLabel(from, to), values])
     : (Object.keys(directions) as MigrationDirection[]).flatMap(id => {
         const entry = yearEntries.find(item => item[1] === id)?.[2];
         return entry ? [[directions[id], entry]] : [];
@@ -125,7 +155,8 @@ function Migration({ items, byAge }: { items: RoadmapDemography['migration']; by
         </label> : null}
       </div>
     </div>
-    <FlowTable rows={rows} label={byAge ? 'Возраст' : 'Направление'} />
+    {byAge ? <MigrationPyramids entry={sexProfile} year={year} /> : null}
+    {rows.length > 0 ? <FlowTable rows={rows} label={byAge ? 'Возраст' : 'Направление'} /> : null}
     {!byAge ? <p className="rm-demography-summary">Строки описывают пересекающиеся направления. Их итог приведён в строке «Всего», когда он опубликован.</p> : null}
   </>;
 }
@@ -182,7 +213,7 @@ export function DemographicDetails({ view, territory, editionId }: {
       : <>
           {view === 'pyramid' ? <Structure items={material.data.population} />
             : view === 'additional' ? <Additional data={material.data.annual} />
-            : <Migration key={view} items={material.data.migration} byAge={view === 'migration_age'} />}
+            : <Migration key={view} items={material.data.migration} sexItems={material.data.migrationSex} byAge={view === 'migration_age'} />}
           <p className="rm-source-caption">
             <a href={material.sourceUrl} target="_blank" rel="noreferrer">{material.source}</a>
             {' · '}{material.sourceVersion.replace(/^.*v(\d{4})(\d{2})(\d{2})$/u, '$3.$2.$1')}

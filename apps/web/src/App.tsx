@@ -728,6 +728,9 @@ export function App() {
             mainContentId={view === 'sessions' ? 'main-content' : 'programme-workspace'}
             state={session.state}
             actions={session.actions}
+            practiceGrouping={workshop.snapshot
+              ? { snapshot: workshop.snapshot, saveFamily: workshop.actions.saveFamily }
+              : undefined}
             renderFlipchart={() => session.state.snapshot && session.state.auth.userId ? (
               <Suspense fallback={<p aria-busy="true">Открываем флипчарт…</p>}>
                 <ConnectedFlipchart key={`${session.sessionId}:${session.state.auth.userId}`} api={session.api}
