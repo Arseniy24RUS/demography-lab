@@ -431,6 +431,7 @@ try {
       const response = await pending;
       expect(response.status(), await response.text()).toBe(200);
       expect(response.request().postDataJSON().p_input.board).toBe('objective');
+      expect(response.request().postDataJSON().p_input.territorySelected).toBe(true);
       return (await response.json()).note;
     };
     const title = 'Общая площадь жилых помещений, приходящаяся в среднем на одного жителя — всего';
@@ -438,7 +439,24 @@ try {
       .filter({ has: page.getByRole('heading', { name: title, exact: true }) });
     for (const page of [a.page, b.page])
       await objective(page).getByRole('searchbox', { name: 'Показатель', exact: true }).fill(title);
-    const [first, duplicate] = await Promise.all([select(a.page, housingCard(a.page)), select(b.page, housingCard(b.page))]);
+    // Both clicks must record the unchecked action before a real reply can update either board.
+    const addRoute = '**/rest/v1/rpc/dw_flipchart_add';
+    const release = Promise.withResolvers();
+    let waiting = 0;
+    const holdAdd = async (route) => {
+      if (++waiting === 2) release.resolve();
+      await release.promise;
+      await route.fallback();
+    };
+    const pages = [a.page, b.page];
+    let first, duplicate;
+    await Promise.all(pages.map(page => page.route(addRoute, holdAdd)));
+    try {
+      [first, duplicate] = await Promise.all(pages.map(page => select(page, housingCard(page))));
+    } finally {
+      release.resolve();
+      await Promise.all(pages.map(page => page.unroute(addRoute, holdAdd)));
+    }
     expect(duplicate.id).toBe(first.id);
     expect(duplicate.factorKey).toBe(first.factorKey);
     expect(first.factorKey).toMatch(/^[a-z0-9][a-z0-9_-]{0,79}$/u);
