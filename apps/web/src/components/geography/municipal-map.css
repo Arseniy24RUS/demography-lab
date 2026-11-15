@@ -41,7 +41,8 @@
 .rm-map-shape[role='button']:hover { fill: #c9def9; stroke: #123c73; stroke-width: 2; }
 .rm-map-shape[data-selected='true'],
 .rm-map-shape[data-selected='true']:hover { fill: #123c73; stroke: #123c73; stroke-width: 2; }
-.rm-map-shape:focus-visible { outline: none; stroke: #d19a29; stroke-width: 4; }
+.rm-map-shape:focus { outline: none; }
+.rm-map-shape:focus-visible { stroke: #d19a29; stroke-width: 4; }
 .municipal-map-leaders { pointer-events: none; stroke: #5a7595; stroke-width: .65; }
 .rm-map-label {
   fill: #203c5c;
