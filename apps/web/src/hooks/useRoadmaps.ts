@@ -17,6 +17,7 @@ import type {
   JoinRoadmapInput,
   SaveRoadmapItemInput,
   CaptureRoadmapBasisInput,
+  ImportRoadmapWorkshopInput,
   CaptureRoadmapFactInput,
   FreezeRoadmapInput,
   ReviewRoadmapInput,
@@ -355,6 +356,7 @@ export function useRoadmaps({
     },
     saveItem: (input: SaveRoadmapItemInput) => write((c, id) => c.saveItem(id, input)),
     captureBasis: (input: CaptureRoadmapBasisInput) => write((c, id) => c.captureBasis(id, input)),
+    importWorkshop: (input: ImportRoadmapWorkshopInput) => write((c, id) => c.importWorkshop(id, input)),
     captureFact: (input: CaptureRoadmapFactInput) => write((c, id) => c.captureFact(id, input)),
     saveStatistics: (input: SaveStatisticsInput) => write((c, id) => c.saveStatistics(id, input)),
     restoreStatistics: (input: RestoreStatisticsInput) =>

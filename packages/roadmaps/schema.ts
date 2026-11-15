@@ -13,7 +13,7 @@ import type {
   RoadmapSeries,
 } from './types';
 import type { StatisticsHead } from '../statistics/types';
-import { ROADMAP_LIMITS } from './types';
+import { roadmapSmartCriteria, ROADMAP_LIMITS } from './types';
 
 const uuid = z.uuid();
 const integer = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
@@ -70,6 +70,8 @@ export const roadmapPassportDataSchema = z
     targetGroup: text(4000),
     partners: text(4000),
     goal: text(4000),
+    smartChecks: z.array(z.enum(roadmapSmartCriteria)).max(5)
+      .refine((items) => new Set(items).size === items.length).optional(),
     objectives: z
       .array(z.strictObject({ id: uuid, title: text(1000) }))
       .max(30)
@@ -166,7 +168,7 @@ export const roadmapScenarioParametersSchema = z
     historyStartYear: year,
     historyEndYear: year,
     endYear: year,
-    baselineMethod: z.enum(['last_value', 'linear']),
+    baselineMethod: z.enum(['last_value', 'linear', 'historical_continuation']),
     targetMode: z.enum([
       'absolute_end',
       'relative_end',
@@ -367,11 +369,19 @@ const basisMaterial = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('barrier'), source: barrierGround }),
   z.strictObject({ kind: z.literal('solution'), source: solutionGround }),
   z.strictObject({ kind: z.literal('link'), source: linkGround }),
+  z.strictObject({ kind: z.literal('factor'), source: z.strictObject({
+    id: uuid,
+    title: text(360, 1).refine((v) => Array.from(v).length <= 180),
+    board: z.enum(['parenthood', 'objective']),
+    revision,
+    status: itemStatus,
+    barriers: z.array(barrierGround).max(200),
+  }) }),
 ]);
 export const roadmapBasisSchema = z
   .strictObject({
     id: uuid,
-    sourceKind: z.enum(['barrier', 'link', 'solution']),
+    sourceKind: z.enum(['barrier', 'link', 'solution', 'factor']),
     sourceId: uuid,
     sourceRevision: revision,
     fingerprint: sha256,
@@ -410,6 +420,13 @@ export const captureRoadmapFactInputSchema = z
     interpretation: text(4000),
   })
   .refine((v) => (v.itemId === null) === (v.expectedRevision === 0));
+export const importRoadmapWorkshopInputSchema = z.strictObject({
+  roadmapId: uuid,
+  barrierIds: z.array(uuid).min(1).max(40).refine((ids) => new Set(ids).size === ids.length),
+  measures: z.array(z.strictObject({ kind: z.enum(['family', 'factor', 'solution']), id: uuid }))
+    .max(40)
+    .refine((items) => new Set(items.map(({ kind, id }) => `${kind}:${id}`)).size === items.length),
+});
 const budgetFields = {
   needCashKopecks: integer,
   inKindKopecks: integer,

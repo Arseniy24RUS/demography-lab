@@ -2,6 +2,7 @@ import type { MunicipalMetricId, RegionStatisticsPack } from '../territories/typ
 import type { RoadmapSeries } from '../roadmaps/types';
 import { provisionalObservationYears } from '../statistics/series';
 import { ANALYTICS_VERSION, CalculationError } from './types';
+import { continueHistoricalTrend, historicalTrend, TREND_DAMPING } from './historical-trend';
 import type {
   ObservationPoint,
   ScenarioInput,
@@ -193,7 +194,7 @@ export function computeScenario(input: ScenarioInput): ScenarioResult {
     );
   if (!Number.isFinite(params.targetValue))
     throw new CalculationError('INVALID_TARGET_VALUE', 'Цель должна быть конечным числом.');
-  if (!['last_value', 'linear'].includes(params.baselineMethod))
+  if (!['last_value', 'linear', 'historical_continuation'].includes(params.baselineMethod))
     throw new CalculationError('UNKNOWN_BASELINE_METHOD', 'Неизвестный метод базовой траектории.');
   if (
     ![
@@ -253,6 +254,7 @@ export function computeScenario(input: ScenarioInput): ScenarioResult {
       'Линейная экстраполяция требует минимум пяти последовательных лет без пропусков внутри выбранного ряда.',
     );
   const coefficients = params.baselineMethod === 'linear' ? fitLinear(observed) : null;
+  const trend = params.baselineMethod === 'historical_continuation' ? historicalTrend(observed) : null;
   const clip = (value: number): number => {
     if (!Number.isFinite(value))
       throw new CalculationError(
@@ -262,6 +264,7 @@ export function computeScenario(input: ScenarioInput): ScenarioResult {
     return Math.min(limits.max ?? Infinity, Math.max(limits.min ?? -Infinity, value));
   };
   const baseline = (year: number): number =>
+    trend ? continueHistoricalTrend(trend, year) :
     coefficients
       ? coefficients.intercept + coefficients.slopePerYear * (year - coefficients.firstYear)
       : last.value;
@@ -358,7 +361,7 @@ export function computeScenario(input: ScenarioInput): ScenarioResult {
       message:
         'Горизонт превышает десять лет; простая экстраполяция особенно чувствительна к выбору предпосылок.',
     });
-  if (params.baselineMethod === 'last_value' && observed.length < 5)
+  if ((params.baselineMethod === 'last_value' || trend) && observed.length < 5)
     warnings.push({
       code: 'SHORT_HISTORY_LEVEL_ONLY',
       severity: 'warning',
@@ -469,9 +472,11 @@ export function computeScenario(input: ScenarioInput): ScenarioResult {
     baselineYear: last.year,
     baselineObservedValue: last.value,
     horizonYears,
-    trainingYears: coefficients ? observed.map((point) => point.year) : [last.year],
+    trainingYears: trend ? trend.sample.map((point) => point.year)
+      : coefficients ? observed.map((point) => point.year) : [last.year],
     years,
     coefficients,
+    ...(trend ? { continuation: { slopePerYear: trend.slope, damping: TREND_DAMPING } } : {}),
     backtest,
     endGap: future.at(-1)!.delta!,
     cumulativeFlowGap,

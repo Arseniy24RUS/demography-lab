@@ -250,6 +250,25 @@ describe('Stage 5 private territorial roadmap transactions', () => {
     );
   });
 
+  it('shares SMART self-checks on a passport and rejects invalid criteria', async () => {
+    const e = await setup();
+    await named(e, 'dw_join_roadmap', joinInput(), e.bob);
+    const original = only(await snapshot(e), 'passport')[0];
+    assert.equal(Object.hasOwn(original.data, 'smartChecks'), false);
+    const data = {
+      ...original.data,
+      goal: 'К концу года увеличить охват семей консультациями с 40 до 60 процентов.',
+      smartChecks: ['specific', 'measurable', 'timeBound'],
+    };
+    await save(e, 'passport', data, original);
+    const saved = only(await snapshot(e, e.roomId, e.bob), 'passport')[0];
+    assert.deepEqual(saved.data, data);
+    for (const smartChecks of [['specific', 'specific'], ['unknown'], null]) {
+      await code(save(e, 'passport', { ...data, smartChecks }, saved), 'INVALID_INPUT');
+    }
+    assert.equal(only(await snapshot(e), 'passport')[0].revision, saved.revision);
+  });
+
   it('opens one shared team outside the initial region without replacing its saved roadmap', async () => {
     const e = await setup({ room: false });
     const entered = await rpc(e.alice, 'dw_enter_workspace', { p_operation_id: id() });
@@ -864,6 +883,20 @@ describe('Stage 5 provenance, resource limits and cumulative compatibility', () 
     };
     const s = await save(e, 'scenario', data);
     assert.deepEqual(only(s, 'scenario')[0].data.parameters, parameters);
+    const continuation = {
+      ...parameters,
+      endYear: last.year + 5,
+      baselineMethod: 'historical_continuation',
+      targetMode: 'absolute_delta_end',
+      targetValue: -20,
+    };
+    const continued = await save(e, 'scenario', { ...data, parameters: continuation });
+    assert.ok(only(continued, 'scenario').some(item => item.data.parameters.baselineMethod === 'historical_continuation'));
+    // The historical births are declining fast enough to make a 75-person reduction
+    // infeasible after five years, although the same reduction is possible from 102.
+    const infeasible = { ...continuation, targetValue: -75 };
+    await code(save(e, 'scenario', { ...data, parameters: infeasible }), 'SCENARIO_DOMAIN');
+    await save(e, 'scenario', { ...data, parameters: { ...infeasible, baselineMethod: 'last_value' } });
     const indicator = {
       title: 'Плановый ориентир',
       definition: '',
@@ -1131,8 +1164,9 @@ describe('Stage 5 provenance, resource limits and cumulative compatibility', () 
     const tables = await db.query(
       "select c.relname,c.relrowsecurity,has_table_privilege('authenticated',c.oid,'SELECT,INSERT,UPDATE,DELETE') access from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='private' and c.relkind='r' and c.relname like 'dw_roadmap%'",
     );
-    assert.equal(tables.rows.length, 14);
+    assert.equal(tables.rows.length, 15);
     assert.ok(tables.rows.some(r => r.relname === 'dw_roadmap_view_presence'));
+    assert.ok(tables.rows.some(r => r.relname === 'dw_roadmap_workshop_imports'));
     assert.ok(tables.rows.every((r) => r.relrowsecurity && !r.access));
     const newNames = Object.keys(rpcArguments).filter((name) => name.includes('roadmap'));
     const functions = await db.query(

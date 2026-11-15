@@ -33,8 +33,13 @@ const NAME_TEACHER = 'Преподаватель общей мастерской
 const PRACTICE = 'Компенсация родительской платы за детский сад';
 const FAMILY = 'Доступный уход за детьми';
 const RENT_BARRIER = 'Дорогая аренда жилья. Съёмное жильё недоступно многим семьям.';
+const ARDATOV = 'Ардатовский муниципальный район';
+const LINKED_BARRIER = 'Нестабильный график работы';
+const LINKED_MEASURE = 'Гибкий график для родителей';
+const RANKED_FAMILY = 'Региональный материнский (семейный) капитал';
 const navigation = page => page.getByRole('navigation', { name: 'Основная навигация' });
 const scenes = page => page.getByRole('navigation', { name: 'Этапы коллективной работы' });
+const roadmapNav = page => page.getByRole('navigation', { name: 'Разделы дорожной карты', exact: true });
 const inspector = page => page.getByRole('complementary', { name: 'Связь цитаты и практики' });
 const rpc = (page, name) => page.waitForResponse(response =>
   new URL(response.url()).pathname === `/rest/v1/rpc/${name}` && response.request().method() === 'POST');
@@ -124,6 +129,16 @@ async function workspace(page) {
 }
 async function scene(page, name) {
   await scenes(page).getByRole('button', { name, exact: true }).click();
+}
+async function joinRoadmap(page) {
+  await scene(page, 'Дорожные карты');
+  const territories = page.getByRole('region', { name: 'Выбор территории', exact: true });
+  await territories.getByRole('table').getByRole('button', { name: ARDATOV, exact: true }).click();
+  await expect(roadmapNav(page).getByRole('button', { name: 'Паспорт', exact: true })).toHaveAttribute('aria-current', 'page');
+  await expect(page.getByRole('form', { name: 'Паспорт проекта', exact: true })).toBeVisible();
+}
+async function roadmapTab(page, name) {
+  await roadmapNav(page).getByRole('button', { name, exact: true }).click();
 }
 async function barrier(page, title) {
   await workspace(page);
@@ -371,7 +386,7 @@ try {
   await stage('Regional and federal catalogue selections reach one shared rating with intact variants', a.page, async () => {
     const catalogue = page => page.getByRole('region', { name: 'Каталог мер', exact: true });
     const ranking = page => page.getByRole('region', { name: 'Рейтинг практик', exact: true });
-    const familyName = 'Региональный материнский (семейный) капитал';
+    const familyName = RANKED_FAMILY;
     const amur = 'Региональный материнский капитал при рождении второго ребёнка (Амурская область)';
     const arkhangelsk = 'Региональный материнский (семейный) капитал (Архангельская область)';
     const federal = 'Декретные выплаты для ИП и самозанятых';
@@ -429,12 +444,12 @@ try {
     await screenshot(a.page, 'family-catalog-shared-ranking.png');
   });
   await stage('One barrier spans several life stages and keeps reusable links and both gap lists', a.page, async () => {
-    const red = 'Нестабильный график работы';
-    const green = 'Гибкий график для родителей';
+    const red = LINKED_BARRIER;
+    const green = LINKED_MEASURE;
     const unusedGreen = 'Прокат семейных велосипедов';
     const authored = 'Дежурная группа для детей сотрудников';
     const oldBarrier = RENT_BARRIER;
-    const rankedFamily = 'Региональный материнский (семейный) капитал';
+    const rankedFamily = RANKED_FAMILY;
     const lifecycle = page => page.getByRole('region', { name: 'Барьеры по этапам жизни', exact: true });
     const solutions = page => page.getByRole('region', { name: 'Решения', exact: true });
 
@@ -508,6 +523,117 @@ try {
     await expect(unused).toContainText(authored);
     await noOverflow(b.page, 390);
     await screenshot(a.page, 'shared-lifecycle-solutions.png');
+  });
+  await stage('Joining a territory opens its passport and SMART self-checks reach another team member', a.page, async () => {
+    await joinRoadmap(a.page);
+    await joinRoadmap(b.page);
+    const passport = page => page.getByRole('form', { name: 'Паспорт проекта', exact: true });
+    const title = 'Время для семьи в Ардатовском районе';
+    const goal = 'К 2030 году увеличить долю родителей с гибким графиком с 20 до 35 процентов.';
+    const checklist = page => passport(page).getByRole('group', { name: 'Самопроверка цели по SMART', exact: true });
+    await expect(checklist(a.page).getByRole('checkbox')).toHaveCount(5);
+    await passport(a.page).getByRole('textbox', { name: 'Название проекта', exact: true }).fill(title);
+    await passport(a.page).getByRole('textbox', { name: 'Цель проекта', exact: true }).fill(goal);
+    await checklist(a.page).getByRole('checkbox', { name: /^Конкретная/u }).check();
+    await checklist(a.page).getByRole('checkbox', { name: /^Измеримая/u }).check();
+    await checklist(a.page).getByRole('checkbox', { name: /^Ограничена сроком/u }).check();
+    await roadmapTab(a.page, 'Статистика');
+    await roadmapTab(a.page, 'Паспорт');
+    await expect(passport(a.page).getByRole('textbox', { name: 'Цель проекта', exact: true })).toHaveValue(goal);
+    await passport(a.page).getByRole('button', { name: 'Сохранить паспорт', exact: true }).click();
+    await expect(passport(a.page).getByText('Паспорт сохранён.', { exact: true })).toBeVisible();
+    await b.page.getByRole('button', { name: 'Обновить дорожные карты', exact: true }).click();
+    await expect(passport(b.page).getByRole('textbox', { name: 'Название проекта', exact: true })).toHaveValue(title);
+    await expect(passport(b.page).getByRole('textbox', { name: 'Цель проекта', exact: true })).toHaveValue(goal);
+    await expect(checklist(b.page).getByRole('checkbox', { checked: true })).toHaveCount(3);
+    await expect(checklist(b.page).getByRole('checkbox', { name: /^Измеримая/u })).toBeChecked();
+    await noOverflow(b.page, 390);
+    await checklist(a.page).scrollIntoViewIfNeeded();
+    await screenshot(a.page, 'roadmap-passport-desktop.png');
+  });
+  await stage('Statistics displays measured age structure and migration for the selected municipality', b.page, async () => {
+    await roadmapTab(b.page, 'Статистика');
+    const metrics = b.page.getByRole('group', { name: 'Показатели', exact: true });
+    await metrics.getByRole('button', { name: 'Половозрастная структура', exact: true }).click();
+    const structure = b.page.getByRole('region', { name: 'Половозрастная структура', exact: true });
+    await structure.getByRole('combobox', { name: /^Год/u }).selectOption('2024');
+    const pyramid = structure.getByRole('figure', { name: 'Половозрастная пирамида за 2024 год', exact: true });
+    await expect(pyramid).toBeVisible();
+    await expect(pyramid).toContainText('Мужчины');
+    await expect(pyramid).toContainText('Женщины');
+    await expect(pyramid).toContainText('0–4');
+    await expect(pyramid).toContainText('288');
+    await screenshot(b.page, 'roadmap-statistics-pyramid-mobile.png');
+
+    await metrics.getByRole('button', { name: 'Миграция по возрасту', exact: true }).click();
+    const age = b.page.getByRole('region', { name: 'Миграция по возрасту', exact: true });
+    await age.getByRole('combobox', { name: /^Год/u }).selectOption('2023');
+    const young = age.getByRole('row').filter({ has: b.page.getByRole('rowheader', { name: '0–4', exact: true }) });
+    await expect(young.getByRole('cell')).toHaveText(['27', '25', '2']);
+
+    await metrics.getByRole('button', { name: 'Направления миграции', exact: true }).click();
+    const migration = b.page.getByRole('region', { name: 'Направления миграции', exact: true });
+    await migration.getByRole('combobox', { name: /^Год/u }).selectOption('2023');
+    const interregional = migration.getByRole('row').filter({
+      has: b.page.getByRole('rowheader', { name: 'Между регионами', exact: true }),
+    });
+    await expect(interregional.getByRole('cell')).toHaveText(['392', '278', '114']);
+    await expect(migration.getByRole('rowheader', { name: 'Международная', exact: true })).toBeVisible();
+    await noOverflow(b.page, 390);
+  });
+  await stage('The cohort forecast compares a changed scenario with the baseline through 2100', a.page, async () => {
+    await roadmapTab(a.page, 'Прогноз');
+    const forecast = a.page.getByRole('region', { name: 'Прогноз населения', exact: true });
+    await expect(forecast.getByRole('heading', { name: 'Параметры прогноза', exact: true })).toBeVisible();
+    await expect(forecast.getByText('Базовый прогноз', { exact: true })).toBeVisible();
+    await forecast.getByRole('spinbutton', { name: 'Конечный год', exact: true }).fill('2100');
+    await forecast.getByRole('spinbutton', { name: 'Рождаемость, %', exact: true }).fill('120');
+    await forecast.getByRole('button', { name: 'Рассчитать', exact: true }).click();
+    await expect(forecast.getByText('Ваш сценарий', { exact: true })).toBeVisible();
+    const population = forecast.locator('.rm-forecast-kpi');
+    await expect(population).toContainText('Население на 1 января 2100 года');
+    const people = value => Number(value.replace(/[^\d]/gu, ''));
+    const scenario = people(await population.locator('strong').innerText());
+    const baseline = people(await population.locator('small').innerText());
+    expect(baseline).toBeGreaterThan(0);
+    expect(scenario).toBeGreaterThan(baseline);
+    await forecast.getByText('Половозрастная пирамида прогноза', { exact: true }).click();
+    await expect(forecast.getByRole('figure', { name: 'Половозрастная пирамида прогноза на 2100 год', exact: true })).toBeVisible();
+    await forecast.getByText('Таблица прогноза по годам', { exact: true }).click();
+    const finalYear = forecast.getByRole('row').filter({
+      has: a.page.getByRole('rowheader', { name: '2099', exact: true }),
+    });
+    await expect(finalYear).toBeVisible();
+    expect(people(await finalYear.getByRole('cell').nth(1).innerText())).toBeGreaterThan(0);
+    await noOverflow(a.page, 1440);
+    await forecast.getByRole('heading', { name: 'Параметры прогноза', exact: true }).scrollIntoViewIfNeeded();
+    await screenshot(a.page, 'roadmap-cohort-2100-desktop.png');
+  });
+  await stage('A team selects linked measures and edits the imported activity in its roadmap', a.page, async () => {
+    await roadmapTab(a.page, 'Мероприятия');
+    await a.page.getByRole('button', { name: 'Перенести барьеры и меры', exact: true }).click();
+    const dialog = a.page.getByRole('dialog', { name: 'Перенос барьеров и мер', exact: true });
+    await dialog.getByRole('checkbox', { name: LINKED_BARRIER }).check();
+    await expect(dialog.getByRole('checkbox', { name: LINKED_MEASURE })).toBeChecked();
+    await dialog.getByRole('checkbox', { name: RANKED_FAMILY }).uncheck();
+    await dialog.getByRole('button', { name: 'Перенести в проект', exact: true }).click();
+    await expect(dialog).toBeHidden();
+    await expect(a.page.getByRole('heading', { name: LINKED_BARRIER, exact: true })).toBeVisible();
+    const activity = (page, name) => page.locator('.rm-activity-card')
+      .filter({ has: page.getByRole('heading', { name, exact: true }) });
+    await expect(activity(a.page, LINKED_MEASURE)).toHaveCount(1);
+    await expect(activity(a.page, RANKED_FAMILY)).toHaveCount(0);
+    await activity(a.page, LINKED_MEASURE).getByRole('button', { name: 'Изменить', exact: true }).click();
+    const editor = a.page.getByRole('dialog', { name: 'Мероприятие', exact: true });
+    const renamed = 'Внедрить гибкий график для родителей в трёх организациях района';
+    await editor.getByRole('textbox', { name: 'Название мероприятия', exact: true }).fill(renamed);
+    await editor.getByRole('button', { name: 'Сохранить изменения', exact: true }).click();
+    await expect(editor).toBeHidden();
+    await expect(activity(a.page, renamed)).toBeVisible();
+    await roadmapTab(b.page, 'Мероприятия');
+    await b.page.getByRole('button', { name: 'Обновить дорожные карты', exact: true }).click();
+    await expect(activity(b.page, renamed)).toBeVisible();
+    await expect(b.page.getByRole('heading', { name: LINKED_MEASURE, exact: true })).toBeVisible();
   });
   expect(externalRequests).toEqual([]);
   expect(failedResponses).toEqual([]);

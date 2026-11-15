@@ -114,6 +114,7 @@ const labels: Record<string, string> = {
   amount: 'Размер',
   conditions: 'Условия',
   last_value: 'Сохранение последнего уровня',
+  historical_continuation: 'Продолжение наблюдаемого тренда',
   linear: 'Линейная экстраполяция',
   absolute_end: 'Абсолютная цель последнего года',
   relative_end: 'Изменение относительно базы к последнему году в процентах',
@@ -546,6 +547,9 @@ function buildReportBlocks(prepared: PreparedRoadmapExport): ReportBlock[] {
       `${result.baselineYear}: ${formatNumber(result.baselineObservedValue)} ${translated(result.definition.unit)}`,
     );
     field('Годы расчёта базовой траектории', result.trainingYears.join(', '));
+    if (result.continuation)
+      field('Тренд от последнего наблюдения',
+        `Изменение в первой точке ${formatNumber(result.continuation.slopePerYear, 8)}. Множитель ежегодного затухания ${formatNumber(result.continuation.damping, 2)}.`);
     if (result.coefficients)
       field(
         'Коэффициенты линейной базы',
@@ -846,6 +850,11 @@ function buildReportBlocks(prepared: PreparedRoadmapExport): ReportBlock[] {
         `${solution.id}; ${solution.revision}; ${translated(solution.status)}`,
       );
       for (const ground of solution.barriers) barrier(ground);
+    } else if (basis.material.kind === 'factor') {
+      const factor = basis.material.source;
+      field('Мера с флипчарта', factor.title);
+      field('Флипчарт', factor.board === 'objective' ? 'Объективные факторы' : 'Субъективные факторы');
+      for (const ground of factor.barriers) barrier(ground);
     } else {
       const link = basis.material.source;
       barrier(link.barrier);

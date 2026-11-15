@@ -1,5 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, FilePlus2, PencilLine, Save } from 'lucide-react';
+import {
+  ArrowDownLeft,
+  ArrowRight,
+  ArrowUpRight,
+  Baby,
+  ChartNoAxesColumnIncreasing,
+  FilePlus2,
+  Heart,
+  List,
+  Map,
+  MoveHorizontal,
+  PencilLine,
+  Save,
+  Users,
+} from 'lucide-react';
 import type {
   CanonicalMunicipalSeries,
   MunicipalMetricId,
@@ -34,8 +48,29 @@ import {
   useRoadmapTask,
 } from './common';
 import type { RoadmapWorkspaceProps } from './common';
+import {
+  DemographicDetails,
+  demographicViewLabels,
+  type DemographicView,
+} from './DemographicDetails';
 import { ScenarioChart } from './ScenarioChart';
 import { StatisticsEditor } from './StatisticsEditor';
+
+const metricIcons = {
+  pop_mid: Users,
+  births_total: Baby,
+  deaths_total: Heart,
+  natural_change: ChartNoAxesColumnIncreasing,
+  mig_in_total: ArrowDownLeft,
+  mig_out_total: ArrowUpRight,
+  mig_net_total: MoveHorizontal,
+} satisfies Record<MunicipalMetricId, typeof Users>;
+const demographicViews = [
+  ['pyramid', Users],
+  ['migration_age', ChartNoAxesColumnIncreasing],
+  ['migration_directions', Map],
+  ['additional', List],
+] as const;
 
 function defaults(series: RoadmapSeries): RoadmapScenarioParameters | null {
   const interval = suggestHistoryWindow(series.points);
@@ -48,7 +83,7 @@ function defaults(series: RoadmapSeries): RoadmapScenarioParameters | null {
           interval.endYear + 10,
           Math.max(interval.endYear + 3, new Date().getFullYear() + 3),
         ),
-        baselineMethod: 'last_value',
+        baselineMethod: 'historical_continuation',
         targetMode: series.valueDomain === 'signed' ? 'absolute_delta_end' : 'relative_end',
         targetValue: series.valueDomain === 'signed' ? 0 : 10,
       }
@@ -67,18 +102,22 @@ export function DiagnosticWorkbench({
   registry,
   territory,
   workspace,
+  mode = 'statistics',
 }: {
   index: TerritoryDataIndex;
   registry: TerritoryRegistry;
   territory: TerritoryRecord;
   workspace?: RoadmapWorkspaceProps;
+  mode?: 'statistics' | 'scenarios';
 }) {
+  const scenarioMode = mode === 'scenarios';
   const [allSeries, setAllSeries] = useState<CanonicalMunicipalSeries[]>([]),
     [loadError, setLoadError] = useState<string | null>(null),
     [loading, setLoading] = useState(false),
     [attempt, setAttempt] = useState(0);
   const [selectedMetric, setSelectedMetric] = useState<MunicipalMetricId>('births_total'),
     [comparisonKeys, setComparisonKeys] = useState<string[]>([]);
+  const [demographicView, setDemographicView] = useState<DemographicView | null>(null);
   const [parameters, setParameters] = useState<RoadmapScenarioParameters | null>(null),
     [title, setTitle] = useState(''),
     [assumptions, setAssumptions] = useState('');
@@ -101,10 +140,6 @@ export function DiagnosticWorkbench({
   const material = [...imported, ...(snapshot?.series ?? [])];
   const currentSeries = ownSeries.find((row) => row.metricId === selectedMetric) ?? null;
   const selected = pinnedSeries?.metricId === selectedMetric ? pinnedSeries : currentSeries;
-  const originalSeries =
-    currentSeries && isTeamStatisticalSeries(currentSeries)
-      ? currentSeries.baseSeries
-      : (imported.find((row) => row.metricId === selectedMetric) ?? currentSeries);
   const balances = useMemo(() => inspectStatisticalBalances(ownSeries), [ownSeries]);
   const contextRef = useRef('');
   const viewIdentity = `${snapshot?.roadmapId ?? territory.territoryKey}:${selectedMetric}:${selected?.id ?? ''}:${opened?.id ?? ''}`;
@@ -150,7 +185,7 @@ export function DiagnosticWorkbench({
       return;
     }
     // Polling may deliver new objects. Keep an in-progress scenario's parameters intact.
-    if (changedContext || !parameters) {
+    if (scenarioMode && (changedContext || !parameters)) {
       setParameters(defaults(selected));
       setTitle(`${selected.title}: целевой сценарий`);
       setAssumptions('');
@@ -162,10 +197,10 @@ export function DiagnosticWorkbench({
         ? previous
         : (selected.points.filter((point) => point.value !== null).at(-1)?.year ?? null),
     );
-  }, [selected?.id, selected?.fingerprint, territory.territoryKey, selectedMetric]);
+  }, [selected?.id, selected?.fingerprint, territory.territoryKey, selectedMetric, scenarioMode]);
   let calculated: ScenarioResult | null = null,
     calculationError: string | null = null;
-  if (selected && parameters) {
+  if (scenarioMode && selected && parameters) {
     try {
       calculated = computeCanonicalScenario(selected, parameters);
     } catch (cause) {
@@ -216,6 +251,14 @@ export function DiagnosticWorkbench({
     value: RoadmapScenarioParameters[K],
   ) {
     setParameters((previous) => (previous ? { ...previous, [key]: value } : null));
+  }
+  function chooseMetric(metric: MunicipalMetricId) {
+    setDemographicView(null);
+    if (metric === selectedMetric) return;
+    setPendingScenario(null);
+    setPinnedSeries(null);
+    setOpened(null);
+    setSelectedMetric(metric);
   }
   function openScenario(item: RoadmapItem<'scenario'>) {
     const canonical = material.find((series) => series.id === item.data.seriesId);
@@ -305,31 +348,56 @@ export function DiagnosticWorkbench({
   }
   return (
     <section className="rm-diagnostic">
-      <SectionHeading title="Диагностика и сценарии">
-        {territory.name}. Исходные наблюдения, проверка гипотез и точные плановые ориентиры.
-      </SectionHeading>
-      {workspace ? (
-        <div className="rm-statistics-launch">
-          <div>
-            <strong>Статистика территории</strong>
-            <p>
-              Уточните исходные значения, заполните пропуски или добавьте новые годы. Данные
-              сохраняются для всей команды.
-            </p>
-          </div>
-          <button
+      {!scenarioMode ? (
+        <div className="rm-demography-heading">
+          <h2>Статистика</h2>
+          {workspace ? <button
             className="button button-secondary"
             disabled={
               workspace.controller.busy || loading || Boolean(loadError && !snapshot?.series.length)
             }
             onClick={() => setStatisticsOpen(true)}
           >
-            <PencilLine size={17} />
+            <PencilLine size={17} aria-hidden="true" />
             {editable ? 'Уточнить данные' : 'Посмотреть уточнения'}
-          </button>
+          </button> : null}
         </div>
       ) : null}
-      {loading ? (
+      <div className="rm-metric-nav" role="group" aria-label="Показатели">
+        {STATISTICS_METRIC_IDS.map((metric) => {
+          const Icon = metricIcons[metric];
+          return (
+            <button
+              className="button button-secondary"
+              key={metric}
+              type="button"
+              aria-pressed={!demographicView && metric === selectedMetric}
+              onClick={() => chooseMetric(metric)}
+            >
+              <Icon size={17} aria-hidden="true" /> {STATISTICS_METRIC_LABELS[metric]}
+            </button>
+          );
+        })}
+        {!scenarioMode &&
+          demographicViews.map(([view, Icon]) => (
+            <button
+              className="button button-secondary"
+              key={view}
+              type="button"
+              aria-pressed={demographicView === view}
+              onClick={() => setDemographicView(view)}
+            >
+              <Icon size={17} aria-hidden="true" /> {demographicViewLabels[view]}
+            </button>
+          ))}
+      </div>
+      {!scenarioMode && demographicView ? (
+        <DemographicDetails
+          view={demographicView}
+          territory={territory}
+          editionId={index.editionId}
+        />
+      ) : loading ? (
         <p className="rm-empty" aria-busy="true">
           Загружаем проверенный пакет муниципальных рядов…
         </p>
@@ -344,73 +412,10 @@ export function DiagnosticWorkbench({
           </button>
         </div>
       ) : !ownSeries.length && !selected ? (
-        <Note warning>
-          Для этой территории в текущем выпуске нет однозначно сопоставленных рядов. Диагностику
-          {workspace
-            ? ' можно построить, введя статистику через «Уточнить данные».'
-            : ' можно строить на отдельно проверенных источниках и ручных фактах.'}{' '}
-          Агрегаты регионального и федерального уровня не выводятся суммированием неполного набора
-          муниципалитетов.
-        </Note>
+        <Note warning>В текущем выпуске отсутствуют агрегированные ряды для этой территории.</Note>
       ) : (
         <>
-          <div className="rm-diagnostic-toolbar">
-            <label className="rm-field">
-              <span>Показатель</span>
-              <select
-                value={selectedMetric}
-                onChange={(event) => {
-                  setPendingScenario(null);
-                  setPinnedSeries(null);
-                  setOpened(null);
-                  setSelectedMetric(event.target.value as MunicipalMetricId);
-                }}
-              >
-                {(workspace
-                  ? STATISTICS_METRIC_IDS
-                  : ownSeries.map((series) => series.metricId)
-                ).map((metricId) => (
-                  <option key={metricId} value={metricId}>
-                    {STATISTICS_METRIC_LABELS[metricId]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {currentSeries && selected ? (
-              <label className="rm-field">
-                <span>Редакция данных</span>
-                <select
-                  aria-label="Редакция данных"
-                  value={selected.id}
-                  onChange={(event) => {
-                    const chosen =
-                      event.target.value === currentSeries.id ? currentSeries : originalSeries;
-                    if (!chosen) return;
-                    setPinnedSeries(chosen.id === currentSeries.id ? null : chosen);
-                    setOpened(null);
-                    setPendingScenario(null);
-                    setParameters(defaults(chosen));
-                    setTitle(`${chosen.title}: целевой сценарий`);
-                    setAssumptions('');
-                  }}
-                >
-                  <option value={currentSeries.id}>
-                    {isTeamStatisticalSeries(currentSeries)
-                      ? `Уточнение команды · редакция ${currentSeries.revision}`
-                      : 'Исходный пакет'}
-                  </option>
-                  {originalSeries && originalSeries.id !== currentSeries.id ? (
-                    <option value={originalSeries.id}>Исходный пакет · до уточнений</option>
-                  ) : null}
-                  {selected.id !== currentSeries.id && selected.id !== originalSeries?.id ? (
-                    <option value={selected.id}>
-                      Закреплённая редакция{' '}
-                      {isTeamStatisticalSeries(selected) ? selected.revision : ''}
-                    </option>
-                  ) : null}
-                </select>
-              </label>
-            ) : null}
+          {selected && comparisonOptions.length ? (
             <details className="rm-comparison-picker">
               <summary>Сравнить территории · {comparisonKeys.length} / 3</summary>
               <div>
@@ -435,12 +440,12 @@ export function DiagnosticWorkbench({
                 ))}
               </div>
             </details>
-          </div>
-          {selected && parameters ? (
-            <div className="rm-analysis-layout">
+          ) : null}
+          {selected ? (
+            <div className={scenarioMode && parameters ? 'rm-analysis-layout' : undefined}>
               <div className="rm-chart-panel">
                 <ScenarioChart series={selected} result={calculated} comparisons={comparisons} />
-                {calculated ? (
+                {calculated && parameters ? (
                   <div className="rm-scenario-results">
                     <div>
                       <span>Последнее наблюдение в расчёте</span>
@@ -470,7 +475,7 @@ export function DiagnosticWorkbench({
                   {isTeamStatisticalSeries(selected)
                     ? `Используется уточнение команды, редакция ${selected.revision}. Источники отдельных лет указаны в истории; актуальность и сопоставимость требуют проверки.`
                     : 'Происхождение значений указано в паспорте ряда. Сопоставимость муниципальных границ требует проверки.'}{' '}
-                  Сценарии — условные расчёты; они не устанавливают влияние мер на рождаемость.
+                  {scenarioMode ? ' Сценарии — условные расчёты.' : null}
                 </Note>
                 {selected.id !== currentSeries?.id ? (
                   <Note warning>
@@ -560,174 +565,181 @@ export function DiagnosticWorkbench({
                     index.warnings.map((warning) => <p key={warning}>{warning}</p>)}
                 </details>
               </div>
-              <aside className="rm-scenario-inspector">
-                <h3>Конструктор сценария</h3>
-                <label className="rm-field">
-                  <span>Название</span>
-                  <input
-                    maxLength={240}
-                    value={title}
-                    onChange={(event) => setTitle(event.target.value)}
-                  />
-                </label>
-                <div className="rm-form-grid">
+              {scenarioMode && parameters ? (
+                <aside className="rm-scenario-inspector">
+                  <h3>Конструктор сценария</h3>
                   <label className="rm-field">
-                    <span>История с</span>
+                    <span>Название</span>
                     <input
-                      aria-label="Начало истории"
-                      type="number"
-                      min={1900}
-                      max={2200}
-                      value={parameters.historyStartYear}
-                      onChange={(event) => param('historyStartYear', Number(event.target.value))}
+                      maxLength={240}
+                      value={title}
+                      onChange={(event) => setTitle(event.target.value)}
                     />
                   </label>
+                  <div className="rm-form-grid">
+                    <label className="rm-field">
+                      <span>История с</span>
+                      <input
+                        aria-label="Начало истории"
+                        type="number"
+                        min={1900}
+                        max={2200}
+                        value={parameters.historyStartYear}
+                        onChange={(event) => param('historyStartYear', Number(event.target.value))}
+                      />
+                    </label>
+                    <label className="rm-field">
+                      <span>История по</span>
+                      <input
+                        aria-label="Окончание истории"
+                        type="number"
+                        min={1900}
+                        max={2200}
+                        value={parameters.historyEndYear}
+                        onChange={(event) => param('historyEndYear', Number(event.target.value))}
+                      />
+                    </label>
+                  </div>
                   <label className="rm-field">
-                    <span>История по</span>
+                    <span>Конечный год</span>
                     <input
-                      aria-label="Окончание истории"
+                      aria-label="Горизонт сценария"
                       type="number"
-                      min={1900}
-                      max={2200}
-                      value={parameters.historyEndYear}
-                      onChange={(event) => param('historyEndYear', Number(event.target.value))}
-                    />
-                  </label>
-                </div>
-                <label className="rm-field">
-                  <span>Конечный год</span>
-                  <input
-                    aria-label="Горизонт сценария"
-                    type="number"
-                    min={parameters.historyEndYear + 1}
-                    max={
-                      (selected.points
-                        .filter(
-                          (point) =>
-                            point.value !== null && point.year <= parameters.historyEndYear,
-                        )
-                        .at(-1)?.year ?? parameters.historyEndYear) + 30
-                    }
-                    value={parameters.endYear}
-                    onChange={(event) => param('endYear', Number(event.target.value))}
-                  />
-                </label>
-                <label className="rm-field">
-                  <span>Базовая траектория</span>
-                  <select
-                    value={parameters.baselineMethod}
-                    onChange={(event) =>
-                      param(
-                        'baselineMethod',
-                        event.target.value as RoadmapScenarioParameters['baselineMethod'],
-                      )
-                    }
-                  >
-                    <option value="last_value">Постоянный последний уровень</option>
-                    <option value="linear">Линейное продолжение истории</option>
-                  </select>
-                </label>
-                <label className="rm-field">
-                  <span>Способ задания цели</span>
-                  <select
-                    value={parameters.targetMode}
-                    onChange={(event) =>
-                      param(
-                        'targetMode',
-                        event.target.value as RoadmapScenarioParameters['targetMode'],
-                      )
-                    }
-                  >
-                    {Object.entries(targetLabels)
-                      .filter(
-                        ([key]) =>
-                          key !== 'percentage_points' &&
-                          (selected.valueDomain !== 'signed' ||
-                            !['relative_end', 'annual_growth'].includes(key)),
-                      )
-                      .map(([key, label]) => (
-                        <option key={key} value={key}>
-                          {label}
-                        </option>
-                      ))}
-                  </select>
-                </label>
-                <label className="rm-field">
-                  <span>
-                    {parameters.targetMode === 'relative_end' ||
-                    parameters.targetMode === 'annual_growth'
-                      ? 'Значение, %'
-                      : 'Значение, человек'}
-                  </span>
-                  <input
-                    aria-label="Параметр целевого сценария"
-                    type="number"
-                    step="any"
-                    value={parameters.targetValue}
-                    onChange={(event) => param('targetValue', Number(event.target.value))}
-                  />
-                </label>
-                <label className="rm-field">
-                  <span>Условия и допущения команды</span>
-                  <textarea
-                    rows={4}
-                    maxLength={4000}
-                    value={assumptions}
-                    onChange={(event) => setAssumptions(event.target.value)}
-                    placeholder="Какие условия должны выполняться? Что требует дополнительной проверки?"
-                  />
-                </label>
-                {workspace ? (
-                  <>
-                    <button
-                      className="button button-primary"
-                      disabled={
-                        !editable || task.working || workspace.controller.busy || !calculated
+                      min={parameters.historyEndYear + 1}
+                      max={
+                        (selected.points
+                          .filter(
+                            (point) =>
+                              point.value !== null && point.year <= parameters.historyEndYear,
+                          )
+                          .at(-1)?.year ?? parameters.historyEndYear) + 30
                       }
-                      onClick={() => void saveScenario()}
+                      value={parameters.endYear}
+                      onChange={(event) => param('endYear', Number(event.target.value))}
+                    />
+                  </label>
+                  <label className="rm-field">
+                    <span>Базовая траектория</span>
+                    <select
+                      value={parameters.baselineMethod}
+                      onChange={(event) =>
+                        param(
+                          'baselineMethod',
+                          event.target.value as RoadmapScenarioParameters['baselineMethod'],
+                        )
+                      }
                     >
-                      <Save size={16} />
-                      {opened ? 'Сохранить редакцию сценария' : 'Сохранить сценарий'}
-                    </button>
-                    {opened ? (
+                      <option value="historical_continuation">
+                        Продолжение наблюдаемой динамики
+                      </option>
+                      <option value="last_value">Постоянный последний уровень</option>
+                      <option value="linear">Линейное продолжение истории</option>
+                    </select>
+                  </label>
+                  <label className="rm-field">
+                    <span>Способ задания цели</span>
+                    <select
+                      value={parameters.targetMode}
+                      onChange={(event) =>
+                        param(
+                          'targetMode',
+                          event.target.value as RoadmapScenarioParameters['targetMode'],
+                        )
+                      }
+                    >
+                      {Object.entries(targetLabels)
+                        .filter(
+                          ([key]) =>
+                            key !== 'percentage_points' &&
+                            (selected.valueDomain !== 'signed' ||
+                              !['relative_end', 'annual_growth'].includes(key)),
+                        )
+                        .map(([key, label]) => (
+                          <option key={key} value={key}>
+                            {label}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                  <label className="rm-field">
+                    <span>
+                      {parameters.targetMode === 'relative_end' ||
+                      parameters.targetMode === 'annual_growth'
+                        ? 'Значение, %'
+                        : 'Значение, человек'}
+                    </span>
+                    <input
+                      aria-label="Параметр целевого сценария"
+                      type="number"
+                      step="any"
+                      value={parameters.targetValue}
+                      onChange={(event) => param('targetValue', Number(event.target.value))}
+                    />
+                  </label>
+                  <label className="rm-field">
+                    <span>Условия и допущения команды</span>
+                    <textarea
+                      rows={4}
+                      maxLength={4000}
+                      value={assumptions}
+                      onChange={(event) => setAssumptions(event.target.value)}
+                      placeholder="Какие условия должны выполняться? Что требует дополнительной проверки?"
+                    />
+                  </label>
+                  {workspace ? (
+                    <>
                       <button
-                        className="button button-quiet"
-                        onClick={() => {
-                          setOpened(null);
-                          setTitle(`${title} — вариант`.slice(0, 240));
-                        }}
+                        className="button button-primary"
+                        disabled={
+                          !editable || task.working || workspace.controller.busy || !calculated
+                        }
+                        onClick={() => void saveScenario()}
                       >
-                        Создать отдельный вариант
+                        <Save size={16} />
+                        {opened ? 'Сохранить редакцию сценария' : 'Сохранить сценарий'}
                       </button>
-                    ) : null}
-                    <button
-                      className="button button-secondary"
-                      disabled={!editable || !unchanged || !calculated}
-                      onClick={useTargets}
-                    >
-                      Перенести ориентиры в показатель
-                      <ArrowRight size={16} />
-                    </button>
-                    {!unchanged ? (
-                      <p className="rm-muted">
-                        Для переноса ориентиров сохраните текущую редакцию сценария.
-                      </p>
-                    ) : null}
-                  </>
-                ) : (
-                  <p className="rm-muted">
-                    Расчёт выполняется локально. В совместном занятии сценарий можно сохранить в
-                    дорожную карту.
-                  </p>
-                )}
-              </aside>
+                      {opened ? (
+                        <button
+                          className="button button-quiet"
+                          onClick={() => {
+                            setOpened(null);
+                            setTitle(`${title} — вариант`.slice(0, 240));
+                          }}
+                        >
+                          Создать отдельный вариант
+                        </button>
+                      ) : null}
+                      <button
+                        className="button button-secondary"
+                        disabled={!editable || !unchanged || !calculated}
+                        onClick={useTargets}
+                      >
+                        Перенести ориентиры в показатель
+                        <ArrowRight size={16} />
+                      </button>
+                      {!unchanged ? (
+                        <p className="rm-muted">
+                          Для переноса ориентиров сохраните текущую редакцию сценария.
+                        </p>
+                      ) : null}
+                    </>
+                  ) : (
+                    <p className="rm-muted">
+                      Расчёт выполняется локально. В совместном занятии сценарий можно сохранить в
+                      дорожную карту.
+                    </p>
+                  )}
+                </aside>
+              ) : scenarioMode ? (
+                <Note>Для расчёта сценария нужно больше наблюдений.</Note>
+              ) : null}
             </div>
           ) : (
             <Note>Для выбранного показателя нет числовых наблюдений.</Note>
           )}
         </>
       )}
-      {balances.length ? (
+      {!scenarioMode && !demographicView && balances.length ? (
         <details className="rm-source-details">
           <summary>Проверка согласованности показателей · {balances.length}</summary>
           <p>
@@ -744,7 +756,7 @@ export function DiagnosticWorkbench({
       {task.feedback}
       {workspace && snapshot ? (
         <>
-          {activeItems(snapshot, 'scenario').length ? (
+          {scenarioMode && activeItems(snapshot, 'scenario').length ? (
             <section className="rm-section">
               <SectionHeading title="Сохранённые сценарии" />
               <div className="rm-card-grid">
@@ -772,123 +784,129 @@ export function DiagnosticWorkbench({
               </div>
             </section>
           ) : null}
-          <section className="rm-section">
-            <SectionHeading
-              title="Факты для диагноза"
-              onAdd={editable ? () => workspace.onEdit({ kind: 'fact' }) : undefined}
-              addLabel="Ручной источник"
-            >
-              Выберите наблюдение и объясните его значение для проекта.
-            </SectionHeading>
-            {selected && factYear !== null ? (
-              <div className="rm-capture-fact">
-                <label className="rm-field">
-                  <span>Наблюдение</span>
-                  <select
-                    aria-label="Год факта"
-                    value={factYear}
-                    onChange={(event) => setFactYear(Number(event.target.value))}
-                  >
-                    {selected.points
-                      .filter((point) => point.value !== null)
-                      .map((point) => (
-                        <option key={point.year} value={point.year}>
-                          {point.year}: {numeric(point.value, selected.decimals)} чел.
-                        </option>
-                      ))}
-                  </select>
-                </label>
-                <label className="rm-field">
-                  <span>Интерпретация для проекта</span>
-                  <textarea
-                    rows={2}
-                    maxLength={4000}
-                    value={interpretation}
-                    onChange={(event) => setInterpretation(event.target.value)}
-                  />
-                </label>
-                <button
-                  className="button button-secondary"
-                  disabled={!editable || task.working || workspace.controller.busy}
-                  onClick={() =>
-                    void task.run(
-                      () =>
-                        workspace.controller.actions.captureFact({
-                          roadmapId: snapshot.roadmapId,
-                          itemId: null,
-                          expectedRevision: 0,
-                          seriesId: selected.id,
-                          expectedSeriesFingerprint: selected.fingerprint,
-                          year: factYear,
-                          interpretation,
-                        }),
-                      'Факт закреплён с его источником и значением.',
-                    )
-                  }
+          {!scenarioMode && (
+            <>
+              <section className="rm-section">
+                <SectionHeading
+                  title="Факты для диагноза"
+                  onAdd={editable ? () => workspace.onEdit({ kind: 'fact' }) : undefined}
+                  addLabel="Ручной источник"
                 >
-                  <FilePlus2 size={16} />
-                  Закрепить факт
-                </button>
-              </div>
-            ) : null}
-            <div className="rm-card-grid">
-              {activeItems(snapshot, 'fact').map((item) => (
-                <article className="rm-small-card" key={item.id}>
-                  <span className="rm-eyebrow">
-                    {item.data.sourceKind === 'registry'
-                      ? 'Закреплённый ряд'
-                      : item.data.sourceKind === 'team_statistics'
-                        ? 'Уточнение команды'
-                        : 'Ручной источник'}
-                  </span>
-                  <h4>{item.data.title}</h4>
-                  <strong>
-                    {item.data.year ?? 'Год не указан'} · {numeric(item.data.value)}{' '}
-                    {item.data.unit}
-                  </strong>
-                  <p>{item.data.interpretation || 'Добавьте интерпретацию для проекта.'}</p>
-                  <p className="rm-source-caption">{item.data.sourceReference}</p>
-                  {editable ? (
-                    <EditButton onClick={() => workspace.onEdit({ kind: 'fact', id: item.id })} />
-                  ) : null}
-                </article>
-              ))}
-            </div>
-            {!activeItems(snapshot, 'fact').length ? (
-              <EmptySection>
-                Отберите несколько фактов, которые действительно меняют выбор проблемы, целевой
-                группы или масштаба проекта.
-              </EmptySection>
-            ) : null}
-          </section>
-          <section className="rm-section">
-            <SectionHeading title="Проблема, причины и вывод" />
-            {activeItems(snapshot, 'diagnosis').map((item) => (
-              <article className="rm-diagnosis-summary" key={item.id}>
-                <div>
-                  <h4>Проблема</h4>
-                  <p>{item.data.problem || 'Ещё не сформулирована.'}</p>
-                </div>
-                <div>
-                  <h4>Гипотеза о причинах</h4>
-                  <p>{item.data.causeHypothesis || 'Ещё не сформулирована.'}</p>
-                </div>
-                <div>
-                  <h4>Вывод для проекта</h4>
-                  <p>{item.data.conclusion || 'Ещё не сформулирован.'}</p>
-                </div>
-                {editable ? (
-                  <EditButton
-                    label="Сформулировать диагноз"
-                    onClick={() => workspace.onEdit({ kind: 'diagnosis', id: item.id })}
-                  />
+                  Выберите наблюдение и объясните его значение для проекта.
+                </SectionHeading>
+                {selected && !demographicView && factYear !== null ? (
+                  <div className="rm-capture-fact">
+                    <label className="rm-field">
+                      <span>Наблюдение</span>
+                      <select
+                        aria-label="Год факта"
+                        value={factYear}
+                        onChange={(event) => setFactYear(Number(event.target.value))}
+                      >
+                        {selected.points
+                          .filter((point) => point.value !== null)
+                          .map((point) => (
+                            <option key={point.year} value={point.year}>
+                              {point.year}: {numeric(point.value, selected.decimals)} чел.
+                            </option>
+                          ))}
+                      </select>
+                    </label>
+                    <label className="rm-field">
+                      <span>Интерпретация для проекта</span>
+                      <textarea
+                        rows={2}
+                        maxLength={4000}
+                        value={interpretation}
+                        onChange={(event) => setInterpretation(event.target.value)}
+                      />
+                    </label>
+                    <button
+                      className="button button-secondary"
+                      disabled={!editable || task.working || workspace.controller.busy}
+                      onClick={() =>
+                        void task.run(
+                          () =>
+                            workspace.controller.actions.captureFact({
+                              roadmapId: snapshot.roadmapId,
+                              itemId: null,
+                              expectedRevision: 0,
+                              seriesId: selected.id,
+                              expectedSeriesFingerprint: selected.fingerprint,
+                              year: factYear,
+                              interpretation,
+                            }),
+                          'Факт закреплён с его источником и значением.',
+                        )
+                      }
+                    >
+                      <FilePlus2 size={16} />
+                      Закрепить факт
+                    </button>
+                  </div>
                 ) : null}
-              </article>
-            ))}
-          </section>
+                <div className="rm-card-grid">
+                  {activeItems(snapshot, 'fact').map((item) => (
+                    <article className="rm-small-card" key={item.id}>
+                      <span className="rm-eyebrow">
+                        {item.data.sourceKind === 'registry'
+                          ? 'Закреплённый ряд'
+                          : item.data.sourceKind === 'team_statistics'
+                            ? 'Уточнение команды'
+                            : 'Ручной источник'}
+                      </span>
+                      <h4>{item.data.title}</h4>
+                      <strong>
+                        {item.data.year ?? 'Год не указан'} · {numeric(item.data.value)}{' '}
+                        {item.data.unit}
+                      </strong>
+                      <p>{item.data.interpretation || 'Добавьте интерпретацию для проекта.'}</p>
+                      <p className="rm-source-caption">{item.data.sourceReference}</p>
+                      {editable ? (
+                        <EditButton
+                          onClick={() => workspace.onEdit({ kind: 'fact', id: item.id })}
+                        />
+                      ) : null}
+                    </article>
+                  ))}
+                </div>
+                {!activeItems(snapshot, 'fact').length ? (
+                  <EmptySection>
+                    Отберите несколько фактов, которые действительно меняют выбор проблемы, целевой
+                    группы или масштаба проекта.
+                  </EmptySection>
+                ) : null}
+              </section>
+              <section className="rm-section">
+                <SectionHeading title="Проблема, причины и вывод" />
+                {activeItems(snapshot, 'diagnosis').map((item) => (
+                  <article className="rm-diagnosis-summary" key={item.id}>
+                    <div>
+                      <h4>Проблема</h4>
+                      <p>{item.data.problem || 'Ещё не сформулирована.'}</p>
+                    </div>
+                    <div>
+                      <h4>Гипотеза о причинах</h4>
+                      <p>{item.data.causeHypothesis || 'Ещё не сформулирована.'}</p>
+                    </div>
+                    <div>
+                      <h4>Вывод для проекта</h4>
+                      <p>{item.data.conclusion || 'Ещё не сформулирован.'}</p>
+                    </div>
+                    {editable ? (
+                      <EditButton
+                        label="Сформулировать диагноз"
+                        onClick={() => workspace.onEdit({ kind: 'diagnosis', id: item.id })}
+                      />
+                    ) : null}
+                  </article>
+                ))}
+              </section>
+            </>
+          )}
         </>
       ) : null}
-      {statisticsOpen && workspace ? (
+      {!scenarioMode && statisticsOpen && workspace ? (
         <StatisticsEditor
           key={workspace.snapshot.roadmapId}
           workspace={workspace}

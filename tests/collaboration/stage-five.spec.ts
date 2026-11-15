@@ -129,14 +129,12 @@ test('public source maps preserve missing values and known anomalies on desktop 
   await page.locator('.rm-map-topline').scrollIntoViewIfNeeded();
   await capture(page, info, 'stage5-mordovia-map-desktop.png');
   await expect(page.getByRole('img', { name: /Число родившихся: наблюдения/u })).toBeVisible();
-  await page.getByLabel('Начало истории', { exact: true }).fill('2010');
-  await page.getByLabel('Окончание истории', { exact: true }).fill('2023');
   await page.getByText('Точные значения и пропуски', { exact: true }).click();
   const values = page.locator('.rm-data-table table');
   await expect(values.getByRole('row').filter({ has: page.getByRole('rowheader', { name: '2014', exact: true }) })).toContainText('253');
   await expect(values.getByRole('row').filter({ has: page.getByRole('rowheader', { name: '2023', exact: true }) }).getByRole('cell').first()).toHaveText('Нет данных');
   await territory(page, SARANSK);
-  await page.getByRole('combobox', { name: 'Показатель', exact: true }).selectOption('pop_mid');
+  await page.getByRole('button', { name: 'Среднегодовая численность населения', exact: true }).click();
   await expect(page.getByText(/изменение численности более чем на 50%/u)).toBeVisible();
   await page.getByText('Источник, определение и ограничения', { exact: true }).click();
   await expect(page.locator('.rm-source-details')).toContainText('Саранск, pop_mid');

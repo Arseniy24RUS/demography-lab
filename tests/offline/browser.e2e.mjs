@@ -49,7 +49,8 @@ async function roadmap(page) {
   const back = page.getByRole('button', { name: 'К территориям', exact: true });
   if (await back.isVisible()) await back.click();
   await page.locator('.rm-table-select').filter({ hasText: 'Ардатовский муниципальный район' }).click();
-  await expect(page.getByRole('heading', { name: 'Диагностика и сценарии', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Паспорт проекта', exact: true })).toBeVisible();
+  await tab(page, 'Статистика');
 }
 async function snapshot(page) {
   await page.screenshot({ path: join(evidence, `offline-${steps.length}.png`), fullPage: true });
@@ -249,7 +250,7 @@ try {
     await snapshot(student.page);
     await editor.getByRole('button', { name: 'Закрыть', exact: true }).click();
     await teacher.page.bringToFront();
-    await expect(teacher.page.getByLabel('Редакция данных', { exact: true })).toContainText('Уточнение команды · редакция 1', { timeout: 15000 });
+    await expect(teacher.page.getByText(/Используется уточнение команды, редакция 1\./u)).toBeVisible({ timeout: 15000 });
     await teacher.page.getByRole('button', { name: 'Уточнить данные', exact: true }).click();
     const teacherEditor = teacher.page.getByRole('dialog', { name: 'Уточнение статистики', exact: true });
     await teacherEditor.getByLabel('Редактируемый показатель', { exact: true }).selectOption('births_total');

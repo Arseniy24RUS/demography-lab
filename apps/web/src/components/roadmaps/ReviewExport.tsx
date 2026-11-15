@@ -25,6 +25,7 @@ export function ReviewExport({
   const readiness = assessRoadmapReadiness(snapshot),
     monitoring = activeItems(snapshot, 'monitoring')[0],
     risks = activeItems(snapshot, 'risk');
+  const scenarioIds = new Set(activeItems(snapshot, 'scenario').map((item) => item.id));
   const [freeze, setFreeze] = useState<'draft' | 'submitted' | null>(null),
     [title, setTitle] = useState(''),
     [reviewing, setReviewing] = useState<RoadmapVersionSummary | null>(null),
@@ -39,7 +40,7 @@ export function ReviewExport({
     };
   }, []);
   const sectionTab: Record<string, RoadmapTab> = {
-    passport: 'activities',
+    passport: 'passport',
     diagnosis: 'diagnosis',
     indicators: 'activities',
     activities: 'activities',
@@ -126,6 +127,11 @@ export function ReviewExport({
                 {issue.message}
               </p>
             ))}
+            {readiness.issues.some((issue) => issue.entityId && scenarioIds.has(issue.entityId)) ? (
+              <button className="button button-quiet" type="button" onClick={() => onTab('forecast')}>
+                Открыть прогноз
+              </button>
+            ) : null}
           </details>
         ) : null}
       </section>

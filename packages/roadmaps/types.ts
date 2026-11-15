@@ -50,11 +50,14 @@ export interface RoadmapTerritory {
   boundaryVersion: string | null;
 }
 export type RoadmapSeries = CanonicalMunicipalSeries | TeamStatisticalSeries;
+export const roadmapSmartCriteria = ['specific', 'measurable', 'achievable', 'relevant', 'timeBound'] as const;
+export type RoadmapSmartCriterion = (typeof roadmapSmartCriteria)[number];
 export interface RoadmapPassportData {
   title: string;
   targetGroup: string;
   partners: string;
   goal: string;
+  smartChecks?: RoadmapSmartCriterion[];
   objectives: Array<{ id: string; title: string }>;
   startDate: string | null;
   endDate: string | null;
@@ -124,7 +127,7 @@ export interface RoadmapScenarioParameters {
   historyStartYear: number;
   historyEndYear: number;
   endYear: number;
-  baselineMethod: 'last_value' | 'linear';
+  baselineMethod: 'last_value' | 'linear' | 'historical_continuation';
   targetMode:
     'absolute_end' | 'relative_end' | 'annual_growth' | 'absolute_delta_end' | 'percentage_points';
   /** 10 is ten percent / ten percentage points in the applicable modes. */
@@ -255,13 +258,22 @@ export interface RoadmapLinkGround {
   familyTitle: string;
   familyFingerprint: string;
 }
+export interface RoadmapFactorGround {
+  id: string;
+  title: string;
+  board: 'parenthood' | 'objective';
+  revision: number;
+  status: RoadmapItemStatus;
+  barriers: RoadmapBarrierGround[];
+}
 export type RoadmapBasisMaterial =
   | { kind: 'barrier'; source: RoadmapBarrierGround }
   | { kind: 'solution'; source: RoadmapSolutionGround }
-  | { kind: 'link'; source: RoadmapLinkGround };
+  | { kind: 'link'; source: RoadmapLinkGround }
+  | { kind: 'factor'; source: RoadmapFactorGround };
 export interface RoadmapBasis {
   id: string;
-  sourceKind: 'barrier' | 'link' | 'solution';
+  sourceKind: RoadmapBasisMaterial['kind'];
   sourceId: string;
   sourceRevision: number;
   fingerprint: string;
@@ -284,6 +296,12 @@ export interface CaptureRoadmapBasisInput {
   expectedSourceRevision: number;
   rationale: string;
   status: RoadmapItemStatus;
+}
+export type RoadmapWorkshopMeasure = { kind: 'family' | 'factor' | 'solution'; id: string };
+export interface ImportRoadmapWorkshopInput {
+  roadmapId: string;
+  barrierIds: string[];
+  measures: RoadmapWorkshopMeasure[];
 }
 export interface CaptureRoadmapFactInput {
   roadmapId: string;

@@ -75,6 +75,29 @@ describe('transparent baseline and target trajectories', () => {
     expect(result.horizonYears).toBe(4);
   });
 
+  it('continues the recent observed direction through gaps and anchors it at the last actual value', () => {
+    const series = [100, 95, null, 85, 500, 75, 70].map((value, i) => ({ year: 2016 + i, value }));
+    const result = computeScenario(input({
+      series,
+      parameters: params({ historyStartYear: 2016, baselineMethod: 'historical_continuation' }),
+    }));
+    expect(result.continuation).toEqual({ slopePerYear: -5, damping: 0.9 });
+    const continuation = result.years.filter(row => row.year >= 2022);
+    expect(continuation.map(row => row.baselineValue)).toEqual([
+      70, 65, 60.5, 56.45, expect.closeTo(52.805, 9),
+    ]);
+    expect(result.trainingYears).toEqual([2016, 2017, 2019, 2020, 2021, 2022]);
+  });
+
+  it('uses a flat continuation with fewer than five observations', () => {
+    const result = computeScenario(input({
+      series: [{ year: 2018, value: 100 }, { year: 2022, value: 44 }],
+      parameters: params({ baselineMethod: 'historical_continuation' }),
+    }));
+    expect(result.years.at(-1)?.baselineValue).toBe(44);
+    expect(result.trainingYears).toEqual([2022]);
+  });
+
   it('preserves a genuine zero observation and refuses an undefined relative target', () => {
     const zero = [{ year: 2022, value: 0 }];
     expect(

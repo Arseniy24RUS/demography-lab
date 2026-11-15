@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Activity, lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import {
   BarChart3,
   CalendarDays,
+  ChartLine,
   CheckSquare,
+  ClipboardList,
   MapPin,
   RefreshCw,
   Upload,
@@ -20,6 +22,7 @@ import { useRoadmaps } from '../hooks/useRoadmaps';
 import { TerritoryPanel, useTerritoryDataset } from './roadmaps/TerritoryPanel';
 import { DiagnosticWorkbench } from './roadmaps/DiagnosticWorkbench';
 import { ActivityWorkbench } from './roadmaps/ActivityWorkbench';
+import { PassportWorkbench } from './roadmaps/PassportWorkbench';
 import { CalendarResources } from './roadmaps/CalendarResources';
 import { ReviewExport } from './roadmaps/ReviewExport';
 import { RoadmapItemEditor } from './roadmaps/RoadmapItemEditor';
@@ -29,11 +32,16 @@ import '../roadmaps.css';
 
 const tabIcons = {
   territory: MapPin,
+  passport: ClipboardList,
   diagnosis: BarChart3,
+  forecast: ChartLine,
   activities: CheckSquare,
   resources: CalendarDays,
   review: Upload,
 };
+const ForecastWorkbench = lazy(() =>
+  import('./roadmaps/ForecastWorkbench').then(module => ({ default: module.ForecastWorkbench }))
+);
 export function ConnectedRoadmaps({
   state,
   sessionActions,
@@ -97,7 +105,7 @@ export function ConnectedRoadmaps({
       if (existing) {
         controller.actions.select(existing);
         setSelectedKey(key);
-        setTab('diagnosis');
+        setTab('passport');
       }
       return;
     }
@@ -109,7 +117,7 @@ export function ConnectedRoadmaps({
         expectedAssignmentRevision: index.assignmentRevision,
       });
       setSelectedKey(key);
-      setTab('diagnosis');
+      setTab('passport');
     } catch {
       // The controller reports the rejected selection and keeps the picker open.
     } finally {
@@ -179,6 +187,11 @@ export function ConnectedRoadmaps({
           </button>
         </div>
       ) : null}
+      {workspace ? (
+        <Activity mode={tab === 'passport' ? 'visible' : 'hidden'}>
+          <PassportWorkbench key={workspace.snapshot.roadmapId} {...workspace} />
+        </Activity>
+      ) : null}
       {tab === 'territory' ? (
         <>
           {isHost && index ? (
@@ -233,7 +246,7 @@ export function ConnectedRoadmaps({
             ? 'Открываем выбранную дорожную карту…'
             : 'Сначала выберите территорию.'}
         </p>
-      ) : tab === 'diagnosis' ? (
+      ) : tab === 'passport' ? null : tab === 'diagnosis' ? (
         data.index && data.registry && selectedTerritory && editionMatches ? (
           <DiagnosticWorkbench
             key={snapshot!.roadmapId}
@@ -245,7 +258,7 @@ export function ConnectedRoadmaps({
         ) : (
           <>
             <Note>
-              Диагностика по локальному набору недоступна. Можно продолжить работу с ручными
+              Статистика по локальному набору недоступна. Можно продолжить работу с ручными
               источниками и сохранёнными разделами.
             </Note>
             <div className="rm-actions">
@@ -271,6 +284,20 @@ export function ConnectedRoadmaps({
             </div>
           </>
         )
+      ) : tab === 'forecast' ? (
+        <>
+          <Suspense fallback={<p className="rm-empty" role="status">Загружаем прогноз…</p>}>
+            <ForecastWorkbench key={workspace.snapshot.roadmapId} roadmapId={workspace.snapshot.roadmapId}
+              territoryKey={workspace.snapshot.territory.key} />
+          </Suspense>
+          {data.index && data.registry && selectedTerritory && editionMatches ? (
+            <details className="rm-source-details">
+              <summary>Сценарии по отдельным показателям</summary>
+              <DiagnosticWorkbench key={workspace.snapshot.roadmapId} index={data.index}
+                registry={data.registry} territory={selectedTerritory} workspace={workspace} mode="scenarios" />
+            </details>
+          ) : null}
+        </>
       ) : tab === 'activities' ? (
         <ActivityWorkbench
           {...workspace}

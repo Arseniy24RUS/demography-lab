@@ -24,7 +24,7 @@ const NAMES = [
   'dw_survey_invitation_state', 'dw_survey_research_export', ...SURVEY_RPCS,
   'dw_roadmaps_index', 'dw_roadmaps_cursor', 'dw_roadmap_snapshot', 'dw_roadmap_version',
   'dw_roadmaps_projector_snapshot', 'dw_configure_roadmaps', 'dw_join_roadmap', 'dw_roadmap_presence',
-  'dw_save_roadmap_item', 'dw_capture_roadmap_fact', 'dw_capture_roadmap_basis',
+  'dw_save_roadmap_item', 'dw_capture_roadmap_fact', 'dw_capture_roadmap_basis', 'dw_import_roadmap_workshop',
   'dw_freeze_roadmap', 'dw_review_roadmap', 'dw_roadmap_statistics_save',
   'dw_roadmap_statistics_restore', 'dw_roadmap_statistics_history', 'dw_roadmap_statistics_series',
 ];

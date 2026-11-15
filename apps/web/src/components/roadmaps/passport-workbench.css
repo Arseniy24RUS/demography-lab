@@ -1,0 +1,93 @@
+.rm-passport-workbench {
+  max-width: 980px;
+}
+
+.rm-passport-fields {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  margin: 0;
+}
+
+.rm-passport-card {
+  padding: 20px;
+  border: 1px solid var(--rm-line);
+  border-radius: 10px;
+  background: white;
+  margin-bottom: 16px;
+}
+
+.rm-passport-card .rm-form-grid:last-child {
+  margin-bottom: 0;
+}
+
+.rm-passport-card h4 {
+  color: var(--rm-ink);
+  margin: 0;
+}
+
+.rm-passport-level {
+  color: var(--rm-muted);
+  margin-bottom: 14px;
+}
+
+.rm-passport-level strong {
+  margin-left: 5px;
+  color: var(--rm-ink);
+}
+
+.rm-passport-smart {
+  min-width: 0;
+  margin: 14px 0 18px;
+  padding: 6px 12px 8px;
+  border: 1px solid var(--rm-line);
+  border-radius: 8px;
+  background: #f5f8fc;
+}
+
+.rm-passport-smart legend {
+  padding: 0 4px;
+  font-weight: 650;
+  color: var(--rm-ink);
+}
+
+.rm-passport-criterion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 4px 0;
+  font-size: 14px;
+}
+
+.rm-passport-criterion input[type='checkbox'] {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--rm-blue);
+}
+
+.rm-passport-criterion strong {
+  margin-right: 4px;
+}
+
+.rm-passport-objectives {
+  margin: 0 0 18px;
+}
+
+.rm-passport-dates {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 630px) {
+  .rm-passport-card {
+    padding: 14px;
+  }
+
+  .rm-passport-card .rm-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

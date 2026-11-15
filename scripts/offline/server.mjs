@@ -105,11 +105,12 @@ async function staticFile(request,response,path,survey,root) {
   const ext=extname(routed);
   const readerModule=!survey&&READER_MODULE_PATHS.has(routed);
   const factorPack=!survey&&/^\/data\/factors\/(?:regions|settlement-parents|(?:lower\/)?(?:index|municipalities\/[a-z0-9_-]+))\.json\.gz$/.test(routed);
+  const demographyPack=!survey&&/^\/data\/demography\/[a-z0-9-]+\.json\.gz$/.test(routed);
   const permitted=routed==='/index.html'||routed==='/survey.html'||/^\/(?:favicon\.(?:svg|ico|png)|apple-touch-icon\.png|site\.webmanifest)$/.test(routed)
     || /^\/assets\/[a-zA-Z0-9_./-]+$/.test(routed)
     || /^\/fonts\/(?:DejaVuSans(?:-Bold)?\.ttf|LICENSE-DejaVu\.txt)$/.test(routed)
     ||readerModule||(!survey&&/^\/data\/[a-zA-Z0-9_./-]+$/.test(routed));
-  if(!permitted||!MIME.has(ext)||(ext==='.gz'&&!factorPack))throw new HttpError(404,'NOT_FOUND');
+  if(!permitted||!MIME.has(ext)||(ext==='.gz'&&!factorPack&&!demographyPack))throw new HttpError(404,'NOT_FOUND');
   const file=readerModule
     ?await within(resolve(root,'dist/vendor/rudn-reader'),routed.slice('/vendor/rudn-reader/'.length))
       ??await within(resolve(root,'public/vendor/rudn-reader'),routed.slice('/vendor/rudn-reader/'.length))

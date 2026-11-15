@@ -9,6 +9,7 @@ import {
   joinRoadmapInputSchema,
   saveRoadmapItemInputSchema,
   captureRoadmapBasisInputSchema,
+  importRoadmapWorkshopInputSchema,
   captureRoadmapFactInputSchema,
   freezeRoadmapInputSchema,
   reviewRoadmapInputSchema,
@@ -18,6 +19,7 @@ import type {
   JoinRoadmapInput,
   SaveRoadmapItemInput,
   CaptureRoadmapBasisInput,
+  ImportRoadmapWorkshopInput,
   CaptureRoadmapFactInput,
   FreezeRoadmapInput,
   ReviewRoadmapInput,
@@ -138,6 +140,9 @@ export class RoadmapsApi {
       'dw_capture_roadmap_basis',
       captureRoadmapBasisInputSchema.parse(input),
     );
+  }
+  importWorkshop(sessionId: string, input: ImportRoadmapWorkshopInput) {
+    return this.mutate(sessionId, 'dw_import_roadmap_workshop', importRoadmapWorkshopInputSchema.parse(input));
   }
   captureFact(sessionId: string, input: CaptureRoadmapFactInput) {
     return this.mutate(

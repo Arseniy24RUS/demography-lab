@@ -97,6 +97,27 @@ describe('Production offline runtime: simple identities, domain RPC, isolation a
     const escaped=await fetch(base+prefix+modules[2]);assert.equal(escaped.status,404);assert.doesNotMatch(await escaped.text(),/PRIVATE/);
   });
 
+  it('serves roadmap demographic assets from the public payload on the classroom origin', async () => {
+    const assets = [
+      ['data/demography/index.json', 'application/json; charset=utf-8'],
+      ['data/demography/respublika-mordoviia.json.gz', 'application/gzip'],
+      ['data/cohort/mordovia.json', 'application/json; charset=utf-8'],
+    ];
+    for (const [path, type] of assets) {
+      const bytes = await readFile(new URL('../../public/' + path, import.meta.url));
+      await mkdir(join(work, 'site/public', path.split('/').slice(0, -1).join('/')), { recursive: true });
+      await writeFile(join(work, 'site/public', path), bytes);
+      const response = await fetch(base + '/' + path);
+      assert.equal(response.status, 200, path);
+      assert.equal(response.headers.get('content-type'), type);
+      if (type === 'application/gzip') assert.equal(response.headers.get('content-encoding'), null);
+      assert.deepEqual(Buffer.from(await response.arrayBuffer()), bytes);
+      assert.equal((await fetch(surveyBase + '/' + path)).status, 404);
+    }
+    await writeFile(join(work, 'site/public/data/demography/unrelated.tar.gz'), 'not a public statistics shard');
+    assert.equal((await fetch(base + '/data/demography/unrelated.tar.gz')).status, 404);
+  });
+
   it('exposes distinct local config and refuses cross-origin, DNS rebinding, raw SQL and secret files',async()=>{
     const config=await request('/workshop-config.json',{method:'GET'});
     assert.equal(config.body.offline,true);assert.equal(config.body.supabaseUrl,base);assert.equal(config.body.surveyUrl,surveyBase+'/survey.html');

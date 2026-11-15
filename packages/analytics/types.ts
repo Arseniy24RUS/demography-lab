@@ -47,7 +47,7 @@ export interface ScenarioParameters {
   historyStartYear: number;
   historyEndYear: number;
   endYear: number;
-  baselineMethod: 'last_value' | 'linear';
+  baselineMethod: 'last_value' | 'linear' | 'historical_continuation';
   targetMode: TargetMode;
   /** Percent input is expressed in percentage units: 10 means 10%, not 0.1. */
   targetValue: number;
@@ -91,6 +91,7 @@ export interface ScenarioResult {
   trainingYears: number[];
   years: ScenarioYear[];
   coefficients: { firstYear: number; intercept: number; slopePerYear: number } | null;
+  continuation?: { slopePerYear: number; damping: number };
   backtest: { heldOutYears: number[]; linearMae: number; lastValueMae: number } | null;
   endGap: number;
   /** Only flow differences may be accumulated; stock/rate/share receive null. */

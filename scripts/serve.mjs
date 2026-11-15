@@ -308,7 +308,8 @@ async function findFile(path) {
     );
   }
   const factorPack = /^\/data\/factors\/(?:regions|settlement-parents|(?:lower\/)?(?:index|municipalities\/[a-z0-9_-]+))\.json\.gz$/u.test(path);
-  if (factorPack || (path.startsWith('/data/') && ['.json', '.geojson'].includes(extname(path).toLowerCase()))) {
+  const demographyPack = /^\/data\/demography\/[a-z0-9-]+\.json\.gz$/u.test(path);
+  if (factorPack || demographyPack || (path.startsWith('/data/') && ['.json', '.geojson'].includes(extname(path).toLowerCase()))) {
     return (
       (await fileWithin(resolve(DIST, 'data'), path.slice('/data/'.length))) ??
       fileWithin(DATA, path.slice('/data/'.length))

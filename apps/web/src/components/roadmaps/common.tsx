@@ -11,10 +11,12 @@ import type {
 import type { RoadmapsController } from '../../hooks/useRoadmaps';
 import { formatKopecks } from '../../../../../packages/analytics';
 
-export type RoadmapTab = 'territory' | 'diagnosis' | 'activities' | 'resources' | 'review';
+export type RoadmapTab = 'territory' | 'passport' | 'diagnosis' | 'forecast' | 'activities' | 'resources' | 'review';
 export const roadmapTabs: Array<[RoadmapTab, string]> = [
   ['territory', 'Территория'],
-  ['diagnosis', 'Диагностика'],
+  ['passport', 'Паспорт'],
+  ['diagnosis', 'Статистика'],
+  ['forecast', 'Прогноз'],
   ['activities', 'Мероприятия'],
   ['resources', 'Календарь и ресурсы'],
   ['review', 'Проверка и экспорт'],

@@ -174,7 +174,7 @@ async function openTeam(page, name) {
   const room = await response.json();
   expect(room.territory.name).toBe(name);
   expect(room.canEdit).toBe(true);
-  await expect(page.getByRole('heading', { name: 'Диагностика и сценарии', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Паспорт проекта', exact: true })).toBeVisible();
   return room.roadmapId;
 }
 async function openObjectives(page, view = 'cards') {

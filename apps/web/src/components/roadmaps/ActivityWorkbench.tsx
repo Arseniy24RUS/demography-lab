@@ -6,6 +6,7 @@ import type { RoadmapBasis } from '../../../../../packages/roadmaps/types';
 import type { FrozenVariant } from '../../../../../packages/workshop/types';
 import { Modal } from '../Modal';
 import { PracticeDetails } from '../workshop/PracticeDetails';
+import { WorkshopImport } from './WorkshopImport';
 import {
   activeItems,
   dateLabel,
@@ -30,14 +31,15 @@ export function ActivityWorkbench(
   const { snapshot, controller, editable, onEdit, barriers, readEvidence, onOpenSource, regions } =
     props;
   const [basisOpen, setBasisOpen] = useState(false),
+    [importOpen, setImportOpen] = useState(false),
     [sourceKey, setSourceKey] = useState(''),
     [rationale, setRationale] = useState(''),
     [evidenceId, setEvidenceId] = useState<string | null>(null),
     [archiving, setArchiving] = useState<string | null>(null);
   const task = useRoadmapTask();
-  const passport = activeItems(snapshot, 'passport')[0],
-    activities = activeItems(snapshot, 'activity'),
-    indicators = activeItems(snapshot, 'indicator');
+  const activities = activeItems(snapshot, 'activity'),
+    indicators = activeItems(snapshot, 'indicator'),
+    diagnosis = activeItems(snapshot, 'diagnosis')[0];
   const available = [
     ...(barriers?.barriers
       .filter((item) => item.status === 'active')
@@ -47,7 +49,7 @@ export function ActivityWorkbench(
         kind: 'barrier' as const,
         title: item.title,
         description: item.description,
-        revision: item.contentRevision,
+        revision: item.revision,
         label: 'Барьер',
       })) ?? []),
     ...(barriers?.links
@@ -100,63 +102,10 @@ export function ActivityWorkbench(
   return (
     <div className="rm-activity-workbench">
       <section className="rm-section">
-        <SectionHeading title="Логика проекта">
-          Цель, задачи, действия и проверяемые изменения в положении семей.
-        </SectionHeading>
-        {passport ? (
-          <article className="rm-passport">
-            <div>
-              <span className="rm-eyebrow">Паспорт</span>
-              <h3>{passport.data.title || 'Назовите проект'}</h3>
-              <p>
-                {passport.data.goal ||
-                  'Сформулируйте цель, которую команда сможет обосновать и проверить.'}
-              </p>
-            </div>
-            {editable ? (
-              <EditButton
-                label="Заполнить паспорт"
-                onClick={() => onEdit({ kind: 'passport', id: passport.id })}
-              />
-            ) : null}
-            <dl className="rm-details">
-              <div>
-                <dt>Целевая группа</dt>
-                <dd>{passport.data.targetGroup || 'Не определена'}</dd>
-              </div>
-              <div>
-                <dt>Период</dt>
-                <dd>
-                  {dateLabel(passport.data.startDate)} — {dateLabel(passport.data.endDate)}
-                </dd>
-              </div>
-              <div>
-                <dt>Ожидаемый результат</dt>
-                <dd>{passport.data.expectedResult || 'Не определён'}</dd>
-              </div>
-              <div>
-                <dt>Партнёры</dt>
-                <dd>{passport.data.partners || 'Не определены'}</dd>
-              </div>
-            </dl>
-            {passport.data.objectives.length ? (
-              <div className="rm-objectives">
-                {passport.data.objectives.map((objective, index) => (
-                  <div key={objective.id}>
-                    <span>{index + 1}</span>
-                    <p>{objective.title || 'Задача без формулировки'}</p>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-          </article>
-        ) : null}
-      </section>
-      <section className="rm-section">
         <SectionHeading
           title="Основания выбранного решения"
-          onAdd={editable ? () => setBasisOpen(true) : undefined}
-          addLabel="Связать с работой группы"
+          onAdd={editable ? () => setImportOpen(true) : undefined}
+          addLabel="Перенести барьеры и меры"
         >
           Сохранённые барьеры, связи с практиками и авторские решения из предыдущих этапов.
         </SectionHeading>
@@ -170,7 +119,9 @@ export function ActivityWorkbench(
                     ? 'Барьер'
                     : basis.sourceKind === 'link'
                       ? 'Региональные практики'
-                      : 'Авторское решение'}{' '}
+                      : basis.sourceKind === 'factor'
+                        ? 'Предложение с флипчарта'
+                        : 'Авторское решение'}{' '}
                   · редакция {basis.sourceRevision}
                 </span>
                 <h4>{basisTitle(basis)}</h4>
@@ -198,6 +149,8 @@ export function ActivityWorkbench(
                       Карточки и точные цитаты
                     </button>
                   </>
+                ) : basis.material.kind === 'factor' ? (
+                  <p>{basis.material.source.barriers.map(({ title }) => title).join(' · ')}</p>
                 ) : (
                   <>
                     <p>{basis.material.source.mechanism}</p>
@@ -244,7 +197,7 @@ export function ActivityWorkbench(
                             roadmapId: snapshot.roadmapId,
                             basisId: basis.id,
                             expectedRevision: basis.revision,
-                            sourceKind: basis.sourceKind,
+                            sourceKind: source.kind,
                             sourceId: basis.sourceId,
                             expectedSourceRevision: source.revision,
                             rationale: basis.rationale,
@@ -265,6 +218,23 @@ export function ActivityWorkbench(
             Выберите обсуждённую проблему или решение, чтобы сохранить обоснование проекта и его
             связь с документами.
           </EmptySection>
+        ) : null}
+        {editable ? (
+          <div className="rm-inline-actions">
+            <button
+              className="button button-quiet"
+              type="button"
+              onClick={() => setBasisOpen(true)}
+            >
+              <Link2 size={15} aria-hidden="true" /> Закрепить отдельный источник
+            </button>
+            {diagnosis?.data.problem ? (
+              <EditButton
+                label="Изменить описание проблемы"
+                onClick={() => onEdit({ kind: 'diagnosis', id: diagnosis.id })}
+              />
+            ) : null}
+          </div>
         ) : null}
       </section>
       {task.feedback}
@@ -422,10 +392,25 @@ export function ActivityWorkbench(
         ) : (
           <EmptySection>
             Добавьте показатели непосредственного результата и положения семей. Сценарные
-            демографические ориентиры можно перенести из диагностики.
+            демографические ориентиры можно перенести со вкладки «Прогноз».
           </EmptySection>
         )}
       </section>
+      {importOpen ? (
+        <WorkshopImport
+          board={barriers}
+          roadmapId={snapshot.roadmapId}
+          busy={controller.busy}
+          onClose={() => setImportOpen(false)}
+          onImport={async (input) => {
+            const result = await controller.actions.importWorkshop(input);
+            await task.run(
+              async () => result,
+              'Барьеры добавлены в описание проблемы, меры — в мероприятия.',
+            );
+          }}
+        />
+      ) : null}
       {basisOpen ? (
         <Modal
           title="Основание из коллективной работы"
