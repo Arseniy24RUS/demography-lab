@@ -5,7 +5,7 @@
 .live-votes-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; max-width: 100%; }
 .live-votes-order { display: flex; align-items: center; gap: 6px; padding-inline-start: 9px; border: 1px solid #c4d2e2; border-radius: 8px; background: #fff; color: #385b7e; }
 .live-votes-order select { min-height: 40px; max-width: 100%; border: 0; border-radius: 8px; padding: 6px 8px 6px 0; background: #fff; color: #284761; font: inherit; font-size: .87rem; }
-.live-vote-list { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); align-items: stretch; gap: 14px; }
+.live-vote-list { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); align-items: start; gap: 14px; }
 .live-vote-card {
   --note-paper: #e9f6ea;
   --note-line: #c4dacb;

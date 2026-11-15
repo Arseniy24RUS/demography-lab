@@ -1,4 +1,5 @@
 import { Activity, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { version as appVersion } from '../../../package.json';
 import {
   ArrowLeft,
   BookOpen,
@@ -815,7 +816,7 @@ export function App() {
                   ? 'Работа сохраняется в вашем профиле'
                   : 'Заметки в этом браузере · войдите для сохранения в профиле'}
         </span>
-        <span className="footer-version">Версия 0.10.2</span>
+        <span className="footer-version">Версия {appVersion}</span>
       </footer>
       {dialog === 'source' ? (
         <SourceDetails entry={entry} doc={doc} onClose={() => setDialog(null)} />
