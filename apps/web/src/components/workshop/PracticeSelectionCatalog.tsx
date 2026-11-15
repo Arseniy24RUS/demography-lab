@@ -2,7 +2,7 @@ import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { ArrowUpRight, BookOpen, Search } from 'lucide-react';
 import type { CorpusManifest } from '@/lib/corpus';
 import { readable } from '@/lib/corpus';
-import { isFamilyCatalogVariant, loadFamilyCatalog } from '@/lib/family-catalog';
+import { FAMILY_SUPPORT_NAME, FAMILY_SUPPORT_URL, isFamilyCatalogVariant, loadFamilyCatalog } from '@/lib/family-catalog';
 import type { FamilyCatalogVariant } from '@/lib/family-catalog';
 import { useCatalogSelection } from '@/hooks/useCatalogSelection';
 import { CatalogSelectButton } from '../CatalogSelectButton';
@@ -113,10 +113,10 @@ export default function PracticeSelectionCatalog({ manifest, session, initialReg
             <p className="tile-summary">{card.mechanism}</p>
             {card.amount && card.amount !== card.mechanism ? <p className="tile-summary">{card.amount}</p> : null}
             <div className="tile-footer">
-              {card.sourceUrl ? <a className="button button-quiet small" href={card.sourceUrl}
-                target="_blank" rel="noopener noreferrer" title={card.snapshot.source_name}>
+              <a className="button button-quiet small" href={FAMILY_SUPPORT_URL}
+                target="_blank" rel="noopener noreferrer" title={FAMILY_SUPPORT_NAME}>
                 Источник <ArrowUpRight size={14} aria-hidden="true" />
-              </a> : <span />}
+              </a>
               <CatalogSelectButton id={card.catalogId} selection={selection} />
             </div>
           </article>;

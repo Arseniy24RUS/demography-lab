@@ -1,13 +1,14 @@
 import { ArrowUpRight } from 'lucide-react';
+import { FAMILY_SUPPORT_NAME, FAMILY_SUPPORT_URL } from '@/lib/family-catalog';
 import type { SharedPracticeBundle } from '../../../../../packages/collaboration/types';
 
-export function CatalogPracticeSource({ source }: {
+export function CatalogPracticeSource(_: {
   source: NonNullable<SharedPracticeBundle['catalogSource']>;
 }) {
-  return source.sourceUrl ? (
-    <a className="button button-quiet" href={source.sourceUrl} target="_blank" rel="noreferrer">
-      {source.sourceName}
+  return (
+    <a className="button button-quiet" href={FAMILY_SUPPORT_URL} target="_blank" rel="noopener noreferrer">
+      {FAMILY_SUPPORT_NAME}
       <ArrowUpRight size={15} aria-hidden="true" />
     </a>
-  ) : <p>{source.sourceName}</p>;
+  );
 }

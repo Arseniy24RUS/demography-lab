@@ -3,6 +3,9 @@ import type { PracticeFamily, PracticeField } from '@domain/index';
 import { assetUrl, safeExternalUrl } from './corpus';
 import type { CorpusManifest, RichVariant } from './corpus';
 
+export const FAMILY_SUPPORT_URL = 'https://меры-поддержки-семей.рф/';
+export const FAMILY_SUPPORT_NAME = 'Меры поддержки семей с детьми';
+
 /** A holding group, not a claim that its cards share the same policy mechanism. */
 export const EXTERNAL_CATALOG_FAMILY: PracticeFamily = {
   id: 'external-catalog',
