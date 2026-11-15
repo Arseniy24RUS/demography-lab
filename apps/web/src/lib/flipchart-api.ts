@@ -35,7 +35,7 @@ export class FlipchartApi {
   ) {
     return this.transport.rpc('dw_flipchart_updates', {
       p_session_id: sessionId, p_after_cursor: afterCursor, p_projector: projector,
-      ...(this.board ? { p_board: this.board } : {}),
+      ...(this.board === 'objective' ? { p_board: 'objective-v2' } : {}),
     }, value => {
       const result = this.match(sessionId, parse(value));
       this.matchBoard(result.notes);

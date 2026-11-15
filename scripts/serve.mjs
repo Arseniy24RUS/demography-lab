@@ -307,7 +307,7 @@ async function findFile(path) {
       fileWithin(resolve(PUBLIC, 'fonts'), path.slice('/fonts/'.length))
     );
   }
-  const factorPack = /^\/data\/factors\/(?:lower\/)?(?:index|municipalities\/[a-z0-9_-]+)\.json\.gz$/u.test(path);
+  const factorPack = /^\/data\/factors\/(?:regions|settlement-parents|(?:lower\/)?(?:index|municipalities\/[a-z0-9_-]+))\.json\.gz$/u.test(path);
   if (factorPack || (path.startsWith('/data/') && ['.json', '.geojson'].includes(extname(path).toLowerCase()))) {
     return (
       (await fileWithin(resolve(DIST, 'data'), path.slice('/data/'.length))) ??

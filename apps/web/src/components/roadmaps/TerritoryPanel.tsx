@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, MapPin, Search, Users, ZoomIn, ZoomOut } from 'lucide-react';
+import { ArrowRight, MapPin, Search, Users } from 'lucide-react';
 import type {
   TerritoryDataIndex,
-  TerritoryMapPack,
   TerritoryRecord,
   TerritoryRegistry,
 } from '../../../../../packages/territories/types';
@@ -10,12 +9,13 @@ import type { RoadmapRoomSummary } from '../../../../../packages/roadmaps/types'
 import type { SessionScope } from '../../../../../packages/collaboration/types';
 import {
   loadTerritoryIndex,
-  loadTerritoryMap,
   loadTerritoryRegistry,
   territoryKindLabel,
 } from '../../lib/territories';
 import { Note, SectionHeading } from './common';
-import { layoutTerritoryLabels } from './map-labels';
+import { MunicipalMap } from '../geography/MunicipalMap';
+
+const emptyRooms: RoadmapRoomSummary[] = [];
 
 export function useTerritoryDataset() {
   const [index, setIndex] = useState<TerritoryDataIndex | null>(null),
@@ -48,7 +48,7 @@ export function TerritoryPanel({
   registry,
   scope = 'municipality',
   fixedRegionId = null,
-  rooms = [],
+  rooms = emptyRooms,
   selectedKey,
   onSelect,
   onJoin,
@@ -76,13 +76,8 @@ export function TerritoryPanel({
   const [regionId, setRegionId] = useState(
     fixedRegionId ?? selected?.regionId ?? 'respublika-mordoviia',
   );
-  const [query, setQuery] = useState(''),
-    [map, setMap] = useState<TerritoryMapPack | null>(null),
-    [mapError, setMapError] = useState<string | null>(null),
-    [zoom, setZoom] = useState(1),
-    [attempt, setAttempt] = useState(0);
+  const [query, setQuery] = useState('');
   const effectiveRegion = fixedRegionId ?? regionId;
-  const region = index.regions.find((item) => item.regionId === effectiveRegion);
   const records = useMemo(
     () =>
       registry.records
@@ -99,37 +94,12 @@ export function TerritoryPanel({
   const filtered = records.filter((record) =>
     record.name.toLocaleLowerCase('ru').includes(query.trim().toLocaleLowerCase('ru')),
   );
-  const roomByTerritory = new Map(rooms.map((room) => [room.territory.key, room]));
-  const recordsByKey = useMemo(
-    () => new Map(registry.records.map((record) => [record.territoryKey, record])),
-    [registry],
-  );
-  const labels =
-    map && scope === 'municipality'
-      ? layoutTerritoryLabels(map, recordsByKey, selectedKey, new Set(roomByTerritory.keys()), zoom)
-      : [];
+  const roomByTerritory = useMemo(() => new Map(rooms.map((room) => [room.territory.key, room])), [rooms]);
   const current =
     selected && records.some((record) => record.territoryKey === selected.territoryKey)
       ? selected
       : null;
   const room = current ? roomByTerritory.get(current.territoryKey) : undefined;
-  useEffect(() => {
-    let active = true;
-    setMap(null);
-    setMapError(null);
-    setZoom(1);
-    if (scope === 'federal') return;
-    void loadTerritoryMap(index, effectiveRegion)
-      .then((value) => {
-        if (active) setMap(value);
-      })
-      .catch((cause) => {
-        if (active) setMapError(cause instanceof Error ? cause.message : 'Карта не загрузилась.');
-      });
-    return () => {
-      active = false;
-    };
-  }, [index, effectiveRegion, scope, attempt]);
   function pick(record: TerritoryRecord) {
     onSelect(record.territoryKey);
     if (record.regionId && scope === 'region') setRegionId(record.regionId);
@@ -207,119 +177,14 @@ export function TerritoryPanel({
             </div>
           ) : (
             <>
-              <div className="rm-map-topline">
-                <span>{region?.name ?? 'Территориальный слой'}</span>
-                <div className="rm-actions">
-                  <button
-                    className="icon-button"
-                    aria-label="Уменьшить карту"
-                    disabled={zoom <= 1}
-                    onClick={() => setZoom((value) => Math.max(1, value - 0.5))}
-                  >
-                    <ZoomOut size={17} />
-                  </button>
-                  <button
-                    className="icon-button"
-                    aria-label="Увеличить карту"
-                    disabled={zoom >= 3}
-                    onClick={() => setZoom((value) => Math.min(3, value + 0.5))}
-                  >
-                    <ZoomIn size={17} />
-                  </button>
-                  <button
-                    className="button button-quiet"
-                    disabled={zoom === 1}
-                    onClick={() => setZoom(1)}
-                  >
-                    Весь слой
-                  </button>
-                </div>
-              </div>
-              <div
-                className="rm-map-viewport"
-                tabIndex={0}
-                aria-label="Карта территорий; выбор также доступен в списке"
-              >
-                {map ? (
-                  <svg
-                    className="rm-territory-map"
-                    role="group"
-                    aria-label={`Территории: ${region?.name ?? effectiveRegion}`}
-                    viewBox={map.viewBox.join(' ')}
-                    style={{ width: `${100 * zoom}%`, minWidth: `${100 * zoom}%` }}
-                  >
-                    <title>{region?.name}. Геометрия исходного слоя.</title>
-                    {map.shapes.map((shape) => {
-                      const record = recordsByKey.get(shape.territoryKey);
-                      if (!record) return null;
-                      const territoryRoom = roomByTerritory.get(record.territoryKey),
-                        chosen = selectedKey === record.territoryKey;
-                      return (
-                        <g key={shape.territoryKey}>
-                          <path
-                            d={shape.path}
-                            fillRule="evenodd"
-                            className="rm-map-shape"
-                            data-selected={chosen}
-                            data-room={Boolean(territoryRoom)}
-                            data-submitted={territoryRoom?.latestVersionKind === 'submitted'}
-                            data-context={!record.roomEligible}
-                            tabIndex={scope === 'municipality' ? 0 : -1}
-                            role="button"
-                            aria-label={`${record.name}${territoryRoom ? `, команда: ${territoryRoom.memberCount}` : ''}`}
-                            aria-pressed={chosen}
-                            onClick={() => {
-                              if (scope === 'municipality') pick(record);
-                            }}
-                            onKeyDown={(event) => {
-                              if (
-                                scope === 'municipality' &&
-                                (event.key === 'Enter' || event.key === ' ')
-                              ) {
-                                event.preventDefault();
-                                pick(record);
-                              }
-                            }}
-                          >
-                            <title>
-                              {record.name} · {territoryKindLabel[record.unitKind]}
-                            </title>
-                          </path>
-                        </g>
-                      );
-                    })}
-                    {labels.map((label) => (
-                      <text
-                        key={label.key}
-                        x={label.x}
-                        y={label.y}
-                        style={{ fontSize: label.fontSize, strokeWidth: 3 / zoom }}
-                        textAnchor="middle"
-                        className="rm-map-label"
-                        data-selected={label.selected}
-                        aria-hidden="true"
-                      >
-                        {label.text}
-                      </text>
-                    ))}
-                  </svg>
-                ) : mapError ? (
-                  <div className="rm-empty">
-                    <p role="alert">{mapError}</p>
-                    <button
-                      className="button button-secondary"
-                      onClick={() => setAttempt((value) => value + 1)}
-                    >
-                      Повторить загрузку
-                    </button>
-                    <p>Выбор территории в списке остаётся доступен.</p>
-                  </div>
-                ) : (
-                  <p className="rm-empty" aria-busy="true">
-                    Загружаем геометрию региона…
-                  </p>
-                )}
-              </div>
+              <MunicipalMap
+                index={index}
+                registry={registry}
+                regionId={effectiveRegion}
+                selectedKey={selectedKey}
+                onSelect={scope === 'municipality' ? onSelect : undefined}
+                rooms={roomByTerritory}
+              />
               <div className="rm-map-legend">
                 <span>
                   <i />
@@ -342,8 +207,7 @@ export function TerritoryPanel({
           )}
           <p className="rm-source-caption">
             Геометрия: RUDN, закреплённая редакция 2025–2026. Названия и границы требуют проверки на
-            дату проекта. При увеличении появляются дополнительные подписи; все названия доступны в
-            списке.
+            дату проекта. Все названия доступны в списке.
           </p>
         </div>
         <aside className="rm-territory-inspector" aria-live="polite">

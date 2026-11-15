@@ -125,6 +125,74 @@ it('validates objective factor keys, board selection and workshop access', async
   } finally { await db.close(); }
 });
 
+it('counts each contributing territory once and preserves the shared card, votes and old response shapes', async () => {
+  const db = await createTestDatabase({ seedCorpus: false });
+  try {
+    const a = await identify(db), b = await identify(db), sid = await enter(db, a);
+    await enter(db, b);
+    const read = (viewer, after = null, projector = false, board = 'objective-v2') => rpc(db, viewer, 'dw_flipchart_updates', {
+      p_session_id: sid, p_after_cursor: after, p_projector: projector, p_board: board,
+    });
+    const select = (viewer, territoryKey, options = {}) => rpc(db, viewer, 'dw_flipchart_add', {
+      p_operation_id: options.operation ?? op(), p_session_id: sid,
+      p_input: {
+        board: 'objective', kind: options.kind ?? 'condition', text: options.text ?? 'Обеспеченность жильём',
+        factorKey: options.factorKey ?? 'housing-per-person-p', territoryKey,
+      },
+    });
+
+    const region = await select(a, 'region-mordovia');
+    assert.equal(region.note.territoryCount, 1);
+    assert.deepEqual(region.note.territoryKeys, ['region-mordovia']);
+    const voted = await vote(db, b, sid, region.note.id, 1, 0);
+    assert.equal(voted.note.territoryCount, undefined);
+    assert.equal(voted.note.territoryKeys, undefined);
+
+    const operation = op();
+    const municipality = await select(b, 'city-saransk', { operation, text: 'Не заменяет заголовок' });
+    assert.equal(municipality.note.id, region.note.id);
+    assert.equal(municipality.note.text, region.note.text);
+    assert.equal(municipality.note.revision, region.note.revision);
+    assert.equal(municipality.note.support, 1);
+    assert.equal(municipality.note.myVote, 1);
+    assert.equal(municipality.cursor, voted.cursor + 1);
+    assert.equal(municipality.note.territoryCount, 2);
+    assert.deepEqual(municipality.note.territoryKeys, ['city-saransk', 'region-mordovia']);
+    assert.deepEqual(await select(b, 'city-saransk', { operation, text: 'Не заменяет заголовок' }), municipality);
+    assert.equal((await select(a, 'city-saransk')).cursor, municipality.cursor);
+    await failure(select(b, 'settlement-alpha', { operation }), 'IDEMPOTENCY_CONFLICT');
+    await failure(select(b, 'settlement-alpha', { kind: 'barrier' }), 'INVALID_INPUT');
+    for (const bad of [null, 7, '', 'UPPER', 'bad:scope']) await failure(select(b, bad), 'INVALID_INPUT');
+
+    const delta = await read(a, voted.cursor);
+    assert.equal(delta.notes.length, 1);
+    assert.equal(delta.notes[0].id, region.note.id);
+    assert.equal(delta.notes[0].territoryCount, 2);
+    assert.equal((await read(a, municipality.cursor)).notes.length, 0);
+    const projection = await read(a, null, true);
+    assert.equal(projection.notes[0].territoryCount, 2);
+    assert.equal(projection.notes[0].territoryKeys, undefined);
+    noIdentities(projection, [a, b]);
+    const legacy = await read(a, null, false, 'objective');
+    assert.equal(legacy.notes[0].id, region.note.id);
+    assert.equal(legacy.notes[0].territoryCount, undefined);
+    assert.equal(legacy.notes[0].territoryKeys, undefined);
+    const oldWrite = await rpc(db, a, 'dw_flipchart_add', {
+      p_operation_id: op(), p_session_id: sid,
+      p_input: { board: 'objective', kind: 'condition', text: 'Старая карточка', factorKey: 'legacy-factor' },
+    });
+    assert.equal(oldWrite.note.territoryCount, undefined);
+    assert.equal((await read(a, oldWrite.cursor - 1)).notes[0].id, oldWrite.note.id);
+
+    const signed = await select(b, 'city-saransk', { kind: 'barrier', factorKey: 'housing-per-person-n' });
+    assert.notEqual(signed.note.id, region.note.id);
+    assert.equal(signed.note.kind, 'barrier');
+    assert.equal(signed.note.territoryCount, 1);
+    assert.deepEqual((await updates(db, b, sid)).notes, []);
+    await assert.rejects(anon(db, 'select count(*) result from private.dw_flipchart_factor_territories'), e => e.code === '42501');
+  } finally { await db.close(); }
+});
+
 it('first and second ordinary participants share unrestricted multiple short posts, complete/reset/delta snapshots and empty polling', async () => {
   const db = await createTestDatabase({ seedCorpus: false });
   try {

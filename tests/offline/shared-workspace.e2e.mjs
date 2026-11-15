@@ -107,7 +107,7 @@ async function enter(page, email, name, fresh = true, role = 'participant') {
   const snapshot = await response.json();
   expect(snapshot.session.role).toBe(role);
   await expect(page.locator('.header-account .account-name')).toHaveText(name);
-  await expect(scenes(page).getByRole('button', { name: 'Флипчарт', exact: true })).toHaveAttribute('aria-current', 'page');
+  await expect(scenes(page).getByRole('button', { name: 'Субъективные факторы', exact: true })).toHaveAttribute('aria-current', 'page');
   await expect(page.getByRole('region', { name: 'Общий флипчарт', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Ответить анонимно', exact: true })).toHaveCount(0);
   await cleanInterface(page);

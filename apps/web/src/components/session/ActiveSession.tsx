@@ -159,7 +159,7 @@ export function ActiveSession({
         >
           {(
             [
-              ...(renderFlipchart ? ([['flipchart', 'Флипчарт']] as const) : []),
+              ...(renderFlipchart ? ([['flipchart', 'Субъективные факторы']] as const) : []),
               ...(renderObjectiveFactors ? ([['objective', 'Объективные факторы']] as const) : []),
               ...(renderBarriers ? ([['barriers', 'Барьеры']] as const) : []),
               ['regions', 'Программы'],

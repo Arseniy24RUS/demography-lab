@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FlipchartReplica } from '../../../../packages/flipchart/replica';
 import type {
-  FlipchartBoardScope, FlipchartKind, FlipchartMutationResult, FlipchartNote, FlipchartPublicNote, FlipchartVote,
+  FlipchartBoardScope, FlipchartFactorSelection, FlipchartKind, FlipchartMutationResult, FlipchartNote, FlipchartPublicNote, FlipchartVote,
 } from '../../../../packages/flipchart/types';
 import { FlipchartApi } from '../lib/flipchart-api';
 import { SessionApiError, type SessionApi } from '../lib/session-api';
@@ -18,6 +18,7 @@ type State<T> = {
   notes: readonly T[]; loading: boolean; error: string | null;
   pendingIds: ReadonlySet<string>; submitting: boolean; removed: FlipchartNote | null;
   add(kind: FlipchartKind, text: string, factorKey?: string): Promise<boolean>;
+  addFactor(kind: FlipchartKind, text: string, selection: FlipchartFactorSelection): Promise<boolean>;
   vote(note: FlipchartNote, value: FlipchartVote): Promise<void>;
   withdraw(note: FlipchartNote): Promise<void>;
   restore(): Promise<void>; dismissUndo(): void; refresh(): Promise<void>;
@@ -111,7 +112,7 @@ export function useFlipchart({ api, sessionId, userId, projector = false, enable
     return runtime?.active && current.current === key && runtime.key === key && !projector ? runtime : null;
   }
 
-  async function mutate(token: string, call: () => Promise<FlipchartMutationResult>): Promise<FlipchartMutationResult | null> {
+  async function mutate(token: string, call: () => Promise<FlipchartMutationResult>, previous?: FlipchartNote): Promise<FlipchartMutationResult | null> {
     const runtime = boundRuntime();
     if (!runtime || !sessionId || !client || runtime.pending.has(token)) return null;
     runtime.pending.add(token);
@@ -120,8 +121,14 @@ export function useFlipchart({ api, sessionId, userId, projector = false, enable
     const valid = () => runtime.active && current.current === key && runtimeRef.current === runtime;
     publishBusy(); setFailure(null);
     try {
-      const result = await call();
+      let result = await call();
       if (!valid()) return null;
+      if (board === 'objective' && result.note.territoryKeys === undefined) {
+        const known = (runtime.replica.note(result.note.id) ?? previous) as FlipchartNote | undefined;
+        if (known?.territoryKeys !== undefined) result = { ...result, note: {
+          ...result.note, territoryKeys: known.territoryKeys, territoryCount: known.territoryCount,
+        } };
+      }
       runtime.replica.acknowledge(result);
       setSaved({ key, notes: runtime.replica.notes() });
       // The acknowledgement covers one note only; keep the read cursor intact.
@@ -150,18 +157,22 @@ export function useFlipchart({ api, sessionId, userId, projector = false, enable
       return client.add(sessionId, { kind, text });
     }));
   }
+  async function addFactor(kind: FlipchartKind, text: string, selection: FlipchartFactorSelection) {
+    if (!client || !sessionId || board !== 'objective') return false;
+    return Boolean(await mutate('add', () => client.add(sessionId, { board, kind, text, ...selection })));
+  }
   async function vote(note: FlipchartNote, value: FlipchartVote) {
-    if (client && sessionId) await mutate(note.id, () => client.vote(sessionId, note, value));
+    if (client && sessionId) await mutate(note.id, () => client.vote(sessionId, note, value), note);
   }
   async function withdraw(note: FlipchartNote) {
     if (!client || !sessionId) return;
-    const result = await mutate(note.id, () => client.status(sessionId, note, 'withdrawn'));
+    const result = await mutate(note.id, () => client.status(sessionId, note, 'withdrawn'), note);
     if (result && current.current === key) setUndo({ key, note: result.note });
   }
   async function restore() {
     const note = undo?.key === key ? undo.note : null;
     if (!client || !sessionId || !note) return;
-    const result = await mutate(note.id, () => client.status(sessionId, note, 'active'));
+    const result = await mutate(note.id, () => client.status(sessionId, note, 'active'), note);
     if (result && current.current === key) setUndo(null);
   }
   return {
@@ -171,7 +182,7 @@ export function useFlipchart({ api, sessionId, userId, projector = false, enable
     pendingIds: busy?.key === key ? busy.pending : noPending,
     submitting: busy?.key === key ? busy.adding : false,
     removed: undo?.key === key ? undo.note : null,
-    add, vote, withdraw, restore,
+    add, addFactor, vote, withdraw, restore,
     dismissUndo: () => setUndo(null),
     refresh: () => runtimeRef.current?.key === key ? runtimeRef.current.refresh() : Promise.resolve(),
   };

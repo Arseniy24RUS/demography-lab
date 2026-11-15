@@ -139,4 +139,30 @@ describe('live flipchart board', () => {
     fireEvent.click(within(board).getByRole('button', { name: 'Рейтинг' }));
     expect(within(card).getByLabelText('Место 1')).toBeTruthy();
   });
+
+  it('shows geographic support beside likes and shares tied ranks regardless of dislikes or territory count', () => {
+    const positive = note({ text: 'Связь с жильём', kind: 'condition', factorKey: 'housing-p', territoryCount: 2,
+      support: 3, oppose: 8, score: -5 });
+    const negative = note({ id: '22222222-2222-4222-8222-222222222222', text: 'Связь с миграцией',
+      kind: 'barrier', factorKey: 'migration-n', territoryCount: 1, support: 3, oppose: 0, score: 3 });
+    const neutral = note({ id: '33333333-3333-4333-8333-333333333333', text: 'Связь с транспортом',
+      kind: 'condition', factorKey: 'transport-z', territoryCount: 20, support: 1, oppose: 0, score: 1 });
+    const { onVote, onWithdraw } = props();
+    render(createElement(FlipchartBoard, { objective: true, notes: [positive, negative, neutral], onVote, onWithdraw }));
+    fireEvent.click(screen.getByRole('button', { name: 'Рейтинг' }));
+    const cards = screen.getAllByRole('article');
+    expect(cards.map(card => card.getAttribute('aria-label'))).toEqual([positive.text, negative.text, neutral.text]);
+    expect(within(cards[0]).getByText('Положительная связь')).toBeTruthy();
+    expect(within(cards[1]).getByText('Отрицательная связь')).toBeTruthy();
+    expect(within(cards[2]).getByText('Нулевая связь')).toBeTruthy();
+    expect(cards[0].getAttribute('data-kind')).toBe('condition');
+    expect(cards[1].getAttribute('data-kind')).toBe('barrier');
+    expect(cards[2].hasAttribute('data-neutral')).toBe(true);
+    expect(within(cards[0]).getByLabelText('Место 1')).toBeTruthy();
+    expect(within(cards[1]).getByLabelText('Место 1')).toBeTruthy();
+    expect(within(cards[2]).getByLabelText('Место 3')).toBeTruthy();
+    const count = within(cards[0]).getByRole('img', { name: 'Территорий: 2' });
+    expect(count.textContent).toBe('2');
+    expect(count.previousElementSibling).toBe(within(cards[0]).getByRole('button', { name: `Поддержать: ${positive.text}` }));
+  });
 });

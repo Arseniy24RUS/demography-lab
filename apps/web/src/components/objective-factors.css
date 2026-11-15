@@ -3,10 +3,14 @@
 .objective-heading p { margin: .4rem 0 .8rem; }
 .objective-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 235px), 1fr)); gap: .75rem; }
 .objective-controls label { display: grid; gap: .3rem; }
-.objective-controls select, .objective-controls input { min-width: 0; width: 100%; min-height: 44px; padding: .4rem .6rem; }
+.objective-search { display: grid; gap: .3rem; width: min(100%, 460px); }
+.objective-controls select, .objective-search input { min-width: 0; width: 100%; min-height: 44px; padding: .4rem .6rem; }
+.objective-map-controls { display: flex; flex-wrap: wrap; gap: .5rem; }
+.objective-map-controls .button { min-height: 44px; }
+.objective-summary { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: .35rem 1rem; }
 .objective-count { margin: 0; }
 .objective-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: .75rem; padding: 0; margin: 0; list-style: none; }
-.objective-card { display: flex; flex-direction: column; gap: .5rem; background: #fff; border: 1px solid #d4dfe9; border-radius: 10px; padding: 1rem; min-width: 0; overflow-wrap: anywhere; }
+.objective-card { display: flex; flex-direction: column; gap: .5rem; background: #fff; border: 1px solid #d4dfe9; border-radius: 10px; padding: 1rem; min-width: 0; overflow-wrap: anywhere; content-visibility: auto; contain-intrinsic-size: auto 226px; }
 .objective-card h3, .objective-card p, .objective-card dl, .objective-card dd { margin: 0; }
 .objective-section { color: #345478; font-size: .85rem; }
 .objective-card dl { display: flex; gap: .65rem; flex-wrap: wrap; }
@@ -14,3 +18,4 @@
 .objective-card dd { font-variant-numeric: tabular-nums; font-weight: 600; }
 .objective-card .button { align-self: flex-start; margin-top: auto; min-height: 44px; }
 .objective-source { margin: 0; font-size: .85rem; }
+.objective-scroll-cursor { block-size: 1px; }

@@ -86,6 +86,46 @@ async function downloadVersion(page: Page, format: 'DOCX' | 'PDF') {
   return { bytes, filename: download.suggestedFilename(), version };
 }
 
+test('municipal map zoom grows polygons, keeps the viewport fixed and preserves selection while panning', async ({ page }) => {
+  await page.goto('/');
+  await navigation(page).getByRole('button', { name: 'Территории', exact: true }).click();
+  const map = page.getByRole('group', { name: 'Территории: Республика Мордовия', exact: true });
+  await expect(map.locator('.rm-map-label')).toHaveCount(23);
+  const projectedWidths = () => map.evaluate((element) => ({
+    viewport: element.getBoundingClientRect().width,
+    polygon: element.querySelector('.rm-map-shape')!.getBoundingClientRect().width,
+  }));
+  const initial = await projectedWidths();
+  const initialBox = await map.getAttribute('viewBox');
+  const selection = map.locator('.rm-map-shape[data-selected="true"]');
+  const initialSelection = await selection.getAttribute('aria-label');
+
+  await page.getByRole('button', { name: 'Увеличить карту', exact: true }).click();
+  const zoomed = await projectedWidths();
+  expect(zoomed.viewport).toBeCloseTo(initial.viewport);
+  expect(zoomed.polygon / initial.polygon).toBeCloseTo(1.5);
+  const zoomedBox = (await map.getAttribute('viewBox'))!.split(' ').map(Number);
+  await map.scrollIntoViewIfNeeded();
+  const rect = (await map.boundingBox())!;
+  const centerX = rect.x + rect.width / 2, centerY = rect.y + rect.height / 2;
+  await page.mouse.move(centerX, centerY);
+  await page.mouse.down();
+  await page.mouse.move(centerX + 65, centerY + 30, { steps: 5 });
+  await page.mouse.up();
+  const pannedBox = (await map.getAttribute('viewBox'))!.split(' ').map(Number);
+  expect(pannedBox[0]).toBeLessThan(zoomedBox[0]);
+  expect(pannedBox[2]).toBe(zoomedBox[2]);
+  await expect(selection).toHaveAttribute('aria-label', initialSelection!);
+
+  await map.focus();
+  await page.mouse.wheel(0, -170);
+  await expect.poll(async () => (await projectedWidths()).polygon).toBeGreaterThan(zoomed.polygon);
+  await page.getByRole('button', { name: 'Уменьшить карту', exact: true }).click();
+  await page.getByRole('button', { name: 'Весь слой', exact: true }).click();
+  await expect(map).toHaveAttribute('viewBox', initialBox!);
+  await noOverflow(page, 1440);
+});
+
 test('public source maps preserve missing values and known anomalies on desktop and touch width', async ({ page, browser }, info) => {
   await page.goto('/');
   await navigation(page).getByRole('button', { name: 'Территории', exact: true }).click();

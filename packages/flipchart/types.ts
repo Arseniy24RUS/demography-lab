@@ -18,6 +18,7 @@ export interface FlipchartPublicNote {
   kind: FlipchartKind;
   /** Stable catalogue key on the objective board. */
   factorKey?: string;
+  territoryCount?: number;
   text: string;
   status: FlipchartStatus;
   createdAt: string;
@@ -30,6 +31,8 @@ export interface FlipchartPublicNote {
 
 /** Identity is used privately for ownership and one current vote per person. */
 export interface FlipchartNote extends FlipchartPublicNote {
+  /** The projector receives the count only. */
+  territoryKeys?: string[];
   myVote: FlipchartVote;
   /** Zero before the first actual vote; retained after removing a vote. */
   myVoteRevision: number;
@@ -56,8 +59,9 @@ export interface FlipchartMutationResult {
 }
 
 export type AddFlipchartInput = { kind: FlipchartKind; text: string } & (
-  | { board?: never; factorKey?: never }
-  | { board: FlipchartBoardScope; factorKey: string }
+  | { board?: never; factorKey?: never; territoryKey?: never }
+  | { board: FlipchartBoardScope; factorKey: string; territoryKey?: string }
 );
+export type FlipchartFactorSelection = { factorKey: string; territoryKey: string };
 export interface VoteFlipchartInput { value: FlipchartVote }
 export interface StatusFlipchartInput { status: FlipchartStatus }

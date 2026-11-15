@@ -109,6 +109,7 @@
   box-shadow: 0 5px 13px #1f34400a, 1px 2px 3px #34485a06;
 }
 .flipchart-note[data-kind='condition'] { --note-accent: #236579; --note-line: #badde0; --note-background: #ecf8f7; }
+.flipchart-note[data-neutral] { --note-accent: #526078; --note-line: #d5dee8; --note-background: #f2f5f8; }
 .flipchart-notes[data-view='cloud'] .flipchart-note { flex: 0 1 245px; width: 245px; }
 .flipchart-notes[data-view='cloud'] .flipchart-note[data-width='medium'] { flex-basis: 290px; width: 290px; }
 .flipchart-notes[data-view='cloud'] .flipchart-note[data-width='wide'] { flex-basis: 330px; width: 330px; }
@@ -131,6 +132,7 @@
 .flipchart-vote-total { display: inline-flex; align-items: center; gap: 8px; font-size: 18px; padding: 6px 10px 6px 0; color: #526875; font-variant-numeric: tabular-nums; }
 .flipchart-vote-total[data-direction='support'] { color: #2e7466; }
 .flipchart-vote-total[data-direction='oppose'] { color: #a0523c; }
+.flipchart-territory-count { display: inline-grid; place-items: center; min-width: 24px; padding: 2px 5px; border: 1px solid var(--note-line); border-radius: 100px; color: var(--note-accent); background: #ffffff84; font-size: .85em; font-weight: 650; font-variant-numeric: tabular-nums; }
 .flipchart-score { font-size: 24px; font-weight: 650; color: #647180; font-variant-numeric: tabular-nums; }
 .flipchart-score[data-positive] { color: #286c5e; }
 .flipchart-score[data-negative] { color: #a0523c; }

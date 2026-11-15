@@ -93,7 +93,7 @@ it('sends a catalogue key only to the objective board and ignores the previous b
   const legacyRead = deferred<FlipchartUpdates>();
   const factor = { ...note(b, 'Дефицит мест в яслях'), factorKey: 'childcare_capacity' };
   const api = transport(
-    async args => args.p_board === 'objective' ? frame(4, [factor], true) : legacyRead.promise,
+    async args => args.p_board === 'objective-v2' ? frame(4, [factor], true) : legacyRead.promise,
     async () => ({ sessionId, cursor: 4, note: factor }),
   );
   const view = renderHook(({ board }: { board?: FlipchartBoardScope }) => useFlipchart({ api, sessionId, userId: 'one', board }),
@@ -101,7 +101,7 @@ it('sends a catalogue key only to the objective board and ignores the previous b
   expect(api.rpc).toHaveBeenCalledWith('dw_flipchart_updates', { p_session_id: sessionId, p_after_cursor: null, p_projector: false }, expect.any(Function));
   view.rerender({ board: 'objective' });
   await waitFor(() => expect(view.result.current.notes).toEqual([factor]));
-  expect(api.rpc).toHaveBeenLastCalledWith('dw_flipchart_updates', { p_session_id: sessionId, p_after_cursor: null, p_projector: false, p_board: 'objective' }, expect.any(Function));
+  expect(api.rpc).toHaveBeenLastCalledWith('dw_flipchart_updates', { p_session_id: sessionId, p_after_cursor: null, p_projector: false, p_board: 'objective-v2' }, expect.any(Function));
   await act(async () => legacyRead.resolve(frame(12, [note(a, 'Старый ответ')], true)));
   expect(view.result.current.notes).toEqual([factor]);
   await act(async () => expect(await view.result.current.add('condition', factor.text)).toBe(false));

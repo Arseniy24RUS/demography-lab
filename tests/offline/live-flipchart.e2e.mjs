@@ -128,7 +128,7 @@ async function enter(page, email, fullName) {
   const snapshot = await response.json();
   expect(snapshot.session.role).toBe('participant');
   await expect(page.locator('.header-account .account-name')).toHaveText(fullName);
-  await expect(scenes(page).getByRole('button', { name: 'Флипчарт', exact: true })).toHaveAttribute('aria-current', 'page');
+  await expect(scenes(page).getByRole('button', { name: 'Субъективные факторы', exact: true })).toHaveAttribute('aria-current', 'page');
   await cleanBoard(page);
   return snapshot.session.id;
 }
@@ -155,7 +155,7 @@ async function screenshot(page, name) {
 }
 async function openObjectives(page, view = 'cards') {
   const tabs = scenes(page).getByRole('button');
-  await expect(tabs.nth(0)).toHaveText('Флипчарт');
+  await expect(tabs.nth(0)).toHaveText('Субъективные факторы');
   await expect(tabs.nth(1)).toHaveText('Объективные факторы');
   await tabs.nth(1).click();
   await expect(tabs.nth(1)).toHaveAttribute('aria-current', 'page');
@@ -163,10 +163,11 @@ async function openObjectives(page, view = 'cards') {
 }
 async function openSaransk(page) {
   await openObjectives(page);
-  await objective(page).getByRole('combobox', { name: 'Регион', exact: true })
+  await objective(page).getByRole('combobox', { name: 'Уровень территории', exact: true }).selectOption('upper');
+  await objective(page).getByRole('combobox', { name: 'Субъект РФ', exact: true })
     .selectOption('respublika-mordoviia');
-  await objective(page).getByRole('combobox', { name: 'Муниципалитет', exact: true })
-    .selectOption({ label: 'Саранск · 89701000' });
+  await objective(page).getByRole('combobox', { name: 'Муниципальное образование', exact: true })
+    .selectOption('89-89701000-6877fd2c07');
   await expect(objective(page).getByText('Байесовская корреляция', { exact: true }).first()).toBeVisible();
   await expect(objective(page).getByText('95% интервал', { exact: true }).first()).toBeVisible();
 }
@@ -188,6 +189,12 @@ try {
     expect(await b.page.evaluate(() => isSecureContext)).toBe(false);
     await expect(board(a.page).getByText('Пока нет тезисов', { exact: true })).toBeVisible();
     await expect(board(a.page).getByRole('button', { name: 'Добавить', exact: true })).toBeDisabled();
+    const ideas = board(a.page).getByRole('region', { name: 'Облако идей для старта' });
+    await expect(ideas).toBeVisible();
+    await expect(ideas.locator('.subjective-cloud-words > span')).toHaveCount(16);
+    await ideas.getByRole('button', { name: 'Приостановить анимацию' }).click();
+    await expect(ideas.getByRole('button', { name: 'Продолжить анимацию' })).toHaveAttribute('aria-pressed', 'true');
+    await ideas.getByRole('button', { name: 'Продолжить анимацию' }).click();
     await noOverflow(a.page, 1440); await noOverflow(b.page, 390);
     expect(legacySurveyRequests).toEqual([]);
     await screenshot(a.page, 'flipchart-empty-desktop.png');
@@ -311,35 +318,70 @@ try {
     await expect(projection(projector).getByRole('article')).toHaveCount(5);
     await screenshot(projector, 'flipchart-projector-320.png');
   });
-  await stage('Two participants load Saransk correlations and select one shared factor; objective votes, ranking and projector stay separate', a.page, async () => {
+  await stage('Nearby rows load automatically; a shared signed factor joins Saransk and Mordovia on one board', a.page, async () => {
     await b.page.setViewportSize({ width: 390, height: 844 });
     await Promise.all([openSaransk(a.page), openSaransk(b.page)]);
+    const desktop = objective(a.page);
+    const subject = desktop.getByRole('combobox', { name: 'Субъект РФ', exact: true });
+    await subject.selectOption('');
+    await desktop.getByRole('button', { name: 'Карта России', exact: true }).click();
+    const russia = desktop.getByRole('group', { name: 'Карта России', exact: true });
+    await russia.getByRole('button', { name: 'Республика Мордовия', exact: true }).press('Enter');
+    await expect(subject).toHaveValue('respublika-mordoviia');
+    await desktop.getByRole('button', { name: 'Карта муниципалитетов', exact: true }).click();
+    const municipalMap = desktop.getByRole('group', { name: /^Территории:/u });
+    await municipalMap.locator('[data-territory-key="rudn-mun-72196-904"]').press('Enter');
+    await expect(desktop.getByRole('combobox', { name: 'Муниципальное образование' })).toHaveValue('89-89701000-6877fd2c07');
+    await desktop.getByRole('button', { name: 'Карта муниципалитетов', exact: true }).click();
     await noOverflow(a.page, 1440); await noOverflow(b.page, 390);
     await screenshot(a.page, 'objective-correlation-desktop.png');
     await screenshot(b.page, 'objective-correlation-mobile.png');
     await objective(b.page).getByRole('listitem').first().scrollIntoViewIfNeeded();
     await b.page.screenshot({ path: join(evidence, 'objective-correlation-card-mobile.png'), animations: 'disabled' });
 
-    const select = async (page, index) => {
+    const listItems = objective(a.page).getByRole('listitem');
+    const initialCount = await listItems.count();
+    await listItems.nth(initialCount - 4).scrollIntoViewIfNeeded();
+    await expect.poll(() => listItems.count()).toBeGreaterThan(initialCount);
+    await expect(objective(a.page).getByRole('button', { name: 'Показать ещё', exact: true })).toHaveCount(0);
+
+    const select = async (page, card) => {
       const pending = rpc(page, 'dw_flipchart_add');
-      await objective(page).getByRole('button', { name: 'На флипчарт', exact: true }).nth(index).click();
+      await card.getByRole('button', { name: 'На флипчарт', exact: true }).click();
       const response = await pending;
       expect(response.status(), await response.text()).toBe(200);
       expect(response.request().postDataJSON().p_input.board).toBe('objective');
       return (await response.json()).note;
     };
-    const [first, duplicate] = await Promise.all([select(a.page, 0), select(b.page, 0)]);
+    const title = 'Общая площадь жилых помещений, приходящаяся в среднем на одного жителя — всего';
+    const housingCard = page => objective(page).getByRole('listitem')
+      .filter({ has: page.getByRole('heading', { name: title, exact: true }) });
+    for (const page of [a.page, b.page])
+      await objective(page).getByRole('searchbox', { name: 'Показатель', exact: true }).fill(title);
+    const [first, duplicate] = await Promise.all([select(a.page, housingCard(a.page)), select(b.page, housingCard(b.page))]);
     expect(duplicate.id).toBe(first.id);
     expect(duplicate.factorKey).toBe(first.factorKey);
     expect(first.factorKey).toMatch(/^[a-z0-9][a-z0-9_-]{0,79}$/u);
-    expect(first.text).toContain('Саранск');
+    expect(first.territoryKeys).toHaveLength(1);
     objectiveFirst = first.text;
-    objectiveSecond = (await select(a.page, 0)).text;
+    await objective(a.page).getByRole('searchbox', { name: 'Показатель', exact: true }).clear();
+    objectiveSecond = (await select(a.page, objective(a.page).locator('.objective-card[data-direction="p"]').first())).text;
     expect(objectiveSecond).not.toBe(objectiveFirst);
+    await objective(b.page).getByRole('combobox', { name: 'Уровень территории', exact: true }).selectOption('region');
+    await expect(objective(b.page).getByText(/Суммарный коэффициент рождаемости/u)).toBeVisible();
+    const regional = objective(b.page).getByRole('listitem').filter({
+      has: b.page.getByRole('heading', { name: 'Общая площадь жилых помещений на 1 жителя, кв. м', exact: true }),
+    });
+    const joint = await select(b.page, regional);
+    expect(joint.id).toBe(first.id);
+    expect(joint.territoryKeys).toHaveLength(2);
     for (const page of [a.page, b.page]) {
       await objective(page).getByRole('button', { name: /^Флипчарт факторов/u }).click();
       await expect(objectiveBoard(page).getByRole('article')).toHaveCount(2);
       await expect(note(page, objectiveFirst)).toBeVisible();
+      await expect(note(page, objectiveFirst)).toHaveAttribute('data-kind', 'barrier');
+      await expect(note(page, objectiveFirst).locator('.flipchart-territory-count')).toHaveAttribute('aria-label', 'Территорий: 2');
+      await expect(note(page, objectiveSecond)).toHaveAttribute('data-kind', 'condition');
     }
     await vote(b.page, objectiveFirst, -1).click();
     await expect(vote(a.page, objectiveFirst, -1)).toHaveText('1');
@@ -348,8 +390,14 @@ try {
     await expect(vote(a.page, objectiveFirst, -1)).toHaveText('0');
     await vote(b.page, objectiveSecond, -1).click();
     await expect(vote(a.page, objectiveSecond, -1)).toHaveText('1');
+    await vote(a.page, objectiveSecond, 1).click();
+    await vote(a.page, objectiveFirst, -1).click();
+    await vote(b.page, objectiveSecond, -1).click();
     await objectiveBoard(a.page).getByRole('button', { name: 'Рейтинг', exact: true }).click();
     await expect(objectiveBoard(a.page).getByRole('article').first()).toHaveAttribute('aria-label', objectiveFirst);
+    await vote(a.page, objectiveSecond, 1).click();
+    await vote(a.page, objectiveFirst, -1).click();
+    await vote(b.page, objectiveSecond, -1).click();
     await screenshot(a.page, 'objective-ranking-desktop.png');
 
     await projector.setViewportSize({ width: 1920, height: 1080 });
@@ -374,21 +422,22 @@ try {
   await stage('The territory selector loads distinct settlement and district correlation packs', a.page, async () => {
     const ui = objective(a.page);
     await ui.getByRole('button', { name: 'Корреляции', exact: true }).click();
-    const level = ui.getByRole('combobox', { name: 'Тип территории', exact: true });
-    const region = ui.getByRole('combobox', { name: 'Регион', exact: true });
-    const municipality = ui.getByRole('combobox', { name: 'Муниципалитет', exact: true });
+    const level = ui.getByRole('combobox', { name: 'Уровень территории', exact: true });
+    const region = ui.getByRole('combobox', { name: 'Субъект РФ', exact: true });
+    const municipality = ui.getByRole('combobox', { name: 'Муниципальное образование', exact: true });
+    const settlement = ui.getByRole('combobox', { name: 'Городское или сельское поселение', exact: true });
     await expect(level).toHaveValue('upper');
     const index = a.page.waitForResponse(response => new URL(response.url()).pathname === '/data/factors/lower/index.json.gz');
     await level.selectOption('lower');
     expect((await index).status()).toBe(200);
     await region.selectOption('moskovskaia-oblast');
-    const settlement = municipality.locator('option').filter({ hasText: /Волоколамск \(до 2020 г\.\).*46605101/u });
-    await expect(settlement).toHaveCount(1);
-    const key = await settlement.getAttribute('value');
-    expect(key).toBeTruthy();
+    await expect(settlement).toBeDisabled();
+    await municipality.selectOption('46-46605000-252e8497cc');
+    const key = 'l-46-46605101-dce0c6a000';
+    await expect(settlement.locator(`option[value="${key}"]`)).toHaveCount(1);
     const lowerPack = a.page.waitForResponse(response =>
       new URL(response.url()).pathname === `/data/factors/lower/municipalities/${key}.json.gz`);
-    await municipality.selectOption(key);
+    await settlement.selectOption(key);
     expect((await lowerPack).status()).toBe(200);
     await expect(ui.getByText('Байесовская корреляция', { exact: true }).first()).toBeVisible();
     await expect(ui.getByText('95% интервал', { exact: true }).first()).toBeVisible();
@@ -396,12 +445,13 @@ try {
 
     await level.selectOption('upper');
     await region.selectOption('respublika-mordoviia');
-    await municipality.selectOption({ label: 'Саранск · 89701000' });
-    await expect(ui.getByRole('button', { name: 'На флипчарте', exact: true })).toHaveCount(2);
+    await municipality.selectOption('89-89701000-6877fd2c07');
+    await ui.getByRole('searchbox', { name: 'Показатель', exact: true }).fill('Общая площадь жилых помещений, приходящаяся в среднем на одного жителя — всего');
+    await expect(ui.getByRole('button', { name: 'На флипчарте', exact: true })).toHaveCount(1);
   });
   await stage('Reload restores all notes and individual votes without creating a legacy survey', a.page, async () => {
     await a.page.reload();
-    await expect(scenes(a.page).getByRole('button', { name: 'Флипчарт', exact: true })).toHaveAttribute('aria-current', 'page');
+    await expect(scenes(a.page).getByRole('button', { name: 'Субъективные факторы', exact: true })).toHaveAttribute('aria-current', 'page');
     await expect(board(a.page).getByRole('article')).toHaveCount(5);
     await expect(vote(a.page, TEXT.housing, 1)).toHaveAttribute('aria-pressed', 'true');
     await expect(vote(a.page, TEXT.housing, 1)).toHaveText('2');
@@ -440,7 +490,7 @@ try {
   expect(errors).toEqual([]); expect(failedResponses).toEqual([]); expect(externalRequests).toEqual([]);
   const adds = calls.filter(value => value.path.endsWith('/dw_flipchart_add'));
   expect(adds.filter(value => value.input.p_input.board !== 'objective')).toHaveLength(5);
-  expect(adds.filter(value => value.input.p_input.board === 'objective')).toHaveLength(3);
+  expect(adds.filter(value => value.input.p_input.board === 'objective')).toHaveLength(4);
   expect(calls.some(value => value.path.endsWith('/dw_flipchart_updates') && Number(value.input.p_after_cursor) > 0)).toBe(true);
   for (const payload of projectorPayloads) privateFree(payload, true);
   for (const payload of participantPayloads) privateFree(payload);

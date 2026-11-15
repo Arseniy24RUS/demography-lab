@@ -22,4 +22,9 @@ for (const factors of [join(root, 'data/factors'), join(root, 'data/factors/lowe
   if (createHash('sha256').update(shard).digest('hex') !== sample.sha256)
     throw new Error('Municipal correlations shard checksum mismatch.');
 }
+const regional = JSON.parse(gunzipSync(await readFile(join(root, 'data/factors/regions.json.gz'))));
+const settlements = JSON.parse(gunzipSync(await readFile(join(root, 'data/factors/settlement-parents.json.gz'))));
+if (regional.schemaVersion !== 1 || !regional.regions.some(region => region.rows.length) ||
+    settlements.schemaVersion !== 1 || !settlements.parents.some(parent => parent.settlementKeys.length))
+  throw new Error('Regional correlations or settlement hierarchy missing.');
 console.log('Compiled Pages entry, relative assets, online configuration and datasets verified.');

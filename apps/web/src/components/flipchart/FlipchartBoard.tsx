@@ -8,6 +8,7 @@ import {
   type FlipchartKind, type FlipchartNote, type FlipchartPublicNote, type FlipchartVote,
 } from '../../../../../packages/flipchart/types';
 import './flipchart.css';
+import { SubjectiveTagCloud } from './SubjectiveTagCloud';
 
 const noPending = new Set<string>();
 const kinds: readonly { kind: FlipchartKind; question: string; label: string }[] = [
@@ -153,12 +154,16 @@ function FlipchartSurface({ notes, loading, projector = false, objective = false
     condition: active.filter(note => note.kind === 'condition').length,
   }), [active]);
   const visible = useMemo(() => active.filter(note => objective || filter === 'all' || note.kind === filter).sort(
-    view === 'ranking'
-      ? (a, b) => b.score - a.score || b.support - a.support || a.oppose - b.oppose
-        || a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id)
-      : (a, b) => b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id),
+    (a, b) => {
+      if (view !== 'ranking') return b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id);
+      const difference = objective
+        ? b.support - a.support
+        : b.score - a.score || b.support - a.support || a.oppose - b.oppose;
+      return difference || a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id);
+    },
   ), [active, filter, objective, view]);
-  const maximum = useMemo(() => Math.max(1, ...active.map(note => note.support + note.oppose)), [active]);
+  const maximum = useMemo(() => Math.max(1, ...active.map(note => objective ? note.support : note.support + note.oppose)), [active, objective]);
+  let rank = 0;
   return (
     <div className="flipchart-surface">
       <header className="flipchart-toolbar">
@@ -180,6 +185,7 @@ function FlipchartSurface({ notes, loading, projector = false, objective = false
           </button>
         </div>
       </header>
+      {!objective && !projector && view === 'cloud' ? <SubjectiveTagCloud /> : null}
       <div className="flipchart-canvas" data-view={view} aria-busy={loading || undefined}>
         {loading && !active.length ? <div className="flipchart-empty" role="status">
           <LoaderCircle className="flipchart-spinner" size={28} aria-hidden="true" /><p>Загружаем доску…</p>
@@ -187,10 +193,13 @@ function FlipchartSurface({ notes, loading, projector = false, objective = false
           <div className="flipchart-empty-shapes" aria-hidden="true"><span /><span /><Plus size={30} /></div>
           <p>{objective ? 'Пока нет факторов' : active.length ? 'В этой теме пока нет тезисов' : 'Пока нет тезисов'}</p>
         </div> : <div className="flipchart-notes" data-view={view}>
-          {visible.map((note, index) => <FlipchartCard key={note.id} note={note} projector={projector} objective={objective}
-            ranking={view === 'ranking'} rank={index + 1} maximum={maximum}
-            arrival={arrivals.has(note.id)} pending={pendingIds.has(note.id)}
-            onVote={onVote} onWithdraw={onWithdraw} />)}
+          {visible.map((note, index) => {
+            if (!objective || visible[index - 1]?.support !== note.support) rank = index + 1;
+            return <FlipchartCard key={note.id} note={note} projector={projector} objective={objective}
+              ranking={view === 'ranking'} rank={rank} maximum={maximum}
+              arrival={arrivals.has(note.id)} pending={pendingIds.has(note.id)}
+              onVote={onVote} onWithdraw={onWithdraw} />;
+          })}
         </div>}
       </div>
       <span className="flipchart-sr-only" role="status" aria-live="polite" aria-atomic="true">
@@ -211,7 +220,11 @@ function FlipchartCard({ note, ranking, rank, maximum, projector, objective, arr
   const category = kinds.find(item => item.kind === note.kind)!;
   const removeLabel = objective ? 'Убрать фактор' : 'Убрать стикер';
   const width = note.text.length < 45 ? 'compact' : note.text.length < 110 ? 'medium' : 'wide';
-  const voted = note.support + note.oppose;
+  const voted = objective ? note.support : note.support + note.oppose;
+  const objectiveCount = note.territoryCount ?? 1;
+  const neutral = objective && note.territoryCount !== undefined && note.factorKey?.endsWith('-z');
+  const correlationLabel = note.territoryCount === undefined ? 'Фактор' : neutral ? 'Нулевая связь'
+    : note.kind === 'barrier' ? 'Отрицательная связь' : 'Положительная связь';
   const [error, setError] = useState<string | null>(null);
   const inFlight = useRef(false);
   const [working, setWorking] = useState(false);
@@ -229,11 +242,12 @@ function FlipchartCard({ note, ranking, rank, maximum, projector, objective, arr
 
   return (
     <article className="flipchart-note" data-kind={note.kind} data-width={width} data-new={arrival || undefined}
-      data-popular={note.score > 0 || undefined} aria-label={note.text} data-note-id={note.id}>
+      data-neutral={neutral || undefined} data-popular={(objective ? note.support : note.score) > 0 || undefined}
+      aria-label={note.text} data-note-id={note.id}>
       {ranking ? <span className="flipchart-rank" aria-label={`Место ${rank}`}>{rank}</span> : null}
       <div className="flipchart-note-body">
         <header className="flipchart-note-heading">
-          <span className="flipchart-note-kind"><span className="flipchart-kind-dot" aria-hidden="true" />{objective ? 'Фактор' : category.label}</span>
+          <span className="flipchart-note-kind"><span className="flipchart-kind-dot" aria-hidden="true" />{objective ? correlationLabel : category.label}</span>
           {own?.canWithdraw && onWithdraw ? <button type="button" className="flipchart-remove" disabled={busy}
             aria-label={`${removeLabel}: ${note.text}`} title={removeLabel}
             onClick={() => void act(() => onWithdraw(own))}><X size={17} aria-hidden="true" /></button> : null}
@@ -241,27 +255,26 @@ function FlipchartCard({ note, ranking, rank, maximum, projector, objective, arr
         <p className="flipchart-note-text">{note.text}</p>
         <footer className="flipchart-note-footer">
           <div className="flipchart-votes" aria-label={objective ? 'Оценки фактора' : 'Оценки тезиса'}>
-            {own && onVote ? <>
+            {own && onVote ?
               <button type="button" className="flipchart-vote" data-direction="support"
                 aria-label={`Поддержать: ${note.text}`} aria-pressed={own.myVote === 1} disabled={busy}
                 onClick={() => void act(() => onVote(own, own.myVote === 1 ? null : 1))}>
                 <ThumbsUp size={18} aria-hidden="true" /><span>{note.support}</span>
-              </button>
+              </button> : <span className="flipchart-vote-total" data-direction="support" aria-label={`За: ${note.support}`}>
+                <ThumbsUp size={21} aria-hidden="true" />{note.support}
+              </span>}
+            {objective ? <span className="flipchart-territory-count" role="img"
+              aria-label={`Территорий: ${objectiveCount}`} title={`Территорий: ${objectiveCount}`}>{objectiveCount}</span> : null}
+            {own && onVote ?
               <button type="button" className="flipchart-vote" data-direction="oppose"
                 aria-label={`Не поддержать: ${note.text}`} aria-pressed={own.myVote === -1} disabled={busy}
                 onClick={() => void act(() => onVote(own, own.myVote === -1 ? null : -1))}>
                 <ThumbsDown size={18} aria-hidden="true" /><span>{note.oppose}</span>
-              </button>
-            </> : <>
-              <span className="flipchart-vote-total" data-direction="support" aria-label={`За: ${note.support}`}>
-                <ThumbsUp size={21} aria-hidden="true" />{note.support}
-              </span>
-              <span className="flipchart-vote-total" data-direction="oppose" aria-label={`Против: ${note.oppose}`}>
+              </button> : <span className="flipchart-vote-total" data-direction="oppose" aria-label={`Против: ${note.oppose}`}>
                 <ThumbsDown size={21} aria-hidden="true" />{note.oppose}
-              </span>
-            </>}
+              </span>}
           </div>
-          {ranking ? <span className="flipchart-score" data-positive={note.score > 0 || undefined}
+          {ranking && !objective ? <span className="flipchart-score" data-positive={note.score > 0 || undefined}
             data-negative={note.score < 0 || undefined} aria-label={`Баланс: ${signed(note.score)}`}>
             {signed(note.score)}
           </span> : null}
@@ -270,7 +283,7 @@ function FlipchartCard({ note, ranking, rank, maximum, projector, objective, arr
           style={{ '--flipchart-total': `${100 * voted / maximum}%` } as CSSProperties}>
           <span className="flipchart-vote-bar-track">
             <span data-direction="support" style={{ flexGrow: note.support }} />
-            <span data-direction="oppose" style={{ flexGrow: note.oppose }} />
+            {!objective ? <span data-direction="oppose" style={{ flexGrow: note.oppose }} /> : null}
           </span>
         </div> : null}
         {error ? <p className="flipchart-error" role="alert">{error}</p> : null}

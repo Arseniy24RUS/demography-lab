@@ -4,13 +4,18 @@
 .geo-controls { display: flex; flex-shrink: 0; gap: 3px; }
 .geo-controls .icon-button { width: 44px; min-height: 44px; border: 1px solid #d9e3ef; border-radius: 7px; }
 .geo-canvas { display: block; width: 100%; height: clamp(230px, 39vw, 470px); border: 1px solid #e0e7f0; border-radius: 8px; background: #fff; user-select: none; }
-.geo-region { cursor: pointer; outline: none; }
+.geo-region { outline: none; }
+.geo-region[role='button'] { cursor: pointer; }
+.geo-canvas:focus { outline: none; }
+.geo-canvas:focus-visible { outline: 2px solid #1c6cc2; outline-offset: 2px; }
+.geo-canvas[data-pannable='true'] { cursor: grab; }
+.geo-canvas[data-pannable='true']:active, .geo-canvas[data-pannable='true']:active .geo-region { cursor: grabbing; }
 .geo-region path, .geo-region circle { stroke: #7189a7; stroke-width: .7px; transition: fill 140ms ease; }
 .geo-region.geo-available { fill: #e8edf4; }
 .geo-region.geo-in_progress { fill: #8bb9f4; }
 .geo-region.geo-completed { fill: #a9d989; }
 .geo-region.geo-unavailable circle { fill: #e4e9f0; }
-.geo-region:hover path, .geo-region:focus path { stroke: #123c73; stroke-width: 1.8px; }
+.geo-region[role='button']:hover path, .geo-region:focus path { stroke: #123c73; stroke-width: 1.8px; }
 .geo-region:focus circle { stroke: #034bb8; stroke-width: 3px; }
 .geo-selected-outline { stroke: #0758ca; stroke-width: 3px; }
 .geo-region.is-selected circle { stroke: #0758ca; stroke-width: 2px; }

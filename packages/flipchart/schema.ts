@@ -19,11 +19,17 @@ const validText = (v: string) => [...v].length >= 1 && [...v].length <= FLIPCHAR
 const canonicalText = z.string().refine((v) => validText(v) && v === normalizeFlipchartText(v));
 const publicFields = {
   id: uuid, kind, text: canonicalText, status, createdAt: timestamp, revision, factorKey: factorKey.optional(),
+  territoryCount: count.optional(),
   support: count, oppose: count, score: z.number().int().min(-Number.MAX_SAFE_INTEGER).max(Number.MAX_SAFE_INTEGER),
 };
-const publicNote = z.strictObject(publicFields).refine((v) => v.score === v.support - v.oppose);
-const note = z.strictObject({ ...publicFields, myVote: vote, myVoteRevision: count, canWithdraw: z.boolean() })
+const publicNote = z.strictObject(publicFields).refine((v) => v.score === v.support - v.oppose
+  && (v.territoryCount === undefined || v.factorKey !== undefined));
+const note = z.strictObject({ ...publicFields, territoryKeys: z.array(factorKey).optional(),
+  myVote: vote, myVoteRevision: count, canWithdraw: z.boolean() })
   .refine((v) => v.score === v.support - v.oppose
+    && (v.territoryCount === undefined || v.factorKey !== undefined)
+    && (v.territoryKeys === undefined || (v.territoryCount === v.territoryKeys.length &&
+      new Set(v.territoryKeys).size === v.territoryKeys.length))
     && (v.myVote === null || v.myVoteRevision > 0)
     && (v.myVote !== 1 || v.support > 0) && (v.myVote !== -1 || v.oppose > 0));
 function updates<T extends z.ZodType<{ id: string; status: string }>>(noteSchema: T) {
@@ -46,7 +52,7 @@ const addFields = {
 };
 export const addFlipchartInputSchema = z.union([
   z.strictObject(addFields),
-  z.strictObject({ ...addFields, board: z.literal('objective'), factorKey }),
+  z.strictObject({ ...addFields, board: z.literal('objective'), factorKey, territoryKey: factorKey.optional() }),
 ]);
 export const voteFlipchartInputSchema = z.strictObject({ value: vote });
 export const statusFlipchartInputSchema = z.strictObject({ status });

@@ -13,6 +13,10 @@ export class FlipchartReplica<T extends FlipchartPublicNote> {
   private values = new Map<string, T>();
   private applied = new Map<string, number>();
 
+  note(id: string): T | undefined {
+    return this.values.get(id);
+  }
+
   notes(): T[] {
     return [...this.values.values()].sort((a, b) =>
       a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));

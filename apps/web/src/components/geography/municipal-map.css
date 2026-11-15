@@ -1,0 +1,60 @@
+.rm-map-viewport { width: 100%; min-width: 0; }
+.rm-map-topline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  color: #49617d;
+  font-size: 13px;
+}
+.municipal-map-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-left: auto; }
+.municipal-map-actions .icon-button { min-width: 44px; min-height: 44px; }
+.municipal-map-actions .button { font-size: 12px; }
+.rm-territory-map {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 240px;
+  max-height: 580px;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  border-radius: 8px;
+  user-select: none;
+}
+.rm-territory-map:focus { outline: none; }
+.rm-territory-map:focus-visible { outline: 2px solid #1c6cc2; outline-offset: 2px; }
+.rm-territory-map[data-pannable='true'] { cursor: grab; }
+.rm-territory-map[data-pannable='true']:active { cursor: grabbing; }
+.rm-territory-map[data-pannable='true']:active .rm-map-shape { cursor: grabbing; }
+.rm-map-shape {
+  fill: #fff;
+  stroke: #4e83ce;
+  stroke-width: 1.6;
+  vector-effect: non-scaling-stroke;
+  transition: fill .16s;
+}
+.rm-map-shape[role='button'] { cursor: pointer; }
+.rm-map-shape[data-context='true'] { fill: #e9edf2; stroke: #8796aa; stroke-dasharray: 4 3; }
+.rm-map-shape[data-room='true'] { fill: #d8e8ff; }
+.rm-map-shape[data-submitted='true'] { fill: #9abbdf; }
+.rm-map-shape[role='button']:hover { fill: #c9def9; stroke: #123c73; stroke-width: 2; }
+.rm-map-shape[data-selected='true'],
+.rm-map-shape[data-selected='true']:hover { fill: #123c73; stroke: #123c73; stroke-width: 2; }
+.rm-map-shape:focus-visible { outline: none; stroke: #d19a29; stroke-width: 4; }
+.municipal-map-leaders { pointer-events: none; stroke: #5a7595; stroke-width: .65; }
+.rm-map-label {
+  fill: #203c5c;
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: #fff;
+  stroke-linejoin: round;
+  font-weight: 550;
+}
+.rm-map-label[data-selectable='true'] { pointer-events: auto; cursor: pointer; }
+.rm-territory-map[data-pannable='true']:active .rm-map-label { cursor: grabbing; }
+.rm-map-label[data-selected='true'] { fill: #fff; stroke: #123c73; }
+.municipal-map-message { padding: 26px 12px; text-align: center; color: #49617d; }
+@media (prefers-reduced-motion: reduce) {
+  .rm-map-shape { transition: none; }
+}

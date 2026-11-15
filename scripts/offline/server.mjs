@@ -104,7 +104,7 @@ async function staticFile(request,response,path,survey,root) {
   if((survey&&routed==='/index.html')||(!survey&&routed==='/survey.html'))throw new HttpError(404,'NOT_FOUND');
   const ext=extname(routed);
   const readerModule=!survey&&READER_MODULE_PATHS.has(routed);
-  const factorPack=!survey&&/^\/data\/factors\/(?:lower\/)?(?:index|municipalities\/[a-z0-9_-]+)\.json\.gz$/.test(routed);
+  const factorPack=!survey&&/^\/data\/factors\/(?:regions|settlement-parents|(?:lower\/)?(?:index|municipalities\/[a-z0-9_-]+))\.json\.gz$/.test(routed);
   const permitted=routed==='/index.html'||routed==='/survey.html'||/^\/(?:favicon\.(?:svg|ico|png)|apple-touch-icon\.png|site\.webmanifest)$/.test(routed)
     || /^\/assets\/[a-zA-Z0-9_./-]+$/.test(routed)
     || /^\/fonts\/(?:DejaVuSans(?:-Bold)?\.ttf|LICENSE-DejaVu\.txt)$/.test(routed)
