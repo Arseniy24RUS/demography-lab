@@ -180,7 +180,12 @@
     overscroll-behavior-y: contain;
     padding-block: 8px;
   }
-  .workshop-header-navigation[data-open='true'] { display: grid; gap: 8px; }
+  .workshop-header-navigation[data-open='true'] {
+    display: grid;
+    grid-template-columns: minmax(0,1fr);
+    justify-content: stretch;
+    gap: 8px;
+  }
   .workshop-header-stages { display: grid; grid-template-columns: minmax(0,1fr); gap: 4px; }
   .workshop-header-stages button { min-height: 44px; width: 100%; padding: 9px 12px; font-size: .97rem; }
   .workshop-header-materials { border-top: 1px solid var(--header-line); padding-top: 7px; }

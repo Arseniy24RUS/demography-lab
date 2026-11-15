@@ -269,6 +269,46 @@ describe('Stage 5 private territorial roadmap transactions', () => {
     assert.equal(only(await snapshot(e), 'passport')[0].revision, saved.revision);
   });
 
+  it('stores the expanded passport resources and retains earlier frozen resource values', async () => {
+    const e = await setup();
+    await named(e, 'dw_join_roadmap', joinInput(), e.bob);
+    const original = only(await snapshot(e), 'passport')[0];
+    const prior = {
+      ...original.data,
+      humanResources: 'Специалисты муниципалитета',
+      materialResources: 'Три помещения детских садов',
+      informationResources: 'Реестр обращений семей',
+    };
+    const before = await save(e, 'passport', prior, original);
+    const frozen = await named(e, 'dw_freeze_roadmap', {
+      roadmapId: e.roomId, expectedRevision: before.revision, title: 'Прежний паспорт', kind: 'draft',
+    });
+    const versionArgs = {
+      p_session_id: e.sessionId, p_roadmap_id: e.roomId, p_version_id: frozen.versions[0].id,
+    };
+    const legacy = await rpc(e.alice, 'dw_roadmap_version', versionArgs);
+    const data = {
+      ...prior,
+      normativeResources: 'Стратегия и муниципальная программа',
+      managementResources: 'Профильное управление',
+      researchResources: 'Исследовательская группа университета',
+      economicResources: 'Муниципальный бюджет',
+      demographicResources: 'Семьи с детьми',
+      institutionalResources: 'Учреждения образования',
+      technologyResources: 'Цифровая форма записи',
+    };
+    await save(e, 'passport', data, only(before, 'passport')[0]);
+    const saved = only(await snapshot(e, e.roomId, e.bob), 'passport')[0];
+    assert.deepEqual(saved.data, data);
+    for (const technologyResources of [null, 12, 'а'.repeat(4001)]) {
+      await code(save(e, 'passport', { ...data, technologyResources }, saved), 'INVALID_INPUT');
+    }
+    assert.equal(only(await snapshot(e), 'passport')[0].revision, saved.revision);
+    const reread = await rpc(e.alice, 'dw_roadmap_version', versionArgs);
+    assert.equal(reread.canonicalJson, legacy.canonicalJson);
+    assert.deepEqual(only(reread.snapshot, 'passport')[0].data, prior);
+  });
+
   it('opens one shared team outside the initial region without replacing its saved roadmap', async () => {
     const e = await setup({ room: false });
     const entered = await rpc(e.alice, 'dw_enter_workspace', { p_operation_id: id() });

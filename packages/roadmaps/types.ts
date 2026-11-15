@@ -65,8 +65,16 @@ export interface RoadmapPassportData {
   /** Retained in stored passports and immutable snapshots for backward compatibility. */
   defenseDate: string | null;
   humanResources: string;
+  /** Infrastructure, using the storage key from earlier passports. */
   materialResources: string;
   informationResources: string;
+  normativeResources?: string;
+  managementResources?: string;
+  researchResources?: string;
+  economicResources?: string;
+  demographicResources?: string;
+  institutionalResources?: string;
+  technologyResources?: string;
 }
 export interface RoadmapDiagnosisData {
   problem: string;

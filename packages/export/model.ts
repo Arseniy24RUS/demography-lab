@@ -1,5 +1,6 @@
 import { sha256Hex } from '../security/crypto.mjs';
 import { parseRoadmapVersion } from '../roadmaps/schema';
+import { passportResources } from '../roadmaps/passport-resources';
 import type {
   FrozenRoadmapData,
   RoadmapBarrierGround,
@@ -671,9 +672,7 @@ function buildReportBlocks(prepared: PreparedRoadmapExport): ReportBlock[] {
   );
 
   h('6 Ресурсы и финансовое обеспечение');
-  field('Кадровые ресурсы', passport.humanResources);
-  field('Материальные ресурсы', passport.materialResources);
-  field('Информационные ресурсы', passport.informationResources);
+  for (const resource of passportResources) field(resource.label, passport[resource.key]);
   table(
     'Финансовая потребность и подтверждённое обеспечение в рублях',
     ['Год', 'Денежная потребность', 'Подтверждено', 'Непокрытый разрыв'],

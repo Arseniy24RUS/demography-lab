@@ -4,8 +4,12 @@ export const headerMenu = page => page.getByRole('banner').getByRole('button', {
 
 export async function revealHeader(page) {
   await page.getByRole('banner').first().waitFor({ state: 'visible' });
-  const toggle = headerMenu(page);
-  if (await toggle.isVisible() && await toggle.getAttribute('aria-expanded') !== 'true') await toggle.click();
+  if (await page.evaluate(() => matchMedia('(max-width: 860px)').matches)) {
+    const toggle = headerMenu(page);
+    await toggle.waitFor({ state: 'visible' });
+    if (await toggle.getAttribute('aria-expanded') !== 'true') await toggle.click();
+  }
+  await stageLinks(page).waitFor({ state: 'visible' });
 }
 
 export async function openStage(page, name) {

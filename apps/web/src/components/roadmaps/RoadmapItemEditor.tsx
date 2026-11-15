@@ -2,6 +2,7 @@ import { randomUuid } from '../../../../../packages/security/crypto.mjs';
 import { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { Modal } from '../Modal';
+import { passportResources } from '../../../../../packages/roadmaps/passport-resources';
 import { roadmapDataSchemas } from '../../../../../packages/roadmaps/schema';
 import type { RoadmapItemKind, SaveRoadmapItemInput } from '../../../../../packages/roadmaps/types';
 import {
@@ -46,9 +47,7 @@ const fields: Record<RoadmapItemKind, Field[]> = {
     date('startDate', 'Начало проекта'),
     date('endDate', 'Окончание проекта'),
     f('expectedResult', 'Ожидаемый результат'),
-    f('humanResources', 'Кадровые ресурсы'),
-    f('materialResources', 'Материальные ресурсы'),
-    f('informationResources', 'Информационные ресурсы'),
+    ...passportResources.map(({ key, label, hint }) => f(key, label, { hint })),
   ],
   diagnosis: [
     f('problem', 'Приоритетная проблема', {

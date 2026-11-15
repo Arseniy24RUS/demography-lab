@@ -1,5 +1,6 @@
 import { useId, useRef, useState } from 'react';
 import { CalendarDays, MoveHorizontal } from 'lucide-react';
+import { passportResources } from '../../../../../packages/roadmaps/passport-resources';
 import type { RoadmapItem } from '../../../../../packages/roadmaps/types';
 import {
   calendarDay,
@@ -28,6 +29,7 @@ export function CalendarResources(props: RoadmapWorkspaceProps) {
     costs = activeItems(snapshot, 'cost'),
     funding = activeItems(snapshot, 'funding'),
     passport = activeItems(snapshot, 'passport')[0];
+  const describedResources = passportResources.filter(({ key }) => passport?.data[key]?.trim());
   const [moving, setMoving] = useState<{ item: RoadmapItem<'activity'>; days: number } | null>(
       null,
     ),
@@ -551,23 +553,19 @@ export function CalendarResources(props: RoadmapWorkspaceProps) {
         ))}
       </section>
       <section className="rm-section">
-        <SectionHeading title="Кадровые, материальные и информационные ресурсы" />
+        <SectionHeading title="Ресурсы проекта" />
         {passport ? (
           <>
-            <dl className="rm-resource-description">
-              <div>
-                <dt>Кадры</dt>
-                <dd>{passport.data.humanResources || 'Не описаны'}</dd>
-              </div>
-              <div>
-                <dt>Материальные ресурсы</dt>
-                <dd>{passport.data.materialResources || 'Не описаны'}</dd>
-              </div>
-              <div>
-                <dt>Информационные ресурсы</dt>
-                <dd>{passport.data.informationResources || 'Не описаны'}</dd>
-              </div>
-            </dl>
+            {describedResources.length ? (
+              <dl className="rm-resource-description">
+                {describedResources.map(({ key, label }) => (
+                  <div key={key}>
+                    <dt>{label}</dt>
+                    <dd>{passport.data[key]}</dd>
+                  </div>
+                ))}
+              </dl>
+            ) : <EmptySection>Ресурсы не описаны.</EmptySection>}
             {editable ? (
               <EditButton
                 label="Описать ресурсы"

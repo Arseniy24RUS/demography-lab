@@ -129,6 +129,9 @@ async function workspace(page) {
 }
 async function joinRoadmap(page, name = ARDATOV) {
   await scene(page, 'Дорожная карта');
+  await selectTerritory(page, name);
+}
+async function selectTerritory(page, name) {
   const territories = page.getByRole('region', { name: 'Выбор территории', exact: true });
   const back = page.getByRole('button', { name: 'К территориям', exact: true });
   if (await back.isVisible()) await back.click();
@@ -694,9 +697,13 @@ try {
   await stage('A participant in Saransk reloads saved workshop choices and exports a real Word file', b.page, async () => {
     const city = 'Городской округ Саранск';
     const title = 'Учебный проект: время с семьёй в Саранске';
+    const tech = 'Цифровая запись и обезличенный журнал участия в пилоте.';
     const passport = b.page.getByRole('form', { name: 'Паспорт проекта', exact: true });
     await joinRoadmap(b.page, city);
     await expect(passport.getByLabel('Дата защиты', { exact: true })).toHaveCount(0);
+    await expect(passport.getByRole('textbox', { name: /ресурс$/u })).toHaveCount(10);
+    await expect(passport.getByText('ИТ-системы, цифровые платформы, инновационные решения', { exact: true })).toBeVisible();
+    await passport.getByRole('textbox', { name: 'Технологический ресурс', exact: true }).fill(tech);
     await passport.getByRole('textbox', { name: 'Название проекта', exact: true }).fill(title);
     await passport.getByRole('textbox', { name: 'Цель проекта', exact: true })
       .fill('К 2030 году в трёх организациях Саранска ввести гибкий график для работающих родителей.');
@@ -712,8 +719,9 @@ try {
     await expect(transfer).toBeHidden();
     await b.page.reload();
     await expect(b.page).toHaveURL(/stage=roadmaps/u);
-    await joinRoadmap(b.page, city);
+    await selectTerritory(b.page, city);
     await expect(passport.getByRole('textbox', { name: 'Название проекта', exact: true })).toHaveValue(title);
+    await expect(passport.getByRole('textbox', { name: 'Технологический ресурс', exact: true })).toHaveValue(tech);
     await roadmapTab(b.page, 'Мероприятия');
     await expect(b.page.locator('.rm-activity-card').getByRole('heading', { name: LINKED_MEASURE, exact: true })).toBeVisible();
     await roadmapTab(b.page, 'Проверка и экспорт');
@@ -725,7 +733,7 @@ try {
     expect(await file.failure()).toBeNull();
     const parts = unzipSync(await readFile(await file.path()));
     const word = new TextDecoder().decode(parts['word/document.xml']);
-    for (const line of [city, title, LINKED_BARRIER, LINKED_MEASURE, RANKED_FAMILY]) expect(word).toContain(line);
+    for (const line of [city, title, LINKED_BARRIER, LINKED_MEASURE, RANKED_FAMILY, 'Технологический ресурс', tech]) expect(word).toContain(line);
     expect(word).not.toContain('Дата защиты');
     await file.saveAs(join(evidence, 'saransk-participant.docx'));
     await expect(b.page.locator('.rm-version')).toHaveCount(1);

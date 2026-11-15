@@ -74,6 +74,9 @@ describe('immutable roadmap export', () => {
     expect(paragraphs).toContain('Блок block-1; символы [0,');
     expect(paragraphs).toContain('Архивный пример риска');
     expect(paragraphs).not.toContain('Дата защиты');
+    expect(paragraphs).toContain('Кадровый ресурс: Координатор проекта');
+    expect(paragraphs).toContain('Инфраструктурный ресурс: Помещение учреждения');
+    expect(paragraphs).toContain('Информационный ресурс: Публичное описание услуги');
     expect(paragraphs).not.toMatch(/страница 1/u);
   });
 
@@ -107,7 +110,11 @@ describe('immutable roadmap export', () => {
   });
 
   it('creates editable OOXML with repeated table headers, native text, full citations and a PNG fallback for every SVG', async () => {
-    const prepared = await prepareRoadmapExport(await makeRoadmapExportFixture());
+    const version = await makeRoadmapExportFixture();
+    const passport = version.snapshot.items.find(row => row.kind === 'passport');
+    if (passport?.kind !== 'passport') throw new Error('fixture');
+    passport.data.technologyResources = 'Цифровая форма записи';
+    const prepared = await prepareRoadmapExport(await resealFixture(version));
     const bytes = await buildRoadmapDocx(prepared, { rasterizeSvg });
     const files = unzipSync(bytes);
     const document = decoder.decode(files['word/document.xml']);
@@ -118,6 +125,8 @@ describe('immutable roadmap export', () => {
     expect(document).toContain('350 рублей за час');
     expect(document).toContain('Порядок обращения определяется отдельно.');
     expect(document).not.toContain('Дата защиты');
+    expect(document).toContain('Технологический ресурс');
+    expect(document).toContain('Цифровая форма записи');
     expect(document).toContain('w:tblHeader');
     expect(document).toContain('w:color="D9D9D9"');
     expect(document).toContain('w:pStyle'); // paragraph styles remain native editable OOXML

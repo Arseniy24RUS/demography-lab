@@ -83,6 +83,13 @@ export const roadmapPassportDataSchema = z
     humanResources: text(4000),
     materialResources: text(4000),
     informationResources: text(4000),
+    normativeResources: text(4000).optional(),
+    managementResources: text(4000).optional(),
+    researchResources: text(4000).optional(),
+    economicResources: text(4000).optional(),
+    demographicResources: text(4000).optional(),
+    institutionalResources: text(4000).optional(),
+    technologyResources: text(4000).optional(),
   })
   .refine(datePair);
 export const roadmapDiagnosisDataSchema = z.strictObject({

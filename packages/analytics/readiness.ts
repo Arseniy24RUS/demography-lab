@@ -473,7 +473,7 @@ export function assessRoadmapReadiness(roadmap: RoadmapForAnalysis): RoadmapRead
     section('resources', 'Ресурсы и финансирование', [
       check(
         'resources-description',
-        'Кадровые, материальные и информационные ресурсы',
+        'Кадровый, инфраструктурный и информационный ресурсы',
         filled(passport?.humanResources) &&
           filled(passport?.materialResources) &&
           filled(passport?.informationResources),

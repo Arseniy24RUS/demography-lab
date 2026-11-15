@@ -1,6 +1,7 @@
 import { useId, useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { randomUuid } from '../../../../../packages/security/crypto.mjs';
+import { passportResources } from '../../../../../packages/roadmaps/passport-resources';
 import { roadmapPassportDataSchema } from '../../../../../packages/roadmaps/schema';
 import {
   roadmapSmartCriteria,
@@ -159,21 +160,19 @@ function PassportForm({ item, snapshot, controller, editable }: Omit<RoadmapWork
       </div>
 
       <div className="rm-passport-card">
-        <h4>Сроки и ресурсы</h4>
+        <h4>Сроки</h4>
         <div className="rm-form-grid">
           <DateField label="Начало проекта" value={data.startDate} onChange={(startDate) => update({ startDate })} />
           <DateField label="Окончание проекта" value={data.endDate} onChange={(endDate) => update({ endDate })} />
         </div>
+      </div>
+      <div className="rm-passport-card">
+        <h4>Ресурсы</h4>
         <div className="rm-form-grid">
-          <TextField label="Кадровые ресурсы" value={data.humanResources}
-            onChange={(humanResources) => update({ humanResources })}
-            hint="Специалисты, координаторы и волонтёры, которых можно привлечь." />
-          <TextField label="Материальные ресурсы" value={data.materialResources}
-            onChange={(materialResources) => update({ materialResources })}
-            hint="Помещения, транспорт и оборудование, нужные для работы." />
-          <TextField label="Информационные ресурсы" value={data.informationResources}
-            onChange={(informationResources) => update({ informationResources })}
-            hint="Сайт, социальные сети, СМИ или другие способы связи с семьями." />
+          {passportResources.map(({ key, label, hint }) => (
+            <TextField key={key} label={label} value={data[key] ?? ''} hint={hint}
+              onChange={(value) => update({ [key]: value })} />
+          ))}
         </div>
       </div>
     </fieldset>
