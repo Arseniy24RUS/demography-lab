@@ -124,4 +124,19 @@ describe('live flipchart board', () => {
     fireEvent.click(screen.getByRole('button', { name: `Убрать стикер: ${own.text}` }));
     await waitFor(() => expect(actions.onWithdraw).toHaveBeenCalledWith(own));
   });
+
+  it('shows catalogue factors and voting without the free-text or thesis controls', async () => {
+    const factor = note({ factorKey: 'childcare_capacity' });
+    const { onVote, onWithdraw } = props();
+    render(createElement(FlipchartBoard, { objective: true, notes: [factor], onVote, onWithdraw }));
+    const board = screen.getByRole('region', { name: 'Объективные факторы' });
+    expect(within(board).queryByRole('textbox')).toBeNull();
+    expect(within(board).queryByRole('group', { name: 'Тезисы по теме' })).toBeNull();
+    const card = within(board).getByRole('article', { name: factor.text });
+    expect(within(card).getByText('Фактор')).toBeTruthy();
+    fireEvent.click(within(card).getByRole('button', { name: `Поддержать: ${factor.text}` }));
+    await waitFor(() => expect(onVote).toHaveBeenCalledWith(factor, 1));
+    fireEvent.click(within(board).getByRole('button', { name: 'Рейтинг' }));
+    expect(within(card).getByLabelText('Место 1')).toBeTruthy();
+  });
 });

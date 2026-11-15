@@ -1,0 +1,16 @@
+.objective-factors { display: grid; gap: 1rem; min-width: 0; }
+.objective-heading h2 { margin: 0; }
+.objective-heading p { margin: .4rem 0 .8rem; }
+.objective-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 235px), 1fr)); gap: .75rem; }
+.objective-controls label { display: grid; gap: .3rem; }
+.objective-controls select, .objective-controls input { min-width: 0; width: 100%; min-height: 44px; padding: .4rem .6rem; }
+.objective-count { margin: 0; }
+.objective-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: .75rem; padding: 0; margin: 0; list-style: none; }
+.objective-card { display: flex; flex-direction: column; gap: .5rem; background: #fff; border: 1px solid #d4dfe9; border-radius: 10px; padding: 1rem; min-width: 0; overflow-wrap: anywhere; }
+.objective-card h3, .objective-card p, .objective-card dl, .objective-card dd { margin: 0; }
+.objective-section { color: #345478; font-size: .85rem; }
+.objective-card dl { display: flex; gap: .65rem; flex-wrap: wrap; }
+.objective-card dt { font-size: .78rem; color: #345478; }
+.objective-card dd { font-variant-numeric: tabular-nums; font-weight: 600; }
+.objective-card .button { align-self: flex-start; margin-top: auto; min-height: 44px; }
+.objective-source { margin: 0; font-size: .85rem; }

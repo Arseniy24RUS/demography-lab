@@ -3,7 +3,7 @@ import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { useFlipchart } from '../../apps/web/src/hooks/useFlipchart';
 import type { SessionApi } from '../../apps/web/src/lib/session-api';
-import type { FlipchartNote, FlipchartUpdates } from '../../packages/flipchart/types';
+import type { FlipchartBoardScope, FlipchartNote, FlipchartUpdates } from '../../packages/flipchart/types';
 
 afterEach(cleanup);
 const sessionId = '11111111-1111-4111-8111-111111111111';
@@ -87,4 +87,28 @@ it('rebases to a restored server backup when a delta request explicitly returns 
   expect(view.result.current.notes.map(item => item.id)).toEqual([b]);
   await act(async () => { await view.result.current.refresh(); });
   expect(cursors).toEqual([null, 12, 4]);
+});
+
+it('sends a catalogue key only to the objective board and ignores the previous board’s late response', async () => {
+  const legacyRead = deferred<FlipchartUpdates>();
+  const factor = { ...note(b, 'Дефицит мест в яслях'), factorKey: 'childcare_capacity' };
+  const api = transport(
+    async args => args.p_board === 'objective' ? frame(4, [factor], true) : legacyRead.promise,
+    async () => ({ sessionId, cursor: 4, note: factor }),
+  );
+  const view = renderHook(({ board }: { board?: FlipchartBoardScope }) => useFlipchart({ api, sessionId, userId: 'one', board }),
+    { initialProps: {} });
+  expect(api.rpc).toHaveBeenCalledWith('dw_flipchart_updates', { p_session_id: sessionId, p_after_cursor: null, p_projector: false }, expect.any(Function));
+  view.rerender({ board: 'objective' });
+  await waitFor(() => expect(view.result.current.notes).toEqual([factor]));
+  expect(api.rpc).toHaveBeenLastCalledWith('dw_flipchart_updates', { p_session_id: sessionId, p_after_cursor: null, p_projector: false, p_board: 'objective' }, expect.any(Function));
+  await act(async () => legacyRead.resolve(frame(12, [note(a, 'Старый ответ')], true)));
+  expect(view.result.current.notes).toEqual([factor]);
+  await act(async () => expect(await view.result.current.add('condition', factor.text)).toBe(false));
+  expect(api.mutate).not.toHaveBeenCalled();
+  await act(async () => expect(await view.result.current.add('condition', factor.text, factor.factorKey)).toBe(true));
+  expect(api.mutate).toHaveBeenCalledWith('dw_flipchart_add', {
+    p_session_id: sessionId,
+    p_input: { board: 'objective', factorKey: factor.factorKey, kind: 'condition', text: factor.text },
+  }, expect.any(Function));
 });

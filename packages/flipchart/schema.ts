@@ -11,13 +11,14 @@ const count = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
 const revision = count.min(1);
 const timestamp = z.string().min(20).max(40).refine((v) => Number.isFinite(Date.parse(v)));
 const kind = z.enum(flipchartKinds);
+const factorKey = z.string().regex(/^[a-z0-9][a-z0-9_-]{0,79}$/u);
 const status = z.enum(['active', 'withdrawn']);
 const vote = z.union([z.literal(-1), z.literal(1), z.null()]);
 const validText = (v: string) => [...v].length >= 1 && [...v].length <= FLIPCHART_MAX_TEXT_LENGTH
   && !/[\u0000-\u0008\u000e-\u001f\u007f]/u.test(v);
 const canonicalText = z.string().refine((v) => validText(v) && v === normalizeFlipchartText(v));
 const publicFields = {
-  id: uuid, kind, text: canonicalText, status, createdAt: timestamp, revision,
+  id: uuid, kind, text: canonicalText, status, createdAt: timestamp, revision, factorKey: factorKey.optional(),
   support: count, oppose: count, score: z.number().int().min(-Number.MAX_SAFE_INTEGER).max(Number.MAX_SAFE_INTEGER),
 };
 const publicNote = z.strictObject(publicFields).refine((v) => v.score === v.support - v.oppose);
@@ -39,10 +40,14 @@ export const flipchartUpdatesSchema = updates(note);
 export const flipchartProjectionUpdatesSchema = updates(publicNote);
 export const flipchartMutationResultSchema = z.strictObject({ sessionId: uuid, cursor: count, note });
 
-export const addFlipchartInputSchema = z.strictObject({
+const addFields = {
   kind,
   text: z.string().max(4096).transform(normalizeFlipchartText).refine(validText),
-});
+};
+export const addFlipchartInputSchema = z.union([
+  z.strictObject(addFields),
+  z.strictObject({ ...addFields, board: z.literal('objective'), factorKey }),
+]);
 export const voteFlipchartInputSchema = z.strictObject({ value: vote });
 export const statusFlipchartInputSchema = z.strictObject({ status });
 

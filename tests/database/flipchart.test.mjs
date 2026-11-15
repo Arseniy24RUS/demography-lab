@@ -8,6 +8,7 @@ import { createTestDatabase, projectRoot, loadMordovia, seedCanonicalDocument } 
 import { realPracticeBundle } from '../collaboration/workshop-test-support.mjs';
 
 const MIGRATION = '20261109181242_stage10_live_flipchart.sql';
+const OBJECTIVE_MIGRATION = '20261115151540_stage11_objective_factors.sql';
 const op = () => randomUUID();
 const failure = (promise, code) => assert.rejects(promise, (e) => e.code === 'P0001' && e.message === code);
 async function anon(db, sql, args = []) {
@@ -41,6 +42,88 @@ function noIdentities(result, people) {
   assert(!/"(?:authorId|authorName|actorId|actor_id|userId|email|fullName)":/.test(json));
   for (const person of people) assert(!json.includes(person.user.id));
 }
+
+it('keeps objective cards on a separate board and preserves the first card and its votes across duplicate selections', async () => {
+  const db = await createTestDatabase({ seedCorpus: false });
+  try {
+    const a = await identify(db), b = await identify(db), sid = await enter(db, a);
+    await enter(db, b);
+    const readObjective = (viewer, after = null, projector = false) => rpc(db, viewer, 'dw_flipchart_updates', {
+      p_session_id: sid, p_after_cursor: after, p_projector: projector, p_board: 'objective',
+    });
+    const selectFactor = (viewer, factorKey, text, operation = op()) => rpc(db, viewer, 'dw_flipchart_add', {
+      p_operation_id: operation, p_session_id: sid,
+      p_input: { kind: 'condition', text, board: 'objective', factorKey },
+    });
+    const legacy = await add(db, a, sid);
+    const legacyRepeat = await add(db, b, sid);
+    assert.notEqual(legacyRepeat.note.id, legacy.note.id);
+    const before = await readObjective(b);
+    assert.deepEqual(before, { sessionId: sid, cursor: legacyRepeat.cursor, reset: true, notes: [], removedIds: [] });
+
+    const sourceKey = 'b-' + 'a'.repeat(64);
+    const factor = await selectFactor(a, sourceKey, ' Первая   карточка ');
+    assert.equal(factor.note.factorKey, sourceKey);
+    assert.equal(factor.note.text, 'Первая карточка');
+    await vote(db, b, sid, factor.note.id, 1, 0);
+    await vote(db, a, sid, factor.note.id, -1, 0);
+    const latest = await readObjective(b, before.cursor);
+    const operation = op();
+    const duplicate = await selectFactor(b, sourceKey, 'Другой заголовок', operation);
+    assert.equal(duplicate.cursor, latest.cursor);
+    assert.deepEqual(duplicate.note, latest.notes[0]);
+    assert.equal(duplicate.note.id, factor.note.id);
+    assert.equal(duplicate.note.text, 'Первая карточка');
+    assert.equal(duplicate.note.myVote, 1);
+    assert.equal(duplicate.note.support, 1);
+    assert.equal(duplicate.note.oppose, 1);
+    assert.equal(duplicate.note.score, 0);
+    assert.deepEqual(await selectFactor(b, sourceKey, 'Другой заголовок', operation), duplicate);
+    await failure(selectFactor(b, sourceKey, 'Изменённый повтор', operation), 'IDEMPOTENCY_CONFLICT');
+    const defaultUpdate = await updates(db, a, sid, legacyRepeat.cursor);
+    assert.deepEqual(defaultUpdate, { sessionId: sid, cursor: latest.cursor, reset: false, notes: [], removedIds: [] });
+    assert((await updates(db, b, sid)).notes.every((note) => !Object.hasOwn(note, 'factorKey')));
+
+    const projected = await readObjective(a, null, true);
+    assert.deepEqual(Object.keys(projected.notes[0]).sort(), [...commonKeys, 'factorKey'].sort());
+    noIdentities(projected, [a, b]);
+    await status(db, a, sid, factor.note.id, 'withdrawn', factor.note.revision);
+    assert.deepEqual((await readObjective(b, latest.cursor)).removedIds, [factor.note.id]);
+    assert.deepEqual((await updates(db, b, sid, latest.cursor)).removedIds, []);
+    assert.equal((await selectFactor(b, sourceKey, 'Другой заголовок', operation)).note.status, 'withdrawn');
+    await failure(selectFactor(b, sourceKey, 'Новый выбор'), 'NOTE_WITHDRAWN');
+    const restored = await selectFactor(a, sourceKey, 'Старый ID и текст');
+    assert.equal(restored.note.id, factor.note.id);
+    assert.equal(restored.note.status, 'active');
+    assert.equal(restored.note.revision, factor.note.revision + 2);
+    assert.equal(restored.note.text, factor.note.text);
+    assert.equal(restored.note.oppose, 1);
+    assert.equal(restored.note.support, 1);
+  } finally { await db.close(); }
+});
+
+it('validates objective factor keys, board selection and workshop access', async () => {
+  const db = await createTestDatabase({ seedCorpus: false });
+  try {
+    const a = await identify(db), outsider = await identify(db), sid = await enter(db, a);
+    const base = { kind: 'condition', text: 'Доступность жилья' };
+    const addInput = (input) => rpc(db, a, 'dw_flipchart_add', {
+      p_operation_id: op(), p_session_id: sid, p_input: { ...base, ...input },
+    });
+    for (const input of [
+      { board: 'objective' }, { board: 'objective', factorKey: null }, { board: 'objective', factorKey: 'a'.repeat(81) },
+      { board: 'objective', factorKey: 'a:1' }, { board: 'objective', factorKey: 'UPPER' },
+      { board: 'objective', factorKey: 42 }, { board: null }, { board: 'missing' }, { factorKey: 'a' },
+    ]) await failure(addInput(input), 'INVALID_INPUT');
+    for (const board of [null, '', 'missing']) await failure(rpc(db, a, 'dw_flipchart_updates', {
+      p_session_id: sid, p_board: board,
+    }), 'INVALID_INPUT');
+    await failure(rpc(db, outsider, 'dw_flipchart_updates', { p_session_id: sid, p_board: 'objective' }), 'FORBIDDEN');
+    await failure(rpc(db, outsider, 'dw_flipchart_add', {
+      p_operation_id: op(), p_session_id: sid, p_input: { ...base, board: 'objective', factorKey: 'a' },
+    }), 'FORBIDDEN');
+  } finally { await db.close(); }
+});
 
 it('first and second ordinary participants share unrestricted multiple short posts, complete/reset/delta snapshots and empty polling', async () => {
   const db = await createTestDatabase({ seedCorpus: false });
@@ -214,10 +297,19 @@ it('upgrades populated 0.9 without rewriting sources, publications, memberships,
     await db.exec(await readFile(resolve(dir, MIGRATION), 'utf8'));
     assert.deepEqual(await snapshot(), before);
     assert.deepEqual((await updates(db, a, sid)).notes, []);
-    await add(db, a, sid, 'Новый публичный тезис');
+    const operation = op();
+    const published = await add(db, a, sid, 'Новый публичный тезис', 'barrier', operation);
     assert.deepEqual(await snapshot(), before, 'flipchart writes do not mutate old module state');
     assert(!JSON.stringify(await updates(db, a, sid)).includes(answers.answerBarrier));
     assert(!JSON.stringify(await updates(db, a, sid, null, true)).includes(answers.answerSupport));
+
+    const previousBoard = await updates(db, a, sid);
+    await db.exec(await readFile(resolve(dir, OBJECTIVE_MIGRATION), 'utf8'));
+    assert.deepEqual(await updates(db, a, sid), previousBoard);
+    assert.deepEqual(await add(db, a, sid, 'Новый публичный тезис', 'barrier', operation), published);
+    const objective = await rpc(db, a, 'dw_flipchart_updates', { p_session_id: sid, p_board: 'objective' });
+    assert.deepEqual(objective.notes, []);
+    assert.deepEqual(await snapshot(), before, 'adding a board preserves earlier private and public modules');
   } finally { await db.close(); }
 });
 

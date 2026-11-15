@@ -62,6 +62,7 @@ const ConnectedBarriers = lazy(() =>
 );
 const ConnectedRoadmaps = lazy(() => import('./components/ConnectedRoadmaps').then(m => ({ default: m.ConnectedRoadmaps })));
 const ConnectedFlipchart = lazy(() => import('./components/ConnectedFlipchart').then(m => ({ default: m.ConnectedFlipchart })));
+const ObjectiveFactors = lazy(() => import('./components/ObjectiveFactors').then(m => ({ default: m.ObjectiveFactors })));
 const LivePracticeVoting = lazy(() => import('./components/workshop/LivePracticeVoting').then(m => ({ default: m.LivePracticeVoting })));
 const TerritoryExplorer = lazy(() => import('./components/roadmaps/TerritoryExplorer').then(m => ({ default: m.TerritoryExplorer })));
 const LocalAtlas = lazy(() =>
@@ -671,6 +672,14 @@ export function App() {
               <Suspense fallback={<p aria-busy="true">Открываем флипчарт…</p>}>
                 <ConnectedFlipchart key={`${session.sessionId}:${session.state.auth.userId}`} api={session.api}
                   sessionId={session.sessionId} userId={session.state.auth.userId} />
+              </Suspense>
+            ) : null}
+            renderObjectiveFactors={() => session.state.snapshot && session.state.auth.userId ? (
+              <Suspense fallback={<p aria-busy="true">Открываем корреляции…</p>}>
+                <ObjectiveFactors key={`${session.sessionId}:${session.state.auth.userId}`} api={session.api}
+                  sessionId={session.sessionId} userId={session.state.auth.userId}
+                  regionId={session.state.snapshot.session.regionId}
+                  editable={session.state.snapshot.session.role !== 'observer' && session.state.snapshot.session.status === 'open'} />
               </Suspense>
             ) : null}
             renderLiveVotes={() => (

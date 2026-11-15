@@ -45,6 +45,9 @@ let lastPage;
 const scenes = page => page.getByRole('navigation', { name: 'Этапы коллективной работы', exact: true });
 const board = page => page.getByRole('region', { name: 'Общий флипчарт', exact: true });
 const projection = page => page.getByRole('region', { name: 'Флипчарт на проекторе', exact: true });
+const objective = page => page.getByRole('region', { name: 'Объективные факторы рождаемости', exact: true });
+const objectiveBoard = page => page.getByRole('region', { name: 'Объективные факторы', exact: true });
+const objectiveProjection = page => page.getByRole('region', { name: 'Объективные факторы на проекторе', exact: true });
 const note = (page, text) => page.getByRole('article', { name: text, exact: true });
 const vote = (page, text, value) => note(page, text).getByRole('button', {
   name: `${value === 1 ? 'Поддержать' : 'Не поддержать'}: ${text}`, exact: true,
@@ -150,6 +153,23 @@ async function screenshot(page, name) {
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: join(evidence, name), fullPage: false, animations: 'disabled' });
 }
+async function openObjectives(page, view = 'cards') {
+  const tabs = scenes(page).getByRole('button');
+  await expect(tabs.nth(0)).toHaveText('Флипчарт');
+  await expect(tabs.nth(1)).toHaveText('Объективные факторы');
+  await tabs.nth(1).click();
+  await expect(tabs.nth(1)).toHaveAttribute('aria-current', 'page');
+  if (view === 'board') await objective(page).getByRole('button', { name: /^Флипчарт факторов/u }).click();
+}
+async function openSaransk(page) {
+  await openObjectives(page);
+  await objective(page).getByRole('combobox', { name: 'Регион', exact: true })
+    .selectOption('respublika-mordoviia');
+  await objective(page).getByRole('combobox', { name: 'Муниципалитет', exact: true })
+    .selectOption({ label: 'Саранск · 89701000' });
+  await expect(objective(page).getByText('Байесовская корреляция', { exact: true }).first()).toBeVisible();
+  await expect(objective(page).getByText('95% интервал', { exact: true }).first()).toBeVisible();
+}
 function privateFree(value, projector = false) {
   const serialized = JSON.stringify(value);
   for (const prohibited of [NAME_A, NAME_B, EMAIL_A, EMAIL_B]) expect(serialized).not.toContain(prohibited);
@@ -160,7 +180,7 @@ function privateFree(value, projector = false) {
   }
 }
 
-let a = await participant(), b = await participant(true), projector, sessionId;
+let a = await participant(), b = await participant(true), projector, sessionId, objectiveFirst, objectiveSecond;
 try {
   await stage('Two participants enter the same flipchart with no teacher, invitations or survey form', a.page, async () => {
     sessionId = await enter(a.page, EMAIL_A, NAME_A);
@@ -196,7 +216,7 @@ try {
     await a.page.getByRole('textbox', { name: 'Короткий тезис', exact: true }).fill(draft);
     await a.page.getByRole('link', { name: 'Экран проектора', exact: true }).click();
     await expect(projection(a.page)).toBeVisible();
-    await expect(a.page.getByRole('navigation', { name: 'Сцены проектора', exact: true }).getByRole('button')).toHaveCount(9);
+    await expect(a.page.getByRole('navigation', { name: 'Сцены проектора', exact: true }).getByRole('button')).toHaveCount(10);
     await a.page.getByRole('button', { name: 'К занятию', exact: true }).click();
     await expect(a.page.getByRole('textbox', { name: 'Короткий тезис', exact: true })).toHaveValue(draft);
     await a.page.getByRole('textbox', { name: 'Короткий тезис', exact: true }).fill('');
@@ -204,7 +224,7 @@ try {
     await a.page.getByRole('link', { name: 'Экран проектора', exact: true }).click({ modifiers: ['ControlOrMeta'] });
     projector = await popup; lastPage = projector;
     await expect(projector).toHaveURL(`${new URL(url).origin}/#sessions=1&projector=1`);
-    await expect(projector.getByRole('navigation', { name: 'Сцены проектора', exact: true }).getByRole('button')).toHaveCount(9);
+    await expect(projector.getByRole('navigation', { name: 'Сцены проектора', exact: true }).getByRole('button')).toHaveCount(10);
     expect(await projector.evaluate(() => window.opener === null)).toBe(true);
     await projector.reload();
     await expect(projection(projector)).toBeVisible();
@@ -291,6 +311,94 @@ try {
     await expect(projection(projector).getByRole('article')).toHaveCount(5);
     await screenshot(projector, 'flipchart-projector-320.png');
   });
+  await stage('Two participants load Saransk correlations and select one shared factor; objective votes, ranking and projector stay separate', a.page, async () => {
+    await b.page.setViewportSize({ width: 390, height: 844 });
+    await Promise.all([openSaransk(a.page), openSaransk(b.page)]);
+    await noOverflow(a.page, 1440); await noOverflow(b.page, 390);
+    await screenshot(a.page, 'objective-correlation-desktop.png');
+    await screenshot(b.page, 'objective-correlation-mobile.png');
+    await objective(b.page).getByRole('listitem').first().scrollIntoViewIfNeeded();
+    await b.page.screenshot({ path: join(evidence, 'objective-correlation-card-mobile.png'), animations: 'disabled' });
+
+    const select = async (page, index) => {
+      const pending = rpc(page, 'dw_flipchart_add');
+      await objective(page).getByRole('button', { name: 'На флипчарт', exact: true }).nth(index).click();
+      const response = await pending;
+      expect(response.status(), await response.text()).toBe(200);
+      expect(response.request().postDataJSON().p_input.board).toBe('objective');
+      return (await response.json()).note;
+    };
+    const [first, duplicate] = await Promise.all([select(a.page, 0), select(b.page, 0)]);
+    expect(duplicate.id).toBe(first.id);
+    expect(duplicate.factorKey).toBe(first.factorKey);
+    expect(first.factorKey).toMatch(/^[a-z0-9][a-z0-9_-]{0,79}$/u);
+    expect(first.text).toContain('Саранск');
+    objectiveFirst = first.text;
+    objectiveSecond = (await select(a.page, 0)).text;
+    expect(objectiveSecond).not.toBe(objectiveFirst);
+    for (const page of [a.page, b.page]) {
+      await objective(page).getByRole('button', { name: /^Флипчарт факторов/u }).click();
+      await expect(objectiveBoard(page).getByRole('article')).toHaveCount(2);
+      await expect(note(page, objectiveFirst)).toBeVisible();
+    }
+    await vote(b.page, objectiveFirst, -1).click();
+    await expect(vote(a.page, objectiveFirst, -1)).toHaveText('1');
+    await vote(b.page, objectiveFirst, 1).click();
+    await expect(vote(a.page, objectiveFirst, 1)).toHaveText('1');
+    await expect(vote(a.page, objectiveFirst, -1)).toHaveText('0');
+    await vote(b.page, objectiveSecond, -1).click();
+    await expect(vote(a.page, objectiveSecond, -1)).toHaveText('1');
+    await objectiveBoard(a.page).getByRole('button', { name: 'Рейтинг', exact: true }).click();
+    await expect(objectiveBoard(a.page).getByRole('article').first()).toHaveAttribute('aria-label', objectiveFirst);
+    await screenshot(a.page, 'objective-ranking-desktop.png');
+
+    await projector.setViewportSize({ width: 1920, height: 1080 });
+    const projectorScenes = projector.getByRole('navigation', { name: 'Сцены проектора', exact: true });
+    await expect(projection(projector).getByRole('article')).toHaveCount(5);
+    await expect(projectorScenes.getByRole('button').nth(1)).toHaveText('Объективные факторы');
+    await projectorScenes.getByRole('button', { name: 'Объективные факторы', exact: true }).click();
+    await expect(objectiveProjection(projector).getByRole('article')).toHaveCount(2);
+    await expect(note(projector, objectiveFirst)).toBeVisible();
+    await expect(note(projector, TEXT.housing)).toHaveCount(0);
+    await expect(objectiveProjection(projector).getByRole('button', { name: /^Поддержать:/u })).toHaveCount(0);
+    await expect(objectiveProjection(projector).locator('[data-new]')).toHaveCount(0);
+    await screenshot(projector, 'objective-projector-1920.png');
+
+    await b.page.reload();
+    await openObjectives(b.page, 'board');
+    await expect(objectiveBoard(b.page).getByRole('article')).toHaveCount(2);
+    await expect(vote(b.page, objectiveFirst, 1)).toHaveAttribute('aria-pressed', 'true');
+    await expect(vote(b.page, objectiveSecond, -1)).toHaveAttribute('aria-pressed', 'true');
+    await noOverflow(b.page, 390);
+  });
+  await stage('The territory selector loads distinct settlement and district correlation packs', a.page, async () => {
+    const ui = objective(a.page);
+    await ui.getByRole('button', { name: 'Корреляции', exact: true }).click();
+    const level = ui.getByRole('combobox', { name: 'Тип территории', exact: true });
+    const region = ui.getByRole('combobox', { name: 'Регион', exact: true });
+    const municipality = ui.getByRole('combobox', { name: 'Муниципалитет', exact: true });
+    await expect(level).toHaveValue('upper');
+    const index = a.page.waitForResponse(response => new URL(response.url()).pathname === '/data/factors/lower/index.json.gz');
+    await level.selectOption('lower');
+    expect((await index).status()).toBe(200);
+    await region.selectOption('moskovskaia-oblast');
+    const settlement = municipality.locator('option').filter({ hasText: /Волоколамск \(до 2020 г\.\).*46605101/u });
+    await expect(settlement).toHaveCount(1);
+    const key = await settlement.getAttribute('value');
+    expect(key).toBeTruthy();
+    const lowerPack = a.page.waitForResponse(response =>
+      new URL(response.url()).pathname === `/data/factors/lower/municipalities/${key}.json.gz`);
+    await municipality.selectOption(key);
+    expect((await lowerPack).status()).toBe(200);
+    await expect(ui.getByText('Байесовская корреляция', { exact: true }).first()).toBeVisible();
+    await expect(ui.getByText('95% интервал', { exact: true }).first()).toBeVisible();
+    await screenshot(a.page, 'objective-settlement-desktop.png');
+
+    await level.selectOption('upper');
+    await region.selectOption('respublika-mordoviia');
+    await municipality.selectOption({ label: 'Саранск · 89701000' });
+    await expect(ui.getByRole('button', { name: 'На флипчарте', exact: true })).toHaveCount(2);
+  });
   await stage('Reload restores all notes and individual votes without creating a legacy survey', a.page, async () => {
     await a.page.reload();
     await expect(scenes(a.page).getByRole('button', { name: 'Флипчарт', exact: true })).toHaveAttribute('aria-current', 'page');
@@ -321,11 +429,18 @@ try {
     }
     await expect(vote(b.page, TEXT.schedule, -1)).toHaveAttribute('aria-pressed', 'false');
     await screenshot(a.page, 'flipchart-restored-after-restart.png');
+    await Promise.all([openObjectives(a.page, 'board'), openObjectives(b.page, 'board')]);
+    await expect(objectiveBoard(a.page).getByRole('article')).toHaveCount(2);
+    await expect(vote(a.page, objectiveFirst, 1)).toHaveText('1');
+    await expect(vote(b.page, objectiveFirst, 1)).toHaveAttribute('aria-pressed', 'true');
+    await expect(vote(b.page, objectiveSecond, -1)).toHaveAttribute('aria-pressed', 'true');
   });
   expect(legacySurveyRequests).toEqual([]);
   await Promise.allSettled([...responseReads]);
   expect(errors).toEqual([]); expect(failedResponses).toEqual([]); expect(externalRequests).toEqual([]);
-  expect(calls.filter(value => value.path.endsWith('/dw_flipchart_add'))).toHaveLength(5);
+  const adds = calls.filter(value => value.path.endsWith('/dw_flipchart_add'));
+  expect(adds.filter(value => value.input.p_input.board !== 'objective')).toHaveLength(5);
+  expect(adds.filter(value => value.input.p_input.board === 'objective')).toHaveLength(3);
   expect(calls.some(value => value.path.endsWith('/dw_flipchart_updates') && Number(value.input.p_after_cursor) > 0)).toBe(true);
   for (const payload of projectorPayloads) privateFree(payload, true);
   for (const payload of participantPayloads) privateFree(payload);

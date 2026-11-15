@@ -19,6 +19,7 @@ export function SessionArea({
   renderBarriers,
   renderRoadmaps,
   renderFlipchart,
+  renderObjectiveFactors,
   renderLiveVotes,
 }: {
   state: SessionAreaState;
@@ -28,6 +29,7 @@ export function SessionArea({
   renderBarriers?: () => ReactNode;
   renderRoadmaps?: () => ReactNode;
   renderFlipchart?: () => ReactNode;
+  renderObjectiveFactors?: () => ReactNode;
   renderLiveVotes?: () => ReactNode;
 }) {
   const ready = state.auth.status === 'signed-in' && state.bootstrap?.profile;
@@ -123,6 +125,7 @@ export function SessionArea({
           renderBarriers={renderBarriers}
           renderRoadmaps={renderRoadmaps}
           renderFlipchart={renderFlipchart}
+          renderObjectiveFactors={renderObjectiveFactors}
           renderLiveVotes={renderLiveVotes}
         />
       ) : (

@@ -35,6 +35,7 @@ const MIME = new Map([
   ['.mjs', 'text/javascript; charset=utf-8'],
   ['.json', 'application/json; charset=utf-8'],
   ['.geojson', 'application/geo+json; charset=utf-8'],
+  ['.gz', 'application/gzip'],
   ['.webmanifest', 'application/manifest+json; charset=utf-8'],
   ['.svg', 'image/svg+xml; charset=utf-8'],
   ['.ico', 'image/x-icon'],
@@ -306,7 +307,8 @@ async function findFile(path) {
       fileWithin(resolve(PUBLIC, 'fonts'), path.slice('/fonts/'.length))
     );
   }
-  if (path.startsWith('/data/') && ['.json', '.geojson'].includes(extname(path).toLowerCase())) {
+  const factorPack = /^\/data\/factors\/(?:lower\/)?(?:index|municipalities\/[a-z0-9_-]+)\.json\.gz$/u.test(path);
+  if (factorPack || (path.startsWith('/data/') && ['.json', '.geojson'].includes(extname(path).toLowerCase()))) {
     return (
       (await fileWithin(resolve(DIST, 'data'), path.slice('/data/'.length))) ??
       fileWithin(DATA, path.slice('/data/'.length))

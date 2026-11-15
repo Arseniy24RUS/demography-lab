@@ -18,48 +18,50 @@ const signed = (value: number) => value > 0 ? `+${value}` : String(value);
 const noteWord = (value: number) => value % 10 === 1 && value % 100 !== 11 ? 'тезис'
   : value % 10 >= 2 && value % 10 <= 4 && !(value % 100 >= 12 && value % 100 <= 14) ? 'тезиса' : 'тезисов';
 
-export interface FlipchartBoardProps {
+type AddNote = (kind: FlipchartKind, text: string) => Promise<boolean>;
+
+export type FlipchartBoardProps = {
   notes: readonly FlipchartNote[];
-  onAdd(kind: FlipchartKind, text: string): Promise<boolean>;
   onVote(note: FlipchartNote, value: FlipchartVote): Promise<void>;
   onWithdraw(note: FlipchartNote): Promise<void>;
   pendingIds?: ReadonlySet<string>;
   submitting?: boolean;
   loading?: boolean;
   error?: string | null;
-}
+} & ({ objective?: boolean; onAdd: AddNote } | { objective: true; onAdd?: never });
 
 export interface FlipchartProjectorProps {
   notes: readonly FlipchartPublicNote[];
   loading?: boolean;
   error?: string | null;
+  objective?: boolean;
 }
 
 /** Full phrases remain intact: agreement is a vote on one thesis, not a word frequency. */
 export function FlipchartBoard({
   notes, onAdd, onVote, onWithdraw, pendingIds = noPending, submitting = false,
-  loading = false, error = null,
+  loading = false, error = null, objective = false,
 }: FlipchartBoardProps) {
   return (
-    <section className="flipchart" aria-label="Общий флипчарт">
-      <FlipchartComposer onAdd={onAdd} submitting={submitting} />
+    <section className="flipchart" aria-label={objective ? 'Объективные факторы' : 'Общий флипчарт'}>
+      {!objective && onAdd ? <FlipchartComposer onAdd={onAdd} submitting={submitting} /> : null}
       {error ? <p className="flipchart-error" role="alert">{error}</p> : null}
-      <FlipchartSurface notes={notes} loading={loading} pendingIds={pendingIds}
+      <FlipchartSurface notes={notes} loading={loading} pendingIds={pendingIds} objective={objective}
         onVote={onVote} onWithdraw={onWithdraw} />
     </section>
   );
 }
 
-export function FlipchartProjector({ notes, loading = false, error = null }: FlipchartProjectorProps) {
+export function FlipchartProjector({ notes, loading = false, error = null, objective = false }: FlipchartProjectorProps) {
   return (
-    <section className="flipchart flipchart-projector" aria-label="Флипчарт на проекторе">
+    <section className="flipchart flipchart-projector" aria-label={objective ? 'Объективные факторы на проекторе' : 'Флипчарт на проекторе'}>
       {error ? <p className="flipchart-error" role="alert">{error}</p> : null}
-      <FlipchartSurface notes={notes} loading={loading} projector />
+      <FlipchartSurface notes={notes} loading={loading} objective={objective} projector />
     </section>
   );
 }
 
-function FlipchartComposer({ onAdd, submitting }: Pick<FlipchartBoardProps, 'onAdd'> & { submitting: boolean }) {
+function FlipchartComposer({ onAdd, submitting }: { onAdd: AddNote; submitting: boolean }) {
   const id = useId();
   const [kind, setKind] = useState<FlipchartKind>('barrier');
   const [text, setText] = useState('');
@@ -135,12 +137,13 @@ interface SurfaceProps {
   notes: readonly FlipchartPublicNote[];
   loading: boolean;
   projector?: boolean;
+  objective?: boolean;
   pendingIds?: ReadonlySet<string>;
   onVote?: FlipchartBoardProps['onVote'];
   onWithdraw?: FlipchartBoardProps['onWithdraw'];
 }
 
-function FlipchartSurface({ notes, loading, projector = false, pendingIds = noPending, onVote, onWithdraw }: SurfaceProps) {
+function FlipchartSurface({ notes, loading, projector = false, objective = false, pendingIds = noPending, onVote, onWithdraw }: SurfaceProps) {
   const [filter, setFilter] = useState<'all' | FlipchartKind>('all');
   const [view, setView] = useState<'cloud' | 'ranking'>('cloud');
   const arrivals = useArrivals(notes, loading);
@@ -149,17 +152,17 @@ function FlipchartSurface({ notes, loading, projector = false, pendingIds = noPe
     barrier: active.filter(note => note.kind === 'barrier').length,
     condition: active.filter(note => note.kind === 'condition').length,
   }), [active]);
-  const visible = useMemo(() => active.filter(note => filter === 'all' || note.kind === filter).sort(
+  const visible = useMemo(() => active.filter(note => objective || filter === 'all' || note.kind === filter).sort(
     view === 'ranking'
       ? (a, b) => b.score - a.score || b.support - a.support || a.oppose - b.oppose
         || a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id)
       : (a, b) => b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id),
-  ), [active, filter, view]);
+  ), [active, filter, objective, view]);
   const maximum = useMemo(() => Math.max(1, ...active.map(note => note.support + note.oppose)), [active]);
   return (
     <div className="flipchart-surface">
       <header className="flipchart-toolbar">
-        <div className="flipchart-filters" role="group" aria-label="Тезисы по теме">
+        {!objective ? <div className="flipchart-filters" role="group" aria-label="Тезисы по теме">
           <button type="button" aria-pressed={filter === 'all'} onClick={() => setFilter('all')}>
             Все<span>{active.length}</span>
           </button>
@@ -167,7 +170,7 @@ function FlipchartSurface({ notes, loading, projector = false, pendingIds = noPe
             aria-pressed={filter === item.kind} onClick={() => setFilter(item.kind)}>
             <span className="flipchart-kind-dot" aria-hidden="true" />{item.label}<span>{counts[item.kind]}</span>
           </button>)}
-        </div>
+        </div> : null}
         <div className="flipchart-view-switch" role="group" aria-label="Вид флипчарта">
           <button type="button" aria-pressed={view === 'cloud'} onClick={() => setView('cloud')}>
             <Cloud size={18} aria-hidden="true" />Облако
@@ -182,28 +185,31 @@ function FlipchartSurface({ notes, loading, projector = false, pendingIds = noPe
           <LoaderCircle className="flipchart-spinner" size={28} aria-hidden="true" /><p>Загружаем доску…</p>
         </div> : !visible.length ? <div className="flipchart-empty">
           <div className="flipchart-empty-shapes" aria-hidden="true"><span /><span /><Plus size={30} /></div>
-          <p>{active.length ? 'В этой теме пока нет тезисов' : 'Пока нет тезисов'}</p>
+          <p>{objective ? 'Пока нет факторов' : active.length ? 'В этой теме пока нет тезисов' : 'Пока нет тезисов'}</p>
         </div> : <div className="flipchart-notes" data-view={view}>
-          {visible.map((note, index) => <FlipchartCard key={note.id} note={note} projector={projector}
+          {visible.map((note, index) => <FlipchartCard key={note.id} note={note} projector={projector} objective={objective}
             ranking={view === 'ranking'} rank={index + 1} maximum={maximum}
             arrival={arrivals.has(note.id)} pending={pendingIds.has(note.id)}
             onVote={onVote} onWithdraw={onWithdraw} />)}
         </div>}
       </div>
       <span className="flipchart-sr-only" role="status" aria-live="polite" aria-atomic="true">
-        {arrivals.size ? `Новые тезисы: ${arrivals.size}.` : `${active.length} ${noteWord(active.length)} на доске.`}
+        {objective
+          ? (arrivals.size ? `Новые факторы: ${arrivals.size}.` : `Факторов на доске: ${active.length}.`)
+          : (arrivals.size ? `Новые тезисы: ${arrivals.size}.` : `${active.length} ${noteWord(active.length)} на доске.`)}
       </span>
     </div>
   );
 }
 
-function FlipchartCard({ note, ranking, rank, maximum, projector, arrival, pending, onVote, onWithdraw }: {
+function FlipchartCard({ note, ranking, rank, maximum, projector, objective, arrival, pending, onVote, onWithdraw }: {
   note: FlipchartPublicNote; ranking: boolean; rank: number; maximum: number;
-  projector: boolean; arrival: boolean; pending: boolean;
+  projector: boolean; objective: boolean; arrival: boolean; pending: boolean;
   onVote?: FlipchartBoardProps['onVote']; onWithdraw?: FlipchartBoardProps['onWithdraw'];
 }) {
   const own = !projector && 'myVote' in note ? note as FlipchartNote : null;
   const category = kinds.find(item => item.kind === note.kind)!;
+  const removeLabel = objective ? 'Убрать фактор' : 'Убрать стикер';
   const width = note.text.length < 45 ? 'compact' : note.text.length < 110 ? 'medium' : 'wide';
   const voted = note.support + note.oppose;
   const [error, setError] = useState<string | null>(null);
@@ -227,14 +233,14 @@ function FlipchartCard({ note, ranking, rank, maximum, projector, arrival, pendi
       {ranking ? <span className="flipchart-rank" aria-label={`Место ${rank}`}>{rank}</span> : null}
       <div className="flipchart-note-body">
         <header className="flipchart-note-heading">
-          <span className="flipchart-note-kind"><span className="flipchart-kind-dot" aria-hidden="true" />{category.label}</span>
+          <span className="flipchart-note-kind"><span className="flipchart-kind-dot" aria-hidden="true" />{objective ? 'Фактор' : category.label}</span>
           {own?.canWithdraw && onWithdraw ? <button type="button" className="flipchart-remove" disabled={busy}
-            aria-label={`Убрать стикер: ${note.text}`} title="Убрать стикер"
+            aria-label={`${removeLabel}: ${note.text}`} title={removeLabel}
             onClick={() => void act(() => onWithdraw(own))}><X size={17} aria-hidden="true" /></button> : null}
         </header>
         <p className="flipchart-note-text">{note.text}</p>
         <footer className="flipchart-note-footer">
-          <div className="flipchart-votes" aria-label="Оценки тезиса">
+          <div className="flipchart-votes" aria-label={objective ? 'Оценки фактора' : 'Оценки тезиса'}>
             {own && onVote ? <>
               <button type="button" className="flipchart-vote" data-direction="support"
                 aria-label={`Поддержать: ${note.text}`} aria-pressed={own.myVote === 1} disabled={busy}

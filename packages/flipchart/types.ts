@@ -3,6 +3,7 @@ export const FLIPCHART_MAX_TEXT_LENGTH = 180;
 export const FLIPCHART_MAX_NOTES = 20_000;
 export const flipchartKinds = ['barrier', 'condition'] as const;
 export type FlipchartKind = (typeof flipchartKinds)[number];
+export type FlipchartBoardScope = 'objective';
 export type FlipchartVote = -1 | 1 | null;
 export type FlipchartStatus = 'active' | 'withdrawn';
 
@@ -15,6 +16,8 @@ export function normalizeFlipchartText(value: string): string {
 export interface FlipchartPublicNote {
   id: string;
   kind: FlipchartKind;
+  /** Stable catalogue key on the objective board. */
+  factorKey?: string;
   text: string;
   status: FlipchartStatus;
   createdAt: string;
@@ -52,6 +55,9 @@ export interface FlipchartMutationResult {
   note: FlipchartNote;
 }
 
-export interface AddFlipchartInput { kind: FlipchartKind; text: string }
+export type AddFlipchartInput = { kind: FlipchartKind; text: string } & (
+  | { board?: never; factorKey?: never }
+  | { board: FlipchartBoardScope; factorKey: string }
+);
 export interface VoteFlipchartInput { value: FlipchartVote }
 export interface StatusFlipchartInput { status: FlipchartStatus }

@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FlipchartReplica } from '../../../../packages/flipchart/replica';
 import type {
-  FlipchartKind, FlipchartMutationResult, FlipchartNote, FlipchartPublicNote, FlipchartVote,
+  FlipchartBoardScope, FlipchartKind, FlipchartMutationResult, FlipchartNote, FlipchartPublicNote, FlipchartVote,
 } from '../../../../packages/flipchart/types';
 import { FlipchartApi } from '../lib/flipchart-api';
 import { SessionApiError, type SessionApi } from '../lib/session-api';
 
 type Options = {
   api: SessionApi | null; sessionId: string | null; userId: string | null;
-  projector?: boolean; enabled?: boolean;
+  projector?: boolean; enabled?: boolean; board?: FlipchartBoardScope;
 };
 type Runtime = {
   key: string; active: boolean; replica: FlipchartReplica<FlipchartPublicNote>;
@@ -17,7 +17,7 @@ type Runtime = {
 type State<T> = {
   notes: readonly T[]; loading: boolean; error: string | null;
   pendingIds: ReadonlySet<string>; submitting: boolean; removed: FlipchartNote | null;
-  add(kind: FlipchartKind, text: string): Promise<boolean>;
+  add(kind: FlipchartKind, text: string, factorKey?: string): Promise<boolean>;
   vote(note: FlipchartNote, value: FlipchartVote): Promise<void>;
   withdraw(note: FlipchartNote): Promise<void>;
   restore(): Promise<void>; dismissUndo(): void; refresh(): Promise<void>;
@@ -29,9 +29,9 @@ const failureMessage = (error: unknown) => error instanceof SessionApiError && e
 
 export function useFlipchart(options: Options & { projector: true }): State<FlipchartPublicNote>;
 export function useFlipchart(options: Options & { projector?: false }): State<FlipchartNote>;
-export function useFlipchart({ api, sessionId, userId, projector = false, enabled = true }: Options): State<FlipchartPublicNote> {
-  const client = useMemo(() => api && userId ? new FlipchartApi(api) : null, [api, userId]);
-  const key = `${api?.config.url ?? ''}:${api?.config.offlineInstanceId ?? ''}:${sessionId ?? ''}:${userId ?? ''}:${projector}:${enabled}`;
+export function useFlipchart({ api, sessionId, userId, projector = false, enabled = true, board }: Options): State<FlipchartPublicNote> {
+  const client = useMemo(() => api && userId ? new FlipchartApi(api, board) : null, [api, userId, board]);
+  const key = `${api?.config.url ?? ''}:${api?.config.offlineInstanceId ?? ''}:${sessionId ?? ''}:${userId ?? ''}:${board ?? ''}:${projector}:${enabled}`;
   const current = useRef(key);
   current.current = key;
   const runtimeRef = useRef<Runtime | null>(null);
@@ -140,9 +140,15 @@ export function useFlipchart({ api, sessionId, userId, projector = false, enable
     }
   }
 
-  async function add(kind: FlipchartKind, text: string) {
+  async function add(kind: FlipchartKind, text: string, factorKey?: string) {
     if (!client || !sessionId) return false;
-    return Boolean(await mutate('add', () => client.add(sessionId, { kind, text })));
+    return Boolean(await mutate('add', () => {
+      if (board === 'objective') {
+        if (!factorKey) throw new Error('Выберите объективный фактор.');
+        return client.add(sessionId, { kind, text, board, factorKey });
+      }
+      return client.add(sessionId, { kind, text });
+    }));
   }
   async function vote(note: FlipchartNote, value: FlipchartVote) {
     if (client && sessionId) await mutate(note.id, () => client.vote(sessionId, note, value));

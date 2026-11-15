@@ -17,7 +17,7 @@ const BODY_LIMIT=1024*1024;
 const WORKSPACE_BODY_LIMIT=5*1024*1024+16*1024;
 const MIME=new Map(Object.entries({'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8',
   '.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8',
-  '.geojson':'application/geo+json; charset=utf-8','.svg':'image/svg+xml','.ico':'image/x-icon',
+  '.geojson':'application/geo+json; charset=utf-8','.gz':'application/gzip','.svg':'image/svg+xml','.ico':'image/x-icon',
   '.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.gif':'image/gif',
   '.woff':'font/woff','.woff2':'font/woff2','.ttf':'font/ttf','.otf':'font/otf',
   '.txt':'text/plain; charset=utf-8','.pdf':'application/pdf','.webmanifest':'application/manifest+json'}));
@@ -104,11 +104,12 @@ async function staticFile(request,response,path,survey,root) {
   if((survey&&routed==='/index.html')||(!survey&&routed==='/survey.html'))throw new HttpError(404,'NOT_FOUND');
   const ext=extname(routed);
   const readerModule=!survey&&READER_MODULE_PATHS.has(routed);
+  const factorPack=!survey&&/^\/data\/factors\/(?:lower\/)?(?:index|municipalities\/[a-z0-9_-]+)\.json\.gz$/.test(routed);
   const permitted=routed==='/index.html'||routed==='/survey.html'||/^\/(?:favicon\.(?:svg|ico|png)|apple-touch-icon\.png|site\.webmanifest)$/.test(routed)
     || /^\/assets\/[a-zA-Z0-9_./-]+$/.test(routed)
     || /^\/fonts\/(?:DejaVuSans(?:-Bold)?\.ttf|LICENSE-DejaVu\.txt)$/.test(routed)
     ||readerModule||(!survey&&/^\/data\/[a-zA-Z0-9_./-]+$/.test(routed));
-  if(!permitted||!MIME.has(ext))throw new HttpError(404,'NOT_FOUND');
+  if(!permitted||!MIME.has(ext)||(ext==='.gz'&&!factorPack))throw new HttpError(404,'NOT_FOUND');
   const file=readerModule
     ?await within(resolve(root,'dist/vendor/rudn-reader'),routed.slice('/vendor/rudn-reader/'.length))
       ??await within(resolve(root,'public/vendor/rudn-reader'),routed.slice('/vendor/rudn-reader/'.length))
