@@ -550,6 +550,8 @@ try {
   });
   await stage('Reload restores all notes and individual votes without creating a legacy survey', a.page, async () => {
     await a.page.reload();
+    await expect(a.page).toHaveURL(/stage=objective/u);
+    await openStage(a.page, 'Субъективные факторы');
     await expect(scenes(a.page).getByRole('button', { name: 'Субъективные факторы', exact: true })).toHaveAttribute('aria-current', 'page');
     await expect(board(a.page).getByRole('article')).toHaveCount(5);
     await expect(vote(a.page, TEXT.housing, 1)).toHaveAttribute('aria-pressed', 'true');
