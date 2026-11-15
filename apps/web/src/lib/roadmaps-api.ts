@@ -1,6 +1,7 @@
 import { sha256Hex } from '../../../../packages/security/crypto.mjs';
 import {
   parseRoadmapsIndex,
+  parseRoadmapPresence,
   parseRoadmapSnapshot,
   parseRoadmapVersion,
   parseRoadmapsProjection,
@@ -65,6 +66,11 @@ export class RoadmapsApi {
     return this.transport.rpc('dw_roadmaps_index', { p_session_id: sessionId }, (v) =>
       this.match(sessionId, parseRoadmapsIndex(v)),
     );
+  }
+  presence(sessionId: string, viewId: string | null, roadmapId: string | null, revision: number) {
+    return this.transport.rpc('dw_roadmap_presence', {
+      p_session_id: sessionId, p_view_id: viewId, p_roadmap_id: roadmapId, p_revision: revision,
+    }, (value) => this.match(sessionId, parseRoadmapPresence(value)));
   }
   async snapshot(sessionId: string, roadmapId: string) {
     const next = await this.transport.rpc(

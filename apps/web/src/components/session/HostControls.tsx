@@ -1,5 +1,7 @@
 import { useEffect, useId, useState } from 'react';
-import { Settings2 } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Settings } from 'lucide-react';
+import { Modal } from '../Modal';
 import type { SessionAreaActions, SessionRegionOption, SessionScope, SessionSummary } from '../../../../../packages/collaboration/types';
 import { messageFromError, scopeLabels } from './session-ui';
 
@@ -39,8 +41,12 @@ export function HostControls({ session, busy, actions, regions }: {
       setWorking(false);
     }
   }
-  return <details className="workspace-settings" open={open} onToggle={event => setOpen(event.currentTarget.open)}>
-    <summary><Settings2 size={16} aria-hidden="true" />Параметры мастерской</summary>
+  return <>
+    <button type="button" className="icon-button workshop-settings-button" aria-label="Параметры мастерской"
+      title="Параметры мастерской" aria-haspopup="dialog" onClick={() => setOpen(true)}>
+      <Settings size={19} aria-hidden="true" />
+    </button>
+    {open ? createPortal(<Modal title="Параметры мастерской" onClose={() => { if (!working) setOpen(false); }}>
     <form onSubmit={event => { event.preventDefault(); void save(); }}>
       <div className="workspace-settings-fields">
         <label htmlFor={`${id}-title`}>Название
@@ -72,5 +78,6 @@ export function HostControls({ session, busy, actions, regions }: {
         </label>
       </div>
     </form>
-  </details>;
+    </Modal>, document.body) : null}
+  </>;
 }

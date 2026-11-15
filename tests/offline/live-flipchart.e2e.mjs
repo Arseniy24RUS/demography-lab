@@ -49,6 +49,9 @@ const objective = page => page.getByRole('region', { name: 'Объективны
 const objectiveBoard = page => page.getByRole('region', { name: 'Объективные факторы', exact: true });
 const objectiveProjection = page => page.getByRole('region', { name: 'Объективные факторы на проекторе', exact: true });
 const note = (page, text) => page.getByRole('article', { name: text, exact: true });
+const territories = page => page.getByRole('region', { name: 'Выбор территории', exact: true });
+const teamRow = (page, name) => territories(page).getByRole('row').filter({ hasText: name });
+const activeCount = (page, name) => teamRow(page, name).locator('.rm-live-count');
 const vote = (page, text, value) => note(page, text).getByRole('button', {
   name: `${value === 1 ? 'Поддержать' : 'Не поддержать'}: ${text}`, exact: true,
 });
@@ -153,6 +156,27 @@ async function screenshot(page, name) {
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: join(evidence, name), fullPage: false, animations: 'disabled' });
 }
+async function openTerritories(page) {
+  if (!(await territories(page).isVisible())) {
+    const back = page.getByRole('button', { name: 'К территориям', exact: true });
+    if (await back.isVisible()) await back.click();
+    else await scenes(page).getByRole('button', { name: 'Дорожные карты', exact: true }).click();
+  }
+  await expect(territories(page).getByRole('columnheader', { name: 'Сейчас в команде', exact: true })).toBeVisible();
+  await expect(territories(page).getByRole('combobox', { name: 'Регион территорий', exact: true }))
+    .toHaveValue('respublika-mordoviia');
+}
+async function openTeam(page, name) {
+  const joining = rpc(page, 'dw_join_roadmap');
+  await teamRow(page, name).getByRole('button', { name: new RegExp(name, 'u') }).click();
+  const response = await joining;
+  expect(response.status(), await response.text()).toBe(200);
+  const room = await response.json();
+  expect(room.territory.name).toBe(name);
+  expect(room.canEdit).toBe(true);
+  await expect(page.getByRole('heading', { name: 'Диагностика и сценарии', exact: true })).toBeVisible();
+  return room.roadmapId;
+}
 async function openObjectives(page, view = 'cards') {
   const tabs = scenes(page).getByRole('button');
   await expect(tabs.nth(0)).toHaveText('Субъективные факторы');
@@ -199,6 +223,66 @@ try {
     expect(legacySurveyRequests).toEqual([]);
     await screenshot(a.page, 'flipchart-empty-desktop.png');
   });
+  await stage('Territory teams open directly and the list reflects people currently working in each team', a.page, async () => {
+    const firstTeam = 'Ардатовский муниципальный район';
+    const secondTeam = 'Городской округ Саранск';
+    const observer = await participant();
+    try {
+      expect(await enter(observer.page, 'roadmap-observer@example.test', 'Участник у списка команд')).toBe(sessionId);
+      await openTerritories(observer.page);
+      await expect(activeCount(observer.page, firstTeam)).toHaveText('0');
+      await expect(activeCount(observer.page, secondTeam)).toHaveText('0');
+      for (const page of [a.page, b.page]) {
+        await openTerritories(page);
+        await expect(page.getByRole('button', { name: 'Создать команду территории', exact: true })).toHaveCount(0);
+        await expect(page.getByRole('button', { name: 'Присоединиться к команде', exact: true })).toHaveCount(0);
+      }
+
+      const firstRoom = await openTeam(a.page, firstTeam);
+      await expect(activeCount(observer.page, firstTeam)).toHaveText('1', { timeout: 20_000 });
+      expect(await openTeam(b.page, firstTeam)).toBe(firstRoom);
+      await expect(activeCount(observer.page, firstTeam)).toHaveText('2', { timeout: 20_000 });
+      await activeCount(observer.page, firstTeam).scrollIntoViewIfNeeded();
+      await observer.page.screenshot({ path: join(evidence, 'roadmap-two-people.png'), animations: 'disabled' });
+
+      await openTerritories(b.page);
+      await expect(activeCount(observer.page, firstTeam)).toHaveText('1', { timeout: 20_000 });
+      expect(await openTeam(b.page, secondTeam)).not.toBe(firstRoom);
+      await expect(activeCount(observer.page, secondTeam)).toHaveText('1', { timeout: 20_000 });
+      await expect(activeCount(observer.page, firstTeam)).toHaveText('1');
+      await openTerritories(b.page);
+      expect(await openTeam(b.page, firstTeam)).toBe(firstRoom);
+      await expect(activeCount(observer.page, firstTeam)).toHaveText('2', { timeout: 20_000 });
+      await expect(activeCount(observer.page, secondTeam)).toHaveText('0', { timeout: 20_000 });
+
+      const anotherView = await participant(false, await a.context.storageState());
+      try {
+        await anotherView.page.goto(url);
+        await openTerritories(anotherView.page);
+        const presence = anotherView.page.waitForResponse(response =>
+          new URL(response.url()).pathname === '/rest/v1/rpc/dw_roadmap_presence'
+          && response.request().postDataJSON()?.p_roadmap_id === firstRoom,
+        );
+        expect(await openTeam(anotherView.page, firstTeam)).toBe(firstRoom);
+        const response = await presence;
+        expect(response.status(), await response.text()).toBe(200);
+        const presenceSnapshot = await response.json();
+        expect(presenceSnapshot.counts).toContainEqual({ roadmapId: firstRoom, count: 2 });
+        await expect(activeCount(observer.page, firstTeam)).toHaveText('2');
+      } finally {
+        await anotherView.context.close();
+      }
+
+      await scenes(b.page).getByRole('button', { name: 'Субъективные факторы', exact: true }).click();
+      await expect(activeCount(observer.page, firstTeam)).toHaveText('1', { timeout: 40_000 });
+      await scenes(a.page).getByRole('button', { name: 'Субъективные факторы', exact: true }).click();
+      await expect(activeCount(observer.page, firstTeam)).toHaveText('0', { timeout: 40_000 });
+      await expect(board(a.page)).toBeVisible();
+      await expect(board(b.page)).toBeVisible();
+    } finally {
+      await observer.context.close();
+    }
+  });
   await stage('Participants add independent short ideas and both see them live', a.page, async () => {
     await add(a.page, 'barrier', TEXT.housing, true);
     await add(a.page, 'barrier', TEXT.income);
@@ -221,18 +305,14 @@ try {
   await stage('The projector opens anonymous phrases and animates a new thesis from an independent phone', a.page, async () => {
     const draft = 'Несохранённый черновик перед проектором';
     await a.page.getByRole('textbox', { name: 'Короткий тезис', exact: true }).fill(draft);
-    await a.page.getByRole('link', { name: 'Экран проектора', exact: true }).click();
-    await expect(projection(a.page)).toBeVisible();
-    await expect(a.page.getByRole('navigation', { name: 'Сцены проектора', exact: true }).getByRole('button')).toHaveCount(10);
-    await a.page.getByRole('button', { name: 'К занятию', exact: true }).click();
+    await expect(a.page.getByText('Экран проектора', { exact: true })).toHaveCount(0);
+    projector = await a.context.newPage(); lastPage = projector;
+    const projectorUrl = `${url}&projector=1`;
+    await projector.goto(projectorUrl);
+    await expect(projector).toHaveURL(projectorUrl);
+    await expect(projector.getByRole('navigation', { name: 'Сцены проектора', exact: true }).getByRole('button')).toHaveCount(10);
     await expect(a.page.getByRole('textbox', { name: 'Короткий тезис', exact: true })).toHaveValue(draft);
     await a.page.getByRole('textbox', { name: 'Короткий тезис', exact: true }).fill('');
-    const popup = a.page.context().waitForEvent('page');
-    await a.page.getByRole('link', { name: 'Экран проектора', exact: true }).click({ modifiers: ['ControlOrMeta'] });
-    projector = await popup; lastPage = projector;
-    await expect(projector).toHaveURL(`${new URL(url).origin}/#sessions=1&projector=1`);
-    await expect(projector.getByRole('navigation', { name: 'Сцены проектора', exact: true }).getByRole('button')).toHaveCount(10);
-    expect(await projector.evaluate(() => window.opener === null)).toBe(true);
     await projector.reload();
     await expect(projection(projector)).toBeVisible();
     await projector.setViewportSize({ width: 1920, height: 1080 });

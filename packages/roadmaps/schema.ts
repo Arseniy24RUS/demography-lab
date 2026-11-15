@@ -6,6 +6,7 @@ import type {
   FrozenRoadmapData,
   RoadmapSnapshot,
   RoadmapsIndex,
+  RoadmapPresence,
   RoadmapsProjection,
   RoadmapVersion,
   RoadmapSeries,
@@ -671,6 +672,13 @@ function parse<T>(schema: z.ZodType, value: unknown): T {
   return result.data as T;
 }
 export const parseRoadmapsIndex = (v: unknown) => parse<RoadmapsIndex>(roadmapsIndexSchema, v);
+const roadmapPresenceSchema = z.strictObject({
+  sessionId: uuid,
+  counts: z.array(z.strictObject({ roadmapId: uuid, count: revision }))
+    .max(ROADMAP_LIMITS.rooms)
+    .refine((counts) => new Set(counts.map(({ roadmapId }) => roadmapId)).size === counts.length),
+});
+export const parseRoadmapPresence = (value: unknown) => parse<RoadmapPresence>(roadmapPresenceSchema, value);
 export const parseRoadmapSnapshot = (v: unknown) =>
   parse<RoadmapSnapshot>(roadmapSnapshotSchema, v);
 export const parseRoadmapsProjection = (v: unknown) =>

@@ -4,6 +4,8 @@ One roadmap is unique per `(session_id, territory_key)`. Canonical territory ide
 
 All reads require current verified session membership. Participants may read the session's roadmaps but write only their current room; the host may write every room. Observers cannot join or write. One active room assignment per user/session is revisioned. Moving teams preserves the former team's work. Writes require an open session in any teaching phase. User identity and current authorization are checked before operation replay.
 
+In the shared workshop, selecting any eligible territory at the configured level opens its roadmap. The existing join operation prepares the room only on its first visit. Active attendance uses a separate endpoint and is counted once per person in each room. A view updates its presence with an increasing revision, then sends a null room when leaving. The server expires a view 25 seconds after its most recent update. A null view ID reads the counts without registering attendance.
+
 ## RPC surface
 
 Named mutations receive `p_operation_id uuid, p_session_id uuid, p_input jsonb`. Inputs are complete and strict. Unknown fields, forged source records and cross-room references are rejected.
@@ -15,6 +17,7 @@ Named mutations receive `p_operation_id uuid, p_session_id uuid, p_input jsonb`.
 | dw_roadmap_snapshot            | p_roadmap_id              | RoadmapSnapshot                                   |
 | dw_configure_roadmaps          | ConfigureRoadmapsInput    | RoadmapsIndex                                     |
 | dw_join_roadmap                | JoinRoadmapInput          | RoadmapSnapshot; client refreshes the small index |
+| dw_roadmap_presence            | p_view_id, p_roadmap_id, p_revision | Session ID and active counts by roadmap ID |
 | dw_save_roadmap_item           | SaveRoadmapItemInput      | RoadmapSnapshot                                   |
 | dw_capture_roadmap_basis       | CaptureRoadmapBasisInput  | RoadmapSnapshot                                   |
 | dw_capture_roadmap_fact        | CaptureRoadmapFactInput   | RoadmapSnapshot                                   |

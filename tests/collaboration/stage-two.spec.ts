@@ -351,15 +351,12 @@ test('the host projector uses the restricted projection response and updates foc
     await page.bringToFront();
     await expect(sharedCard(page)).toBeVisible();
     const projectionRequests: string[] = [];
-    page.context().once('page', (opened) => {
-      watch(opened, 'projector');
-      opened.on('request', (req) => {
-        if (req.url().includes('/rest/v1/rpc/')) projectionRequests.push(req.url());
-      });
+    projector = await page.context().newPage();
+    watch(projector, 'projector');
+    projector.on('request', (req) => {
+      if (req.url().includes('/rest/v1/rpc/')) projectionRequests.push(req.url());
     });
-    const popup = page.context().waitForEvent('page');
-    await page.getByRole('link', { name: 'Экран проектора', exact: true }).click({ modifiers: ['ControlOrMeta'] });
-    projector = await popup;
+    await projector.goto(`${BASE_URL}/#session=${sessionId}&projector=1`);
     await expect(projector).toHaveURL(`${BASE_URL}/#session=${sessionId}&projector=1`);
     await expect(
       projector

@@ -50,16 +50,10 @@ async function territory(page: Page, name: string) {
 
 async function roadmap(page: Page, name = ARDATOV) {
   await tab(page, 'Дорожные карты');
-  await tab(page, 'Территория');
-  await territory(page, name);
-  const join = page.getByRole('button', { name: 'Создать команду территории', exact: true }).or(page.getByRole('button', { name: 'Присоединиться к команде', exact: true }));
-  if (await join.count()) {
-    await join.click();
-    await expect(page.getByRole('heading', { name: 'Диагностика и сценарии', exact: true })).toBeVisible();
-  } else {
-    await page.getByRole('button', { name: 'Открыть дорожную карту', exact: true }).click();
-    await expect(page.getByRole('heading', { name: 'Диагностика и сценарии', exact: true })).toBeVisible();
-  }
+  const back = page.getByRole('button', { name: 'К территориям', exact: true });
+  if (await back.isVisible()) await back.click();
+  await page.locator('.rm-table-select').filter({ hasText: name }).click();
+  await expect(page.getByRole('heading', { name: 'Диагностика и сценарии', exact: true })).toBeVisible();
 }
 
 async function saveDialog(page: Page) {
@@ -230,7 +224,7 @@ test('desktop and touch accounts share one map, capture a fact, plan an activity
     await phone.locator('.rm-activity-card').scrollIntoViewIfNeeded();
     await capture(phone, info, 'stage5-shared-activity-touch.png');
     await openSessionAfterReload(phone);
-    await tab(phone, 'Дорожные карты');
+    await roadmap(phone);
     await tab(phone, 'Мероприятия');
     await expect(phone.getByRole('heading', { name: 'Пилот вечернего присмотра', exact: true })).toBeVisible();
     await tab(page, 'Календарь и ресурсы');
@@ -304,14 +298,14 @@ test('desktop and touch accounts share one map, capture a fact, plan an activity
     expect(repeated.sha256).toBe(json.sha256);
     const projectorRequests: string[] = [];
     const projectorPayloads: Array<Promise<unknown>> = [];
-    page.context().once('page', opened => {
-      audit.watch(opened, 'roadmaps-projector');
-      opened.on('request', outgoing => { if (outgoing.url().includes('/rest/v1/rpc/')) projectorRequests.push(outgoing.url()); });
-      opened.on('response', response => { if (response.url().endsWith('/dw_roadmaps_projector_snapshot') && response.ok()) projectorPayloads.push(response.json()); });
-    });
-    const opened = page.context().waitForEvent('page');
-    await page.getByRole('link', { name: 'Экран проектора', exact: true }).click({ modifiers: ['ControlOrMeta'] });
-    projector = await opened;
+    projector = await page.context().newPage();
+    audit.watch(projector, 'roadmaps-projector');
+    projector.on('request', outgoing => { if (outgoing.url().includes('/rest/v1/rpc/')) projectorRequests.push(outgoing.url()); });
+    projector.on('response', response => { if (response.url().endsWith('/dw_roadmaps_projector_snapshot') && response.ok()) projectorPayloads.push(response.json()); });
+    const projectorUrl = new URL(page.url());
+    const sessionId = new URLSearchParams(projectorUrl.hash.slice(1)).get('session');
+    projectorUrl.hash = sessionId ? `session=${sessionId}&projector=1` : 'sessions=1&projector=1';
+    await projector.goto(projectorUrl.href);
     await projector.getByRole('navigation', { name: 'Сцены проектора', exact: true }).getByRole('button', { name: 'Дорожные карты', exact: true }).click();
     await expect(projector.getByRole('combobox', { name: 'Дорожная карта для проектора', exact: true })).toBeVisible();
     await projector.getByRole('combobox', { name: 'Дорожная карта для проектора', exact: true }).selectOption({ label: ARDATOV });

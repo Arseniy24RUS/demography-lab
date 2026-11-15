@@ -48,6 +48,7 @@ import { useBarriers } from './hooks/useBarriers';
 import { prepareSharedPractice } from './lib/shared-practice';
 import type { SharedPracticeBundle } from '../../../packages/collaboration/types';
 import './session.css';
+import { HostControls } from './components/session/HostControls';
 import './account.css';
 const SessionArea = lazy(() =>
   import('./components/session/SessionArea').then((m) => ({ default: m.SessionArea })),
@@ -473,6 +474,11 @@ export function App() {
       'Исследуйте документы, представляйте практики и обсуждайте основания',
     ],
   };
+  const currentWorkshop = session.state.snapshot?.session;
+  const sessionRegions = manifest.documents
+    .map(entry => ({ id: entry.regionId, name: entry.territory }))
+    .filter((region, index, all) => all.findIndex(candidate => candidate.id === region.id) === index)
+    .sort((a, b) => a.name.localeCompare(b.name, 'ru'));
   const showProjector = Boolean(
     projectorMode &&
     session.state.auth.status === 'signed-in' &&
@@ -535,6 +541,10 @@ export function App() {
           ))}
         </nav>
         <div className="top-actions">
+          {currentWorkshop?.role === 'host' ? (
+            <HostControls key={currentWorkshop.id} session={currentWorkshop} busy={session.state.busy !== null}
+              actions={session.actions} regions={sessionRegions} />
+          ) : null}
           <button
             className="icon-button"
             aria-label="Как работать с источниками"
@@ -768,10 +778,7 @@ export function App() {
                 />
               </Suspense>
             )}
-            regions={manifest.documents
-              .map((d) => ({ id: d.regionId, name: d.territory }))
-              .filter((d, i, all) => all.findIndex((x) => x.id === d.id) === i)
-              .sort((a, b) => a.name.localeCompare(b.name, 'ru'))}
+            regions={sessionRegions}
           />
         </Suspense>
         </Activity>

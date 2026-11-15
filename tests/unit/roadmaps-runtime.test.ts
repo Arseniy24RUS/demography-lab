@@ -18,7 +18,7 @@ import {
   runtimeVersion,
   testUuid,
 } from './roadmaps-runtime.fixture';
-import type { RoadmapSnapshot, RoadmapVersion } from '../../packages/roadmaps/types';
+import type { RoadmapPresence, RoadmapSnapshot, RoadmapVersion } from '../../packages/roadmaps/types';
 
 type Handler = (name: string, args: Record<string, unknown>) => unknown | Promise<unknown>;
 function transport(handler?: Handler) {
@@ -28,6 +28,7 @@ function transport(handler?: Handler) {
       if (result !== undefined) return parse(result);
       if (name === 'dw_roadmaps_index') return parse(runtimeIndex());
       if (name === 'dw_roadmaps_cursor') return parse(1);
+      if (name === 'dw_roadmap_presence') return parse({ sessionId, counts: [] });
       if (name === 'dw_roadmap_snapshot') return parse(runtimeSnapshot(String(args.p_roadmap_id)));
       if (name === 'dw_roadmaps_projector_snapshot')
         return parse(runtimeProjection(args.p_roadmap_id as string | null));
@@ -57,6 +58,34 @@ afterEach(() => {
 });
 
 describe('Roadmap asynchronous identity and selection boundaries', () => {
+  it('leaves live presence immediately and ignores a late count from the former view', async () => {
+    const delayed = deferred<RoadmapPresence>();
+    const api = transport((name, args) =>
+      name === 'dw_roadmap_presence' && args.p_roadmap_id === roomA ? delayed.promise : undefined,
+    );
+    const calls = () => vi.mocked(api.rpc).mock.calls
+      .filter(([name]) => name === 'dw_roadmap_presence').map(([, args]) => args);
+    const { result, rerender } = renderHook(
+      ({ active }) => useRoadmaps({ api, sessionId, userId, presenceActive: active }),
+      { initialProps: { active: false } },
+    );
+    await waitFor(() => expect(result.current.snapshot?.roadmapId).toBe(roomA));
+    expect(calls()[0]).toMatchObject({ p_view_id: null, p_roadmap_id: null, p_revision: 1 });
+    rerender({ active: true });
+    await waitFor(() => expect(calls()).toHaveLength(2));
+    const entered = calls()[1];
+    expect(entered).toMatchObject({ p_roadmap_id: roomA, p_revision: 1 });
+    expect(entered.p_view_id).toEqual(expect.any(String));
+    rerender({ active: false });
+    await waitFor(() => expect(calls()).toHaveLength(3));
+    expect(calls()[2]).toMatchObject({ p_view_id: entered.p_view_id, p_roadmap_id: null, p_revision: 2 });
+    await act(async () => {
+      delayed.resolve({ sessionId, counts: [{ roadmapId: roomA, count: 9 }] });
+      await delayed.promise;
+    });
+    expect(result.current.presenceCounts?.has(roomA)).toBe(false);
+  });
+
   it('ignores a slow former-room response after a new room is selected', async () => {
     const old = deferred<RoadmapSnapshot>();
     const api = transport((name, args) =>

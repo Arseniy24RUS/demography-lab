@@ -1,7 +1,7 @@
 import { useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { WorkshopView } from '../workshop/workshop-ui';
-import { ArrowLeft, BookOpen, FileText, Monitor, RefreshCw } from 'lucide-react';
+import { ArrowLeft, FileText, RefreshCw } from 'lucide-react';
 import { Modal } from '@/components/Modal';
 import type {
   SessionAreaActions,
@@ -10,7 +10,6 @@ import type {
   SessionSnapshot,
   SharedSubmission,
 } from '../../../../../packages/collaboration/types';
-import { HostControls } from './HostControls';
 import { SessionParticipants } from './SessionParticipants';
 import { SharedPracticeCard } from './SharedPracticeCard';
 import { SharedPracticeEditModal } from './SharedPracticeEditModal';
@@ -19,7 +18,6 @@ import {
   dateLabel,
   messageFromError,
   roleLabels,
-  scopeLabels,
   timeLabel,
 } from './session-ui';
 
@@ -107,39 +105,6 @@ export function ActiveSession({
 
   return (
     <>
-      <div className="session-workspace-toolbar">
-        <p className="workspace-territory">
-          {session.regionId ? regionNames.get(session.regionId) ?? session.regionId : 'Российская Федерация'}
-          <span> · {scopeLabels[session.scope]} уровень</span>
-        </p>
-        <div className="session-action-row">
-          <button className="button button-secondary" onClick={actions.openLocalWork} aria-label="Работать с документами">
-            <BookOpen size={16} />
-            <span className="workspace-action-full" aria-hidden="true">Работать с документами</span>
-            <span className="workspace-action-short" aria-hidden="true">Документы</span>
-          </button>
-          <a className="button button-primary" href={`${location.pathname}#sessions=1&projector=1`}
-            target="_blank" rel="noopener noreferrer" aria-label="Экран проектора"
-            title="Проектор; Ctrl/⌘ + щелчок — отдельная вкладка"
-            onClick={(event) => {
-              if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-              event.preventDefault();
-              actions.openProjector();
-            }}>
-            <Monitor size={17} />
-            <span className="workspace-action-full" aria-hidden="true">Экран проектора</span>
-            <span className="workspace-action-short" aria-hidden="true">Проектор</span>
-          </a>
-        </div>
-      </div>
-      {isHost ? (
-        <HostControls
-          session={session}
-          busy={disabled}
-          actions={actions}
-          regions={regions}
-        />
-      ) : null}
       {session.role === 'observer' ? (
         <p className="session-message">
           Вы участвуете как наблюдатель. Можно читать общую доску и открывать документальные
@@ -207,12 +172,6 @@ export function ActiveSession({
             <div>
               <section className="session-sidebar-section">
                 <h2>Контекст</h2>
-                <p>
-                  {scopeLabels[session.scope]} уровень
-                  {session.regionId
-                    ? ` · ${regionNames.get(session.regionId) ?? session.regionId}`
-                    : ' · Российская Федерация'}
-                </p>
                 <p className="session-form-footer">
                   Ваша роль: {roleLabels[session.role].toLocaleLowerCase('ru')}.
                 </p>

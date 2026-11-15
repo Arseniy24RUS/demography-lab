@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   BarChart3,
   CalendarDays,
@@ -6,7 +6,6 @@ import {
   MapPin,
   RefreshCw,
   Upload,
-  Users,
 } from 'lucide-react';
 import type {
   SessionAreaActions,
@@ -49,17 +48,19 @@ export function ConnectedRoadmaps({
   manifest: CorpusManifest;
 }) {
   const session = state.snapshot?.session ?? null;
+  const [tab, setTab] = useState<RoadmapTab>('territory'),
+    [selectedKey, setSelectedKey] = useState<string | null>(null),
+    [editor, setEditor] = useState<EditorTarget | null>(null);
+  const opening = useRef(false);
   const controller = useRoadmaps({
     api,
     sessionId: session?.id ?? null,
     userId: state.auth.userId,
     enabled: Boolean(session && state.auth.status === 'signed-in'),
+    presenceActive: tab !== 'territory',
   });
   const data = useTerritoryDataset(),
     task = useRoadmapTask();
-  const [tab, setTab] = useState<RoadmapTab>('territory'),
-    [selectedKey, setSelectedKey] = useState<string | null>(null),
-    [editor, setEditor] = useState<EditorTarget | null>(null);
   const { index, snapshot } = controller,
     editable = Boolean(
       snapshot?.canEdit && session?.status === 'open' && session.role !== 'observer',
@@ -68,6 +69,10 @@ export function ConnectedRoadmaps({
     setEditor(null);
     if (snapshot) setSelectedKey(snapshot.territory.key);
   }, [snapshot?.roadmapId]);
+  const rooms = useMemo(() => new Map(index?.rooms.map(room => [room.territory.key, room.id])), [index?.rooms]);
+  const teamCounts = useMemo(() => controller.presenceCounts
+    ? new Map([...rooms].map(([key, id]) => [key, controller.presenceCounts?.get(id) ?? 0]))
+    : null, [rooms, controller.presenceCounts]);
   if (!session) return <p>Выберите учебное занятие.</p>;
   const isHost = session.role === 'host',
     editionMatches =
@@ -77,28 +82,53 @@ export function ConnectedRoadmaps({
     (record) => record.territoryKey === snapshot?.territory.key,
   );
   const workspace = snapshot ? { snapshot, controller, editable, onEdit: setEditor } : null;
+  const canJoin = session.role !== 'observer' && session.status === 'open' && editionMatches;
   const regions = manifest.documents.map((entry) => ({
     id: entry.regionId,
     name: entry.territory,
     hasDocument: readable(entry),
   }));
+
+  async function openTerritory(key: string) {
+    if (!index || !data.index || opening.current || controller.busy || task.working) return;
+    setEditor(null);
+    if (!canJoin) {
+      const existing = rooms.get(key);
+      if (existing) {
+        controller.actions.select(existing);
+        setSelectedKey(key);
+        setTab('diagnosis');
+      }
+      return;
+    }
+    opening.current = true;
+    try {
+      await controller.actions.join({
+        territoryKey: key,
+        dataEditionId: data.index.editionId,
+        expectedAssignmentRevision: index.assignmentRevision,
+      });
+      setSelectedKey(key);
+      setTab('diagnosis');
+    } catch {
+      // The controller reports the rejected selection and keeps the picker open.
+    } finally {
+      opening.current = false;
+    }
+  }
+
   return (
     <section className="rm-workspace" aria-label="Дорожные карты">
       <header className="rm-heading">
         <div>
           <h2>Дорожные карты</h2>
-          <p>
-            {snapshot?.territory.name ??
-              (session.regionId
-                ? manifest.documents.find((entry) => entry.regionId === session.regionId)?.territory
-                : 'Территориальные команды')}
-          </p>
+          {tab !== 'territory' && snapshot ? <p>{snapshot.territory.name}</p> : null}
         </div>
         <div className="rm-actions">
-          <button className="button button-secondary" onClick={() => setTab('territory')}>
-            <Users size={17} />
-            Все команды{index ? ` · ${index.rooms.length}` : ''}
-          </button>
+          {tab !== 'territory' ? <button type="button" className="button button-secondary" onClick={() => {
+            setEditor(null);
+            setTab('territory');
+          }}>К территориям</button> : null}
           <button
             className="icon-button"
             aria-label="Обновить дорожные карты"
@@ -109,15 +139,15 @@ export function ConnectedRoadmaps({
           </button>
         </div>
       </header>
-      <nav className="rm-tabs" aria-label="Разделы дорожной карты">
-        {roadmapTabs.map(([key, label]) => {
+      {tab !== 'territory' ? <nav className="rm-tabs" aria-label="Разделы дорожной карты">
+        {roadmapTabs.filter(([key]) => key !== 'territory').map(([key, label]) => {
           const Icon = tabIcons[key];
           return (
             <button
               key={key}
               className={tab === key ? 'active' : ''}
               aria-current={tab === key ? 'page' : undefined}
-              disabled={key !== 'territory' && !snapshot}
+              disabled={!snapshot}
               onClick={() => {
                 setTab(key);
                 setEditor(null);
@@ -128,20 +158,7 @@ export function ConnectedRoadmaps({
             </button>
           );
         })}
-      </nav>
-      {snapshot ? (
-        <div className="rm-team-strip">
-          <span>
-            <Users size={15} />
-            {snapshot.members.length
-              ? snapshot.members.map((member) => member.fullName).join(' · ')
-              : 'В команде пока нет участников'}
-          </span>
-          <span>
-            {editable ? 'Общая карта команды' : 'Режим чтения'} · редакция {snapshot.revision}
-          </span>
-        </div>
-      ) : null}
+      </nav> : null}
       {controller.error ? (
         <p className="session-message" data-tone="error" role="alert">
           {controller.error}
@@ -167,7 +184,7 @@ export function ConnectedRoadmaps({
           {isHost && index ? (
             <div className="rm-room-settings">
               <label>
-                <span>Команды разрабатывают карты для</span>
+                <span>Уровень команд</span>
                 <select
                   aria-label="Уровень территориальных команд"
                   disabled={
@@ -188,11 +205,6 @@ export function ConnectedRoadmaps({
                   <option value="federal">Российской Федерации</option>
                 </select>
               </label>
-              <p>
-                {index.configuration.locked
-                  ? 'Уровень и выпуск данных закреплены после создания первой команды.'
-                  : 'Уровень можно выбрать до создания первой команды.'}
-              </p>
             </div>
           ) : null}
           {data.index && data.registry && index ? (
@@ -200,34 +212,18 @@ export function ConnectedRoadmaps({
               index={data.index}
               registry={data.registry}
               scope={index.configuration.roomLevel}
-              fixedRegionId={session.regionId}
-              rooms={index.rooms}
+              initialRegionId={session.regionId}
+              teamCounts={teamCounts}
               selectedKey={selectedKey}
-              onSelect={setSelectedKey}
-              myRoadmapId={index.myRoadmapId}
+              onSelect={key => void openTerritory(key)}
+              canOpen={key => canJoin || rooms.has(key)}
               busy={controller.busy || task.working}
-              allowJoin={session.role !== 'observer' && session.status === 'open' && editionMatches}
-              onJoin={(record) =>
-                void task.run(async () => {
-                  await controller.actions.join({
-                    territoryKey: record.territoryKey,
-                    dataEditionId: data.index!.editionId,
-                    expectedAssignmentRevision: index.assignmentRevision,
-                  });
-                  setSelectedKey(record.territoryKey);
-                  setTab('diagnosis');
-                }, 'Вы присоединились к общей дорожной карте территории.')
-              }
-              onOpenRoom={(id) => {
-                controller.actions.select(id);
-                setTab('diagnosis');
-              }}
             />
           ) : !data.error ? (
             <p className="rm-empty" aria-busy={true}>
               {controller.error
                 ? 'Проверьте подключение занятия и миграцию дорожных карт.'
-                : 'Загружаем территории и состав команд…'}
+                : 'Загружаем территории…'}
             </p>
           ) : null}
         </>
@@ -235,7 +231,7 @@ export function ConnectedRoadmaps({
         <p className="rm-empty" aria-busy={controller.loading}>
           {controller.loading
             ? 'Открываем выбранную дорожную карту…'
-            : 'Сначала выберите команду территории.'}
+            : 'Сначала выберите территорию.'}
         </p>
       ) : tab === 'diagnosis' ? (
         data.index && data.registry && selectedTerritory && editionMatches ? (

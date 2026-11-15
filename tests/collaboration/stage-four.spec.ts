@@ -609,18 +609,15 @@ test('private survey review requires a new generalized barrier, projector payloa
 
     const requests: string[] = [];
     const payloads: Promise<unknown>[] = [];
-    page.context().once('page', (opened) => {
-      audit.watch(opened, 'restricted-barriers-projector');
-      opened.on('request', (outgoing) => {
-        if (outgoing.url().includes('/rest/v1/rpc/')) requests.push(outgoing.url());
-      });
-      opened.on('response', (response) => {
-        if (response.url().endsWith('/dw_barriers_projector_snapshot') && response.ok()) payloads.push(response.json());
-      });
+    projector = await page.context().newPage();
+    audit.watch(projector, 'restricted-barriers-projector');
+    projector.on('request', (outgoing) => {
+      if (outgoing.url().includes('/rest/v1/rpc/')) requests.push(outgoing.url());
     });
-    const opening = page.context().waitForEvent('page');
-    await page.getByRole('link', { name: 'Экран проектора', exact: true }).click({ modifiers: ['ControlOrMeta'] });
-    projector = await opening;
+    projector.on('response', (response) => {
+      if (response.url().endsWith('/dw_barriers_projector_snapshot') && response.ok()) payloads.push(response.json());
+    });
+    await projector.goto(`/#session=${sessionId}&projector=1`);
     await expect(projector).toHaveURL(new RegExp(`session=${sessionId}.*projector=1`));
     await projector.getByRole('button', { name: 'Барьеры', exact: true }).click();
     await expect(projector.getByRole('heading', { name: generalTitle, exact: true })).toBeVisible();

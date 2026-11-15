@@ -83,7 +83,11 @@ async function cleanInterface(page) {
     'Введите свой email, чтобы открыть занятия и продолжить сохранённую работу.',
     'Используйте тот же email, чтобы продолжить свою работу в следующий раз.',
     'От документа — к общему решению', 'Занятие открыто.', 'Источники и основания',
+    'Обновляется автоматически', 'Республика Мордовия · Муниципальный уровень',
   ]) await expect(page.getByText(text, { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('main').getByRole('heading', { name: 'Демографическая мастерская', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Работать с документами', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Экран проектора', exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /^(Пригласить участников|Разрешить присоединение|Закрыть присоединение|Создать занятие|Приостановить занятие|Завершить занятие)$/u })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Ваши занятия', exact: true })).toHaveCount(0);
   await expect(page.locator('vite-error-overlay')).toHaveCount(0);
@@ -263,9 +267,8 @@ try {
   });
   await stage('Public barrier words appear on the projector and update from the second participant', a.page, async () => {
     await barrier(a.page, 'Дорогая аренда жилья', 'Жильё съёмное. Жильё требует больших расходов; трудно планировать семейный бюджет.');
-    const popup = a.page.context().waitForEvent('page');
-    await a.page.getByRole('link', { name: 'Экран проектора', exact: true }).click({ modifiers: ['ControlOrMeta'] });
-    projector = await popup; watch(projector); lastPage = projector;
+    projector = await a.page.context().newPage(); watch(projector); lastPage = projector;
+    await projector.goto(`${url}#sessions=1&projector=1`);
     await expect(projector.getByRole('region', { name: 'Флипчарт на проекторе', exact: true })).toBeVisible();
     await projector.getByRole('button', { name: 'Темы', exact: true }).click();
     await expect(projector.getByRole('heading', { name: 'Темы общей доски', exact: true })).toBeVisible();
@@ -299,6 +302,17 @@ try {
   await stage('Teacher enters the existing common board and synchronizes without obsolete invitations', teacher.page, async () => {
     expect(await enter(teacher.page, 'omnistat@yandex.ru', NAME_TEACHER, true, 'host')).toBe(sessionId);
     await expect(teacher.page.locator('.header-account').getByText('Преподаватель', { exact: true })).toBeVisible();
+    const settings = teacher.page.getByRole('banner').getByRole('button', { name: 'Параметры мастерской', exact: true });
+    await settings.click();
+    const settingsDialog = teacher.page.getByRole('dialog', { name: 'Параметры мастерской', exact: true });
+    await expect(settingsDialog.getByRole('button', { name: 'Сохранить параметры', exact: true })).toBeEnabled();
+    await settingsDialog.getByRole('button', { name: 'Отмена', exact: true }).click();
+    await expect(settingsDialog).toBeHidden();
+    await expect(settings).toBeFocused();
+    await teacher.page.setViewportSize({ width: 390, height: 844 });
+    await expect(settings).toBeVisible();
+    await noOverflow(teacher.page, 390);
+    await teacher.page.setViewportSize({ width: 1440, height: 1000 });
     // Observe two normal reconciliation polls so the unchanged-cursor host path runs as well.
     for (let poll = 0; poll < 2; poll += 1) {
       const response = await rpc(teacher.page, 'dw_session_cursor');

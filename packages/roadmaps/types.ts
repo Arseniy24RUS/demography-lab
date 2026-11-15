@@ -331,6 +331,10 @@ export interface RoadmapsIndex {
   assignmentRevision: number;
   rooms: RoadmapRoomSummary[];
 }
+export interface RoadmapPresence {
+  sessionId: string;
+  counts: Array<{ roadmapId: string; count: number }>;
+}
 export interface RoadmapReview {
   decision: 'revise' | 'discussed';
   comment: string;

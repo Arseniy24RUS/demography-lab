@@ -7,7 +7,6 @@ import type {
   SessionRegionOption,
 } from '../../../../../packages/collaboration/types';
 import { SessionAuthPanel } from './SessionAuthPanel';
-import { SessionConnection } from './SessionConnection';
 import { ActiveSession } from './ActiveSession';
 import { OfflineSeminarPanel } from './OfflineSeminarPanel';
 
@@ -35,18 +34,10 @@ export function SessionArea({
   renderLiveVotes?: () => ReactNode;
 }) {
   const ready = state.auth.status === 'signed-in' && state.bootstrap?.profile;
+  const active = Boolean(ready && state.snapshot);
   return (
-    <main id={mainContentId} className={`session-page${ready && state.snapshot ? ' session-page--shared' : ''}`}>
-      <header className="session-heading">
-        <div>
-          <h1>{ready && state.snapshot ? state.snapshot.session.title : 'Мастерская'}</h1>
-        </div>
-        <div className="session-heading-actions">
-          {ready && state.snapshot ? (
-            <SessionConnection connection={state.connection} lastSyncedAt={state.lastSyncedAt} />
-          ) : null}
-        </div>
-      </header>
+    <main id={mainContentId} className={`session-page${active ? ' session-page--shared' : ''}`} aria-label="Мастерская">
+      {active ? null : <header className="session-heading"><h1>Мастерская</h1></header>}
       {state.offline && ready && state.bootstrap?.canCreateSession ? (
         <details className="workspace-settings"><summary>Локальная сеть</summary>
           <OfflineSeminarPanel state={state} actions={actions} />

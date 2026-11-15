@@ -469,6 +469,15 @@
 .rm-territory-list table td {
   min-width: 150px;
 }
+.rm-territory-list-team { min-width: 0; margin-top: 0; }
+.rm-territory-list-team .rm-table-scroll { max-height: clamp(250px, 65vh, 540px); }
+.rm-team-picker { align-items: start; }
+.rm-territory-list-team thead th { position: sticky; top: 0; z-index: 1; white-space: normal; }
+.rm-territory-list-team th:last-child,
+.rm-territory-list-team td.rm-live-count { text-align: center; }
+.rm-territory-list-team td.rm-live-count { min-width: 2.8em; font-variant-numeric: tabular-nums; vertical-align: middle; }
+.rm-territory-list-team tbody th { min-width: 0; padding-block: 6px; }
+.rm-territory-list-team .rm-table-select { width: 100%; min-height: 44px; overflow-wrap: anywhere; }
 .rm-territory-list .button {
   font-size: 12px;
 }
@@ -1521,6 +1530,7 @@
     grid-template-columns: 1fr;
     gap: 0;
   }
+  .rm-team-picker { gap: 14px; }
   .rm-territory-inspector {
     border-left: none;
     border-top: 1px solid var(--rm-line);

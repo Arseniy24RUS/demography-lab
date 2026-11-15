@@ -254,15 +254,12 @@ test('a blinded round preserves neutral and withdrawn answers, reveals a denomin
     await page.getByRole('group', { name: `Оценка семейства «${FAMILY_TITLE}»`, exact: true })
       .getByRole('button', { name: 'Не поддерживаю', exact: true }).click();
     const projectorRequests: string[] = [];
-    page.context().once('page', (opened) => {
-      audit.watch(opened, 'projector');
-      opened.on('request', (outgoing) => {
-        if (outgoing.url().includes('/rest/v1/rpc/')) projectorRequests.push(outgoing.url());
-      });
+    projector = await page.context().newPage();
+    audit.watch(projector, 'projector');
+    projector.on('request', (outgoing) => {
+      if (outgoing.url().includes('/rest/v1/rpc/')) projectorRequests.push(outgoing.url());
     });
-    const opened = page.context().waitForEvent('page');
-    await page.getByRole('link', { name: 'Экран проектора', exact: true }).click({ modifiers: ['ControlOrMeta'] });
-    projector = await opened;
+    await projector.goto(`/#session=${sessionId}&projector=1`);
     await expect(projector).toHaveURL(new RegExp(`session=${sessionId}.*projector=1`));
     await projector.getByRole('button', { name: 'Рейтинг', exact: true }).click();
     await expect(projector.getByRole('heading', { name: 'Участники формируют свои оценки', exact: true })).toBeVisible();

@@ -1763,7 +1763,7 @@ svg {
   .top-actions {
     gap: 5px;
   }
-  .top-actions .icon-button {
+  .top-actions .icon-button:not(.workshop-settings-button) {
     display: none;
   }
   .page-intro {

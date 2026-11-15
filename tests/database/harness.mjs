@@ -65,6 +65,7 @@ export const rpcArguments = Object.freeze({
   dw_workspace_vote: ['p_operation_id', 'p_session_id', 'p_family_id', 'p_value', 'p_expected_revision', 'p_expected_fingerprint'],
   dw_roadmaps_index: ['p_session_id'],
   dw_roadmaps_cursor: ['p_session_id'],
+  dw_roadmap_presence: ['p_session_id', 'p_view_id', 'p_roadmap_id', 'p_revision'],
   dw_roadmap_snapshot: ['p_session_id', 'p_roadmap_id'],
   dw_roadmap_version: ['p_session_id', 'p_roadmap_id', 'p_version_id'],
   dw_roadmaps_projector_snapshot: ['p_session_id', 'p_roadmap_id'],

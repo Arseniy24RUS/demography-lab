@@ -46,12 +46,9 @@ async function tab(page, name) {
 }
 async function roadmap(page) {
   await tab(page, 'Дорожные карты');
-  await tab(page, 'Территория');
+  const back = page.getByRole('button', { name: 'К территориям', exact: true });
+  if (await back.isVisible()) await back.click();
   await page.locator('.rm-table-select').filter({ hasText: 'Ардатовский муниципальный район' }).click();
-  const join = page.getByRole('button', { name: 'Создать команду территории', exact: true })
-    .or(page.getByRole('button', { name: 'Присоединиться к команде', exact: true }));
-  if (await join.count()) await join.click();
-  else await page.getByRole('button', { name: 'Открыть дорожную карту', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Диагностика и сценарии', exact: true })).toBeVisible();
 }
 async function snapshot(page) {

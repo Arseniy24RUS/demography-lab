@@ -2,6 +2,7 @@ import { randomUuid } from '../../../../packages/security/crypto.mjs';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { SessionApi } from '../lib/session-api';
 import { RoadmapsApi } from '../lib/roadmaps-api';
+import { useRoadmapPresence } from './useRoadmapPresence';
 import type {
   SaveStatisticsInput,
   RestoreStatisticsInput,
@@ -35,12 +36,14 @@ export function useRoadmaps({
   userId,
   enabled = true,
   projector = false,
+  presenceActive,
 }: {
   api: SessionApi | null;
   sessionId: string | null;
   userId: string | null;
   enabled?: boolean;
   projector?: boolean;
+  presenceActive?: boolean;
 }) {
   const [index, setIndex] = useState<RoadmapsIndex | null>(null);
   const [snapshot, setSnapshot] = useState<RoadmapSnapshot | null>(null);
@@ -69,6 +72,11 @@ export function useRoadmaps({
     clientRef.current = { transport: api, user: userId, client: new RoadmapsApi(api) };
   if (!api || !userId) clientRef.current = null;
   const client = clientRef.current?.client ?? null;
+  const presenceCounts = useRoadmapPresence(
+    enabled && (projector || presenceActive !== undefined) ? client : null,
+    sessionId,
+    !projector && presenceActive ? snapshot?.roadmapId ?? null : null,
+  );
   useEffect(() => {
     mounted.current = true;
     return () => {
@@ -395,6 +403,6 @@ export function useRoadmaps({
       return next;
     },
   };
-  return { index, snapshot, projection, selectedId, loading, busy, error, actions };
+  return { index, snapshot, projection, selectedId, loading, busy, error, presenceCounts, actions };
 }
 export type RoadmapsController = ReturnType<typeof useRoadmaps>;

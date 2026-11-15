@@ -25,16 +25,18 @@ export function RoadmapProjection({
   onExit(): void;
 }) {
   const controller = useRoadmaps({ api, sessionId, userId, projector: true });
-  const [held, setHeld] = useState<RoadmapsProjection | null>(null),
+  const [held, setHeld] = useState<{
+    projection: RoadmapsProjection;
+    presenceCounts: ReadonlyMap<string, number> | null;
+  } | null>(null),
     [error, setError] = useState<string | null>(null),
     [scenarioId, setScenarioId] = useState('');
   const data = useTerritoryDataset(),
     [map, setMap] = useState<TerritoryMapPack | null>(null);
-  const shown = controller.projection
-    ? held?.sessionId === controller.projection.sessionId
-      ? held
-      : controller.projection
-    : null;
+  const frozen = held && held.projection.sessionId === controller.projection?.sessionId ? held : null;
+  const shown = frozen?.projection ?? controller.projection;
+  const presenceCounts = frozen ? frozen.presenceCounts : controller.presenceCounts;
+  const activeCount = (roomId: string) => presenceCounts ? presenceCounts.get(roomId) ?? 0 : '—';
   const selected = shown?.selected ?? null,
     scenarios = selected ? computeRoadmapScenarios(selected) : [];
   const scenario = scenarios.find((item) => item.itemId === scenarioId) ?? scenarios[0],
@@ -122,10 +124,12 @@ export function RoadmapProjection({
           <button
             className="button button-secondary"
             disabled={!controller.projection}
-            onClick={() => setHeld(held ? null : controller.projection)}
+            onClick={() => setHeld(frozen || !controller.projection ? null : {
+              projection: controller.projection, presenceCounts: controller.presenceCounts,
+            })}
           >
-            {held ? <Play size={16} /> : <Pause size={16} />}{' '}
-            {held ? 'Показать изменения' : 'Зафиксировать показ'}
+            {frozen ? <Play size={16} /> : <Pause size={16} />}{' '}
+            {frozen ? 'Показать изменения' : 'Зафиксировать показ'}
           </button>
           <button
             className="button button-quiet"
@@ -295,8 +299,8 @@ export function RoadmapProjection({
                       >
                         <title>
                           {room
-                            ? `${room.territory.name}: ${room.memberCount} участн.`
-                            : 'Команда не создана'}
+                            ? `${room.territory.name}: ${activeCount(room.id)} сейчас`
+                            : 'Нет дорожной карты'}
                         </title>
                       </path>
                       {room ? (
@@ -322,7 +326,7 @@ export function RoadmapProjection({
                   {shown.rooms.filter((room) => room.latestVersionKind === 'submitted').length}
                 </strong>
                 <span>команд с последней версией к обсуждению</span>
-                <p>Светлый контур — команда ещё не создана. Синие территории — карты в работе.</p>
+                <p>Синим отмечены территории с дорожными картами.</p>
               </div>
             </div>
           ) : null}
@@ -331,7 +335,7 @@ export function RoadmapProjection({
               <button className="rm-projection-room" key={room.id} onClick={() => select(room.id)}>
                 <strong>{room.territory.name}</strong>
                 <span>
-                  {room.memberCount} участн. · {room.activeItemCount} записей
+                  {activeCount(room.id)} сейчас · {room.activeItemCount} записей
                 </span>
                 <span>
                   {room.latestVersionKind === 'submitted'

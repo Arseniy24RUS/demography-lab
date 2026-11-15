@@ -84,16 +84,9 @@ async function createSession(page: Page, region = 'respublika-mordoviia') {
 }
 async function roadmap(page: Page, name = ARDATOV) {
   await tab(page, 'Дорожные карты');
-  await tab(page, 'Территория');
+  const back = page.getByRole('button', { name: 'К территориям', exact: true });
+  if (await back.isVisible()) await back.click();
   await page.locator('.rm-table-select').filter({ hasText: name }).click();
-  await expect(
-    page.locator('.rm-territory-inspector').getByRole('heading', { name, exact: true }),
-  ).toBeVisible();
-  const join = page
-    .getByRole('button', { name: 'Создать команду территории', exact: true })
-    .or(page.getByRole('button', { name: 'Присоединиться к команде', exact: true }));
-  if (await join.count()) await join.click();
-  else await page.getByRole('button', { name: 'Открыть дорожную карту', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: 'Диагностика и сценарии', exact: true }),
   ).toBeVisible();
@@ -356,16 +349,16 @@ test('touch corrections are shared, historical scenarios stay pinned and exporte
     expect(repeatedOriginal.sha256).toBe(originalExport.sha256);
 
     const projectorPayloads: Array<Promise<unknown>> = [];
-    page.context().once('page', (opened) => {
-      audit.watch(opened, 'statistics-projector');
-      opened.on('response', (response) => {
-        if (response.ok() && response.url().endsWith('/dw_roadmaps_projector_snapshot'))
-          projectorPayloads.push(response.json());
-      });
+    projector = await page.context().newPage();
+    audit.watch(projector, 'statistics-projector');
+    projector.on('response', (response) => {
+      if (response.ok() && response.url().endsWith('/dw_roadmaps_projector_snapshot'))
+        projectorPayloads.push(response.json());
     });
-    const opened = page.context().waitForEvent('page');
-    await page.getByRole('link', { name: 'Экран проектора', exact: true }).click({ modifiers: ['ControlOrMeta'] });
-    projector = await opened;
+    const projectorUrl = new URL(page.url());
+    const sessionId = new URLSearchParams(projectorUrl.hash.slice(1)).get('session');
+    projectorUrl.hash = sessionId ? `session=${sessionId}&projector=1` : 'sessions=1&projector=1';
+    await projector.goto(projectorUrl.href);
     await projector
       .getByRole('navigation', { name: 'Сцены проектора', exact: true })
       .getByRole('button', { name: 'Дорожные карты', exact: true })
@@ -384,7 +377,7 @@ test('touch corrections are shared, historical scenarios stay pinned and exporte
     }
     await capture(projector, info, 'stage6-team-statistics-projector.png');
     await openSessionAfterReload(phone);
-    await tab(phone, 'Дорожные карты');
+    await roadmap(phone);
     await tab(phone, 'Диагностика');
     await expect(
       phone.getByLabel('Год факта', { exact: true }).locator('option[value="2024"]'),
@@ -517,7 +510,7 @@ test('a real municipality without imported rows can start a manual series on a p
       .poll(() => observed.current?.items.find((item) => item.kind === 'fact')?.data.value)
       .toBe(6120);
     await openSessionAfterReload(phone);
-    await tab(phone, 'Дорожные карты');
+    await roadmap(phone, NO_SOURCE_TERRITORY);
     await tab(phone, 'Диагностика');
     await expect(
       phone.getByLabel('Год факта', { exact: true }).locator('option[value="2025"]'),

@@ -35,7 +35,8 @@ const index = (e, who = e.alice, database = db) =>
 const snapshot = (e, roomId = e.roomId, who = e.alice, database = db) =>
   rpc(who, 'dw_roadmap_snapshot', { p_session_id: e.sessionId, p_roadmap_id: roomId }, database);
 const municipalities = () => dataset.territories.filter((t) => t.record.level === 'municipality');
-const territory = (i = 0) => municipalities()[i].record.territoryKey;
+const territory = (i = 0) =>
+  municipalities().filter(({ record }) => record.regionId === 'respublika-mordoviia')[i].record.territoryKey;
 const joinInput = (key = territory(), revision = 0) => ({
   territoryKey: key,
   dataEditionId: dataset.id,
@@ -147,7 +148,7 @@ async function revoke(e, who) {
 before(async () => {
   db = await createTestDatabase();
   dataset = await loadRoadmapDataset({
-    regionIds: ['respublika-mordoviia', 'moskva'],
+    regionIds: ['respublika-mordoviia', 'moskva', 'moskovskaia-oblast'],
     fixture: true,
   });
   await seedRoadmapDataset(db, dataset, { allowFixture: true });
@@ -247,6 +248,88 @@ describe('Stage 5 private territorial roadmap transactions', () => {
       ),
       'IDEMPOTENCY_CONFLICT',
     );
+  });
+
+  it('opens one shared team outside the initial region without replacing its saved roadmap', async () => {
+    const e = await setup({ room: false });
+    const entered = await rpc(e.alice, 'dw_enter_workspace', { p_operation_id: id() });
+    assert.equal(entered.session.id, e.sessionId);
+    assert.equal(entered.session.regionId, 'respublika-mordoviia');
+    try {
+      const away = municipalities().find(({ record }) => record.roomEligible && record.regionId === 'moskovskaia-oblast');
+      assert.ok(away);
+      const key = away.record.territoryKey;
+      const first = await named(e, 'dw_join_roadmap', joinInput(key));
+      e.roomId = first.roadmapId;
+      assert.equal(first.territory.regionId, 'moskovskaia-oblast');
+      assert.equal(first.roomLevel, 'municipality');
+      assert.equal(first.canEdit, true);
+      const saved = await save(e, 'risk', risk());
+      const second = await named(e, 'dw_join_roadmap', joinInput(key), e.bob);
+      assert.equal(second.roadmapId, first.roadmapId);
+      assert.deepEqual(only(second, 'risk'), only(saved, 'risk'));
+      assert.equal(second.members.length, 2);
+      assert.equal((await index(e)).rooms.length, 1);
+      await code(named(e, 'dw_join_roadmap', joinInput('region:moskva', 1)), 'TERRITORY_NOT_ELIGIBLE');
+
+      const local = await named(e, 'dw_join_roadmap', joinInput(territory(), 1));
+      assert.notEqual(local.roadmapId, first.roadmapId);
+      const returned = await named(e, 'dw_join_roadmap', joinInput(key, 2));
+      assert.equal(returned.roadmapId, first.roadmapId);
+      assert.deepEqual(only(returned, 'risk'), only(saved, 'risk'));
+
+      const anonymous = (sql, args) => db.transaction(async tx => {
+        await tx.exec('set local role anon');
+        return (await tx.query(sql, args)).rows[0].result;
+      });
+      const declared = await anonymous('select public.dw_identify($1,$2) result', [`${id()}@stage14.test`, 'Открытый вход']);
+      const gateway = (method, args) => anonymous('select public.dw_entry_rpc($1,$2,$3::jsonb) result',
+        [declared.session.access_token, method, JSON.stringify(args)]);
+      const joined = await gateway('dw_enter_workspace', { p_operation_id: id() });
+      assert.equal(joined.session.id, e.sessionId);
+      const counts = await gateway('dw_roadmap_presence', {
+        p_session_id: e.sessionId, p_view_id: id(), p_roadmap_id: first.roadmapId, p_revision: 1,
+      });
+      assert.deepEqual(counts, { sessionId: e.sessionId, counts: [{ roadmapId: first.roadmapId, count: 1 }] });
+    } finally {
+      await db.query('delete from private.dw_current_workspace where session_id=$1', [e.sessionId]);
+    }
+  });
+
+  it('counts distinct live people and expires or switches views without touching saved work or assignments', async () => {
+    const e = await setup();
+    const other = await named(e, 'dw_join_roadmap', joinInput(territory(1)), e.bob);
+    const foreign = await setup();
+    const outsider = await user('Посторонний наблюдатель');
+    const before = await index(e);
+    const initial = await snapshot(e);
+    const presence = (who, view, room, revision = 1) => rpc(who, 'dw_roadmap_presence', {
+      p_session_id: e.sessionId, p_view_id: view, p_roadmap_id: room, p_revision: revision,
+    });
+    const counts = result => Object.fromEntries(result.counts.map(({ roadmapId, count }) => [roadmapId, count]));
+    const a = id(), secondTab = id(), b = id();
+    assert.deepEqual(await presence(e.host, null, null), { sessionId: e.sessionId, counts: [] });
+    await code(presence(outsider, null, null), 'FORBIDDEN');
+    await code(presence(e.alice, null, e.roomId), 'INVALID_INPUT');
+    await code(presence(e.alice, a, e.roomId, 0), 'INVALID_INPUT');
+    await code(presence(e.alice, a, foreign.roomId), 'NOT_FOUND');
+    assert.deepEqual(counts(await presence(e.alice, a, e.roomId)), { [e.roomId]: 1 });
+    assert.deepEqual(counts(await presence(e.alice, secondTab, e.roomId)), { [e.roomId]: 1 });
+    assert.deepEqual(counts(await presence(e.bob, b, e.roomId)), { [e.roomId]: 2 });
+    const viewLease = await db.query('select extract(epoch from expires_at-clock_timestamp()) seconds from private.dw_roadmap_view_presence where session_id=$1 and user_id=$2 and view_id=$3', [e.sessionId, e.alice, a]);
+    assert.ok(Number(viewLease.rows[0].seconds) > 0 && Number(viewLease.rows[0].seconds) <= 25);
+    assert.deepEqual(counts(await presence(e.bob, b, other.roadmapId, 2)), { [e.roomId]: 1, [other.roadmapId]: 1 });
+    assert.deepEqual(counts(await presence(e.bob, b, e.roomId, 1)), { [e.roomId]: 1, [other.roadmapId]: 1 });
+    assert.deepEqual(counts(await presence(e.alice, a, null, 3)), { [e.roomId]: 1, [other.roadmapId]: 1 });
+    assert.deepEqual(counts(await presence(e.alice, a, e.roomId, 2)), { [e.roomId]: 1, [other.roadmapId]: 1 });
+    await db.query("update private.dw_roadmap_view_presence set expires_at=clock_timestamp()-interval '1 second' where session_id=$1 and user_id=$2", [e.sessionId, e.alice]);
+    assert.deepEqual(counts(await presence(e.host, null, null)), { [other.roadmapId]: 1 });
+    assert.deepEqual(await index(e), before);
+    assert.deepEqual(await snapshot(e), initial);
+    await denied(asUser(db, e.alice, tx => tx.query('select * from private.dw_roadmap_view_presence')));
+    await revoke(e, e.bob);
+    assert.deepEqual(counts(await presence(e.host, null, null)), {});
+    await code(presence(e.bob, b, other.roadmapId, 3), 'FORBIDDEN');
   });
 
   it('never authorizes old receipts after moving room, changing role, or revoking membership', async () => {
@@ -1048,7 +1131,8 @@ describe('Stage 5 provenance, resource limits and cumulative compatibility', () 
     const tables = await db.query(
       "select c.relname,c.relrowsecurity,has_table_privilege('authenticated',c.oid,'SELECT,INSERT,UPDATE,DELETE') access from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='private' and c.relkind='r' and c.relname like 'dw_roadmap%'",
     );
-    assert.equal(tables.rows.length, 13);
+    assert.equal(tables.rows.length, 14);
+    assert.ok(tables.rows.some(r => r.relname === 'dw_roadmap_view_presence'));
     assert.ok(tables.rows.every((r) => r.relrowsecurity && !r.access));
     const newNames = Object.keys(rpcArguments).filter((name) => name.includes('roadmap'));
     const functions = await db.query(
