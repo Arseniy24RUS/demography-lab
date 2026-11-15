@@ -96,10 +96,22 @@
   box-shadow: inset 0 1px 4px #1b385a03;
 }
 .flipchart-notes[data-view='cloud'] { display: flex; align-items: flex-start; justify-content: center; flex-wrap: wrap; gap: 22px 18px; }
-.flipchart-note {
+.flipchart-note, .objective-card[data-added] {
   --note-accent: #a5482b;
   --note-line: #efd4bc;
   --note-background: #fff4e6;
+}
+.flipchart-note[data-kind='condition'], .objective-card[data-added][data-direction='p'] {
+  --note-accent: #236579;
+  --note-line: #badde0;
+  --note-background: #ecf8f7;
+}
+.flipchart-note[data-neutral], .objective-card[data-added][data-direction='z'] {
+  --note-accent: #526078;
+  --note-line: #d5dee8;
+  --note-background: #f2f5f8;
+}
+.flipchart-note {
   position: relative;
   min-width: 0;
   border: 1px solid var(--note-line);
@@ -108,8 +120,6 @@
   color: #28333f;
   box-shadow: 0 5px 13px #1f34400a, 1px 2px 3px #34485a06;
 }
-.flipchart-note[data-kind='condition'] { --note-accent: #236579; --note-line: #badde0; --note-background: #ecf8f7; }
-.flipchart-note[data-neutral] { --note-accent: #526078; --note-line: #d5dee8; --note-background: #f2f5f8; }
 .flipchart-notes[data-view='cloud'] .flipchart-note { flex: 0 1 245px; width: 245px; }
 .flipchart-notes[data-view='cloud'] .flipchart-note[data-width='medium'] { flex-basis: 290px; width: 290px; }
 .flipchart-notes[data-view='cloud'] .flipchart-note[data-width='wide'] { flex-basis: 330px; width: 330px; }

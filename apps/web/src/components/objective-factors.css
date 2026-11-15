@@ -17,5 +17,7 @@
 .objective-card dt { font-size: .78rem; color: #345478; }
 .objective-card dd { font-variant-numeric: tabular-nums; font-weight: 600; }
 .objective-card .button { align-self: flex-start; margin-top: auto; min-height: 44px; }
+.objective-card[data-added] { background: var(--note-background); border-color: var(--note-line); }
+.objective-card[data-added] .button { color: var(--note-accent); border-color: var(--note-line); }
 .objective-source { margin: 0; font-size: .85rem; }
 .objective-scroll-cursor { block-size: 1px; }

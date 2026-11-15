@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
-import { Plus } from 'lucide-react';
+import { CircleCheck, Plus } from 'lucide-react';
 import { useFlipchart } from '../hooks/useFlipchart';
 import type { SessionApi } from '../lib/session-api';
 import {
@@ -206,7 +206,7 @@ export function ObjectiveFactors({ api, sessionId, userId, regionId, editable }:
           {visible.slice(0, limit).map(({ card, rank }) => {
             const added = chosen.has(card.factorKey);
             const years = card.years;
-            return <li key={rank} className="objective-card" data-direction={card.factorKey.slice(-1)}>
+            return <li key={rank} className="objective-card" data-direction={card.factorKey.slice(-1)} data-added={added || undefined}>
               <span className="objective-section">{rank}{card.section ? `. ${card.section}` : ''}</span>
               <h3>{card.title}</h3>
               {card.info.length ? <p>{card.info.join(' · ')}</p> : null}
@@ -214,7 +214,9 @@ export function ObjectiveFactors({ api, sessionId, userId, regionId, editable }:
                 {card.interval ? <div><dt>95% интервал</dt><dd>{format.format(card.interval[0])} … {format.format(card.interval[1])}</dd></div> : null}
                 <div><dt>Годы наблюдений</dt><dd title={years.join(', ')}>{years.length ? `${years[0]}–${years.at(-1)} · ${years.length}` : 'Не указаны'}</dd></div></dl>
               <button type="button" className="button button-secondary" disabled={!added && (!editable || board.submitting || board.loading)}
-                onClick={() => added ? setView('board') : void addCard(card)}>{added ? 'На флипчарте' : <><Plus size={16} aria-hidden />На флипчарт</>}</button>
+                onClick={() => added ? setView('board') : void addCard(card)}>
+                {added ? <><CircleCheck size={19} aria-hidden />На флипчарте</> : <><Plus size={16} aria-hidden />На флипчарт</>}
+              </button>
             </li>;
           })}
         </ol>
