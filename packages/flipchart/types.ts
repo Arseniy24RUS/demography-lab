@@ -51,11 +51,11 @@ interface UpdatesBase<TNote> {
 export type FlipchartUpdates = UpdatesBase<FlipchartNote>;
 export type FlipchartProjectionUpdates = UpdatesBase<FlipchartPublicNote>;
 
-export interface FlipchartMutationResult {
+export interface FlipchartMutationResult<TNote extends FlipchartNote | null = FlipchartNote> {
   sessionId: string;
   /** Informational: never advance the read cursor from a mutation response. */
   cursor: number;
-  note: FlipchartNote;
+  note: TNote;
 }
 
 export type AddFlipchartInput = { kind: FlipchartKind; text: string } & (

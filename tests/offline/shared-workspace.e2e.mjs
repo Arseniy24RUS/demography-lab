@@ -161,18 +161,36 @@ try {
     await expect(scenes(a.page)).toBeVisible();
     await cleanInterface(a.page);
   });
-  await stage('Regional map allocation by a participant updates independently on the phone', a.page, async () => {
+  await stage('Two participants open the same programme from the map and list without claiming it', a.page, async () => {
     await scene(a.page, 'Программы');
     await scene(b.page, 'Программы');
     const map = a.page.getByRole('group', { name: 'Карта региональных программ', exact: true });
-    await expect(map.getByRole('button')).toHaveCount(89);
+    await expect(map.locator('[data-region-id]')).toHaveCount(89);
+    const layer = a.page.getByRole('region', { name: 'Карта программ', exact: true });
+    const lengths = () => map.locator('[data-region-id="moskva"] path, [data-region-id="respublika-ingushetiia"] path')
+      .evaluateAll(paths => paths.map(path => path.getAttribute('d').length));
+    const overviewLengths = await lengths();
+    expect(overviewLengths).toHaveLength(2);
+    const detailed = a.page.waitForResponse(response => new URL(response.url()).pathname === '/data/regions.detail.map.json');
+    const zoom = layer.getByRole('button', { name: 'Приблизить карту', exact: true });
+    await zoom.click();
+    await zoom.click();
+    expect((await detailed).status()).toBe(200);
+    await expect.poll(async () => (await lengths()).every((length, i) => length > overviewLengths[i] * 3)).toBe(true);
+    await layer.getByRole('button', { name: 'Показать всю карту', exact: true }).click();
+    await expect.poll(lengths).toEqual(overviewLengths);
     await map.getByRole('button', { name: /^Республика Мордовия:/u }).click();
-    const detail = a.page.getByRole('complementary', { name: 'Выбранная программа', exact: true });
-    await detail.getByRole('button', { name: 'Взять программу', exact: true }).click();
-    await expect(detail).toContainText('В работе');
-    await expect(b.page.getByRole('complementary', { name: 'Выбранная программа', exact: true })).toContainText(`${NAME_A} — проверено`);
+    const reader = page => page.getByRole('region', { name: 'Полный текст программы', exact: true });
+    await expect(reader(a.page)).toBeVisible();
+    const search = b.page.getByRole('searchbox', { name: 'Найти регион' });
+    await search.fill('Мордовия');
+    const list = b.page.getByRole('group', { name: 'Выбрать программу по названию' });
+    await list.getByRole('button', { name: 'Республика Мордовия', exact: true }).click();
+    await expect(reader(b.page)).toBeVisible();
+    await b.page.getByRole('button', { name: 'К программам', exact: true }).click();
+    await expect(search).toHaveValue('Мордовия');
+    await expect(list.getByRole('button', { name: 'Республика Мордовия', exact: true })).toHaveAttribute('data-measures', 'unselected');
     await noOverflow(b.page, 390);
-    await detail.getByRole('button', { name: 'Открыть документ', exact: true }).click();
   });
   await stage('Full source search and exact quotation lead to the prepared card and a real shared publication', a.page, async () => {
     const reader = a.page.getByRole('region', { name: 'Полный текст программы', exact: true });
@@ -194,6 +212,13 @@ try {
     expect(entry.bundle.occurrences.length).toBeGreaterThan(0);
     expect(entry.bundle.occurrences.some(value => value.anchor.spans.some(span => span.exact.includes('компенсация платы')))).toBe(true);
     await expect(publication).toBeHidden();
+    await expect(reader).toBeVisible();
+    const list = b.page.getByRole('group', { name: 'Выбрать программу по названию' });
+    await expect(list.getByRole('button', { name: /Республика Мордовия.*меры отобраны/u })).toHaveAttribute('data-measures', 'selected');
+    await expect(b.page.getByRole('group', { name: 'Карта региональных программ', exact: true })
+      .locator('[data-region-id="respublika-mordoviia"]')).toHaveAttribute('data-measures', 'selected');
+    await a.page.getByRole('button', { name: 'К программам', exact: true }).click();
+    await expect(scenes(a.page).getByRole('button', { name: 'Программы', exact: true })).toHaveAttribute('aria-current', 'page');
     await scene(a.page, 'Практики');
     await scene(b.page, 'Практики');
     await expect(b.page.getByRole('article', { name: PRACTICE, exact: true })).toBeVisible();

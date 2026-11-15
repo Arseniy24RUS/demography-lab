@@ -14,6 +14,7 @@ import { OfflineSeminarPanel } from './OfflineSeminarPanel';
 export function SessionArea({
   state,
   actions,
+  mainContentId = 'main-content',
   regions,
   renderWorkshop,
   renderBarriers,
@@ -24,6 +25,7 @@ export function SessionArea({
 }: {
   state: SessionAreaState;
   actions: SessionAreaActions;
+  mainContentId?: string;
   regions: SessionRegionOption[];
   renderWorkshop?: (view: WorkshopView) => ReactNode;
   renderBarriers?: () => ReactNode;
@@ -34,7 +36,7 @@ export function SessionArea({
 }) {
   const ready = state.auth.status === 'signed-in' && state.bootstrap?.profile;
   return (
-    <main id="main-content" className={`session-page${ready && state.snapshot ? ' session-page--shared' : ''}`}>
+    <main id={mainContentId} className={`session-page${ready && state.snapshot ? ' session-page--shared' : ''}`}>
       <header className="session-heading">
         <div>
           <h1>{ready && state.snapshot ? state.snapshot.session.title : 'Мастерская'}</h1>

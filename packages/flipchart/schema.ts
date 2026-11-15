@@ -3,7 +3,7 @@ import {
   FLIPCHART_MAX_NOTES, FLIPCHART_MAX_TEXT_LENGTH, flipchartKinds, normalizeFlipchartText,
 } from './types';
 import type {
-  FlipchartMutationResult, FlipchartProjectionUpdates, FlipchartUpdates,
+  FlipchartMutationResult, FlipchartNote, FlipchartProjectionUpdates, FlipchartUpdates,
 } from './types';
 
 const uuid = z.uuid();
@@ -45,6 +45,7 @@ function updates<T extends z.ZodType<{ id: string; status: string }>>(noteSchema
 export const flipchartUpdatesSchema = updates(note);
 export const flipchartProjectionUpdatesSchema = updates(publicNote);
 export const flipchartMutationResultSchema = z.strictObject({ sessionId: uuid, cursor: count, note });
+const flipchartFactorMutationResultSchema = flipchartMutationResultSchema.extend({ note: note.nullable() });
 
 const addFields = {
   kind,
@@ -54,6 +55,9 @@ export const addFlipchartInputSchema = z.union([
   z.strictObject(addFields),
   z.strictObject({ ...addFields, board: z.literal('objective'), factorKey, territoryKey: factorKey.optional() }),
 ]);
+export const selectFlipchartFactorInputSchema = z.strictObject({
+  ...addFields, board: z.literal('objective'), factorKey, territoryKey: factorKey, territorySelected: z.boolean(),
+});
 export const voteFlipchartInputSchema = z.strictObject({ value: vote });
 export const statusFlipchartInputSchema = z.strictObject({ status });
 
@@ -65,3 +69,5 @@ function parse<T>(schema: z.ZodType<T>, value: unknown): T {
 export const parseFlipchartUpdates = (value: unknown): FlipchartUpdates => parse(flipchartUpdatesSchema, value);
 export const parseFlipchartProjectionUpdates = (value: unknown): FlipchartProjectionUpdates => parse(flipchartProjectionUpdatesSchema, value);
 export const parseFlipchartMutationResult = (value: unknown): FlipchartMutationResult => parse(flipchartMutationResultSchema, value);
+export const parseFlipchartFactorMutationResult = (value: unknown): FlipchartMutationResult<FlipchartNote | null> =>
+  parse(flipchartFactorMutationResultSchema, value);

@@ -112,3 +112,27 @@ it('sends a catalogue key only to the objective board and ignores the previous b
     p_input: { board: 'objective', factorKey: factor.factorKey, kind: 'condition', text: factor.text },
   }, expect.any(Function));
 });
+
+it('applies explicit territory removal responses without moving the read cursor or retaining stale territory keys', async () => {
+  const selection = { factorKey: 'housing-p', territoryKey: 'town-one' };
+  const shared = { ...note(a, 'Жильё'), kind: 'condition' as const, factorKey: selection.factorKey,
+    territoryKeys: ['region-one', 'town-one'], territoryCount: 2 };
+  const active = { ...shared, territoryKeys: ['region-one'], territoryCount: 1 };
+  const responses = [active, null, { ...active, territoryKeys: [], territoryCount: 0, status: 'withdrawn' as const }];
+  let reads = 0;
+  const api = transport(async () => ++reads === 1 ? frame(2, [shared], true) : frame(reads + 1, []),
+    async () => ({ sessionId, cursor: reads + 2, note: responses.shift() }));
+  const view = renderHook(() => useFlipchart({ api, sessionId, userId: 'one', board: 'objective' }));
+  await waitFor(() => expect(view.result.current.notes).toEqual([shared]));
+  await act(async () => expect(await view.result.current.selectFactor('condition', active.text, selection, false)).toBe(true));
+  expect(api.mutate).toHaveBeenLastCalledWith('dw_flipchart_add', { p_session_id: sessionId,
+    p_input: { board: 'objective', kind: 'condition', text: active.text, ...selection, territorySelected: false },
+  }, expect.any(Function));
+  expect(api.rpc).toHaveBeenLastCalledWith('dw_flipchart_updates',
+    { p_session_id: sessionId, p_after_cursor: 2, p_projector: false, p_board: 'objective-v2' }, expect.any(Function));
+  expect(view.result.current.notes).toEqual([active]);
+  await act(async () => expect(await view.result.current.selectFactor('condition', active.text, selection, false)).toBe(true));
+  expect(view.result.current.notes).toEqual([active]);
+  await act(async () => expect(await view.result.current.selectFactor('condition', active.text, { ...selection, territoryKey: 'region-one' }, false)).toBe(true));
+  expect(view.result.current.notes).toEqual([]);
+});

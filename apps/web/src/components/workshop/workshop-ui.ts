@@ -1,11 +1,9 @@
 import type { ReactNode } from 'react';
 import type { TextAnchor } from '@domain/index';
-import type { SessionSnapshot } from '../../../../../packages/collaboration/types';
+import type { SessionSnapshot, SharedSubmission } from '../../../../../packages/collaboration/types';
 import type {
   CastVoteInput,
   OpenRoundInput,
-  RegionWork,
-  RegionWorkInput,
   SaveFamilyInput,
   VotingRound,
   WorkshopSnapshot,
@@ -23,7 +21,6 @@ export interface WorkshopRegionOption {
 }
 
 export interface WorkshopActions {
-  regionWork(input: RegionWorkInput): Promise<void>;
   saveFamily(input: SaveFamilyInput): Promise<void>;
   deleteFamily(familyId: string, expectedBoardRevision: number): Promise<void>;
   openRound(input: OpenRoundInput): Promise<void>;
@@ -50,6 +47,7 @@ export interface WorkshopAreaProps {
   renderMap: (selection: RegionMapRenderProps) => ReactNode;
   onOpenSource: (anchor: TextAnchor) => void;
   onOpenDocument: (regionId: string) => void;
+  measureRegionIds: ReadonlySet<string>;
   view?: WorkshopView;
   onViewChange?: (view: WorkshopView) => void;
   hideNavigation?: boolean;
@@ -61,30 +59,8 @@ export type ReadyWorkshopProps = Omit<WorkshopAreaProps, 'snapshot'> & {
   snapshot: WorkshopSnapshot;
 };
 
-export const regionWorkLabels = {
-  available: 'Свободна',
-  in_progress: 'В работе',
-  completed: 'Отбор завершён',
-  unavailable: 'Нет текста',
-} as const;
-
-export function leaseExpired(
-  work: Pick<RegionWork, 'status' | 'leaseExpiresAt'> | undefined,
-  now: number,
-): boolean {
-  return Boolean(
-    work?.status === 'in_progress' && work.leaseExpiresAt && Date.parse(work.leaseExpiresAt) <= now,
-  );
-}
-
-export function visibleRegionStatus(
-  available: boolean,
-  work: Pick<RegionWork, 'status' | 'leaseExpiresAt'> | undefined,
-  now: number,
-): keyof typeof regionWorkLabels {
-  if (!available) return 'unavailable';
-  if (leaseExpired(work, now)) return 'available';
-  return work?.status ?? 'available';
+export function programmeMeasureRegions(submissions: readonly Pick<SharedSubmission, 'bundle'>[]) {
+  return new Set(submissions.map(({ bundle }) => bundle.practice.regionId));
 }
 
 export function workshopError(cause: unknown): string {

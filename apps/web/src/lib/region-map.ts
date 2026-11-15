@@ -23,10 +23,35 @@ export function parseRegionMap(raw: unknown): RegionMapData {
   if (!result.success) throw new Error('Не удалось проверить геометрию карты. Список регионов остаётся доступным.');
   return result.data;
 }
+async function fetchRegionMap(path: string) {
+  const response = await fetch(assetUrl(path));
+  if (!response.ok) throw new Error('Карта не загрузилась. Выберите регион в списке или повторите загрузку.');
+  return parseRegionMap(await response.json());
+}
+
 let pending: Promise<RegionMapData> | null = null;
 export function loadRegionMap() {
-  return pending ??= fetch(assetUrl('data/regions.map.json')).then(async (response) => {
-    if (!response.ok) throw new Error('Карта не загрузилась. Выберите регион в списке или повторите загрузку.');
-    return parseRegionMap(await response.json());
-  }).catch((error: unknown) => { pending = null; throw error; });
+  return pending ??= fetchRegionMap('data/regions.map.json')
+    .catch((error: unknown) => { pending = null; throw error; });
+}
+
+export interface RegionMapDetail {
+  source: RegionMapData['source'];
+  shapes: ReadonlyMap<string, RegionMapData['shapes'][number]>;
+}
+
+let pendingDetail: Promise<RegionMapDetail> | null = null;
+export function loadRegionMapDetail() {
+  return pendingDetail ??= Promise.all([loadRegionMap(), fetchRegionMap('data/regions.detail.map.json')])
+    .then(([overview, detail]) => {
+      const featureIds = new Map(overview.shapes.map(({ regionId, featureId }) => [regionId, featureId]));
+      if (JSON.stringify(overview.projection) !== JSON.stringify(detail.projection) ||
+        detail.shapes.some(({ regionId, featureId }) => featureIds.get(regionId) !== featureId)) {
+        throw new Error('Подробные контуры не согласованы с обзорной картой.');
+      }
+      return {
+        source: detail.source,
+        shapes: new Map(detail.shapes.map(shape => [shape.regionId, shape])),
+      };
+    }).catch((error: unknown) => { pendingDetail = null; throw error; });
 }

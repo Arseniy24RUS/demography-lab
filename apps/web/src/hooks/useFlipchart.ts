@@ -19,6 +19,7 @@ type State<T> = {
   pendingIds: ReadonlySet<string>; submitting: boolean; removed: FlipchartNote | null;
   add(kind: FlipchartKind, text: string, factorKey?: string): Promise<boolean>;
   addFactor(kind: FlipchartKind, text: string, selection: FlipchartFactorSelection): Promise<boolean>;
+  selectFactor(kind: FlipchartKind, text: string, selection: FlipchartFactorSelection, selected: boolean): Promise<boolean>;
   vote(note: FlipchartNote, value: FlipchartVote): Promise<void>;
   withdraw(note: FlipchartNote): Promise<void>;
   restore(): Promise<void>; dismissUndo(): void; refresh(): Promise<void>;
@@ -112,7 +113,9 @@ export function useFlipchart({ api, sessionId, userId, projector = false, enable
     return runtime?.active && current.current === key && runtime.key === key && !projector ? runtime : null;
   }
 
-  async function mutate(token: string, call: () => Promise<FlipchartMutationResult>, previous?: FlipchartNote): Promise<FlipchartMutationResult | null> {
+  async function mutate<TNote extends FlipchartNote | null>(
+    token: string, call: () => Promise<FlipchartMutationResult<TNote>>, previous?: FlipchartNote,
+  ): Promise<FlipchartMutationResult<TNote> | null> {
     const runtime = boundRuntime();
     if (!runtime || !sessionId || !client || runtime.pending.has(token)) return null;
     runtime.pending.add(token);
@@ -121,19 +124,22 @@ export function useFlipchart({ api, sessionId, userId, projector = false, enable
     const valid = () => runtime.active && current.current === key && runtimeRef.current === runtime;
     publishBusy(); setFailure(null);
     try {
-      let result = await call();
+      const result = await call();
       if (!valid()) return null;
-      if (board === 'objective' && result.note.territoryKeys === undefined) {
-        const known = (runtime.replica.note(result.note.id) ?? previous) as FlipchartNote | undefined;
-        if (known?.territoryKeys !== undefined) result = { ...result, note: {
-          ...result.note, territoryKeys: known.territoryKeys, territoryCount: known.territoryCount,
-        } };
+      let note = result.note;
+      if (note) {
+        if (board === 'objective' && note.territoryKeys === undefined) {
+          const known = (runtime.replica.note(note.id) ?? previous) as FlipchartNote | undefined;
+          if (known?.territoryKeys !== undefined) note = {
+            ...note, territoryKeys: known.territoryKeys, territoryCount: known.territoryCount,
+          };
+        }
+        runtime.replica.acknowledge({ cursor: result.cursor, note });
+        setSaved({ key, notes: runtime.replica.notes() });
       }
-      runtime.replica.acknowledge(result);
-      setSaved({ key, notes: runtime.replica.notes() });
       // The acknowledgement covers one note only; keep the read cursor intact.
       void runtime.refresh();
-      return result;
+      return { ...result, note };
     } catch (error) {
       if (valid()) {
         setFailure({ key, kind: 'write', message: failureMessage(error) });
@@ -161,6 +167,10 @@ export function useFlipchart({ api, sessionId, userId, projector = false, enable
     if (!client || !sessionId || board !== 'objective') return false;
     return Boolean(await mutate('add', () => client.add(sessionId, { board, kind, text, ...selection })));
   }
+  async function selectFactor(kind: FlipchartKind, text: string, selection: FlipchartFactorSelection, selected: boolean) {
+    if (!client || !sessionId || board !== 'objective') return false;
+    return Boolean(await mutate('add', () => client.selectFactor(sessionId, kind, text, selection, selected)));
+  }
   async function vote(note: FlipchartNote, value: FlipchartVote) {
     if (client && sessionId) await mutate(note.id, () => client.vote(sessionId, note, value), note);
   }
@@ -182,7 +192,7 @@ export function useFlipchart({ api, sessionId, userId, projector = false, enable
     pendingIds: busy?.key === key ? busy.pending : noPending,
     submitting: busy?.key === key ? busy.adding : false,
     removed: undo?.key === key ? undo.note : null,
-    add, addFactor, vote, withdraw, restore,
+    add, addFactor, selectFactor, vote, withdraw, restore,
     dismissUndo: () => setUndo(null),
     refresh: () => runtimeRef.current?.key === key ? runtimeRef.current.refresh() : Promise.resolve(),
   };

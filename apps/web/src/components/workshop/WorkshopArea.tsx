@@ -99,21 +99,21 @@ export function WorkshopArea(props: WorkshopAreaProps) {
         id={`${id}-panel`}
         role={props.hideNavigation ? undefined : 'tabpanel'}
         aria-labelledby={props.hideNavigation ? undefined : `${id}-${view}`}
-        aria-busy={props.loading && !props.snapshot}
+        aria-busy={view !== 'regions' && props.loading && !props.snapshot}
       >
-        {!props.snapshot ? (
+        {view === 'regions' ? (
+          <RegionWorkView {...props} />
+        ) : !props.snapshot ? (
           <div className="workshop-empty workshop-loading" role="status">
             <h2>
               {props.loading ? 'Подключаем мастерскую' : 'Материалы мастерской пока недоступны'}
             </h2>
             <p>
               {props.loading
-                ? 'Получаем распределение программ, семейства и раунды оценки.'
+                ? 'Получаем семейства практик и раунды оценки.'
                 : 'Обновите состояние занятия после подключения серверного модуля.'}
             </p>
           </div>
-        ) : view === 'regions' ? (
-          <RegionWorkView {...props} snapshot={props.snapshot} />
         ) : view === 'families' ? (
           <FamilyWorkbench {...props} snapshot={props.snapshot} />
         ) : (

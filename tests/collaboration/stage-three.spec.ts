@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import {
-  ALICE_NAME, BOB_NAME, HOST_NAME, BASE_URL, GATEWAY_URL, MORDOVIA_TITLE, SAKHALIN_TITLE,
+  ALICE_NAME, BOB_NAME, HOST_NAME, GATEWAY_URL, MORDOVIA_TITLE, SAKHALIN_TITLE,
   BrowserAudit, fixture, freshContext, login, createSession, joinSession,
-  navigation, reader, preparedPractice, publishPractice, openSessionAfterReload, capture, noOverflow, readableVariantColumns,
+  navigation, reader, inspector, preparedPractice, publishPractice, openSessionAfterReload, capture, noOverflow, readableVariantColumns,
 } from './browser-fixture';
 
 const FAMILY_TITLE = 'Доступность дошкольного ухода';
@@ -17,25 +17,41 @@ test.beforeEach(async ({ page, request }) => {
 test.afterEach(async () => { await audit.assertHealthy(); });
 
 async function workshopTab(page: Page, name: 'Карта программ' | 'Семейства практик' | 'Оценивание' | 'Доска карточек') {
+  if (name === 'Карта программ') {
+    await navigation(page).getByRole('button', { name: 'Мастерская', exact: true }).click();
+    await page.getByRole('navigation', { name: 'Этапы коллективной работы', exact: true })
+      .getByRole('button', { name: 'Программы', exact: true }).click();
+    return;
+  }
   const tab = page.getByRole('tab', { name, exact: true });
   const button = page.getByRole('button', { name, exact: true });
   await tab.or(button).first().click();
 }
-const detail = (page: Page) => page.getByRole('complementary', { name: 'Выбранная программа', exact: true });
 const map = (page: Page) => page.getByRole('group', { name: 'Карта региональных программ', exact: true });
+const programmeList = (page: Page) => page.getByRole('group', { name: 'Выбрать программу по названию', exact: true });
+const mordovia = (page: Page) => map(page).locator('[data-region-id="respublika-mordoviia"]');
+
+async function enterSharedWorkshop(page: Page, email: string, name: string) {
+  await page.goto('/');
+  const form = page.locator('.session-access-main form');
+  await form.getByLabel('Email', { exact: true }).fill(email);
+  await form.getByRole('button', { name: 'Войти', exact: true }).click();
+  await form.getByLabel('Фамилия, имя, отчество', { exact: true }).fill(name);
+  await form.getByRole('button', { name: 'Продолжить', exact: true }).click();
+  await expect(page.getByRole('navigation', { name: 'Этапы коллективной работы', exact: true })).toBeVisible();
+}
 
 async function selectOnMap(page: Page, region: string) {
   const target = map(page).getByRole('button', { name: new RegExp(`^${region}:`) });
   await target.focus();
   await page.keyboard.press('Enter');
-  await expect(detail(page).getByRole('heading', { name: region, exact: true })).toBeVisible();
+  await expect(reader(page)).toBeVisible();
 }
 
 async function selectFromList(page: Page, region: string) {
   await page.getByRole('searchbox', { name: 'Найти регион', exact: true }).fill(region);
-  await page.getByRole('group', { name: 'Выбрать программу по названию', exact: true })
-    .getByRole('button', { name: new RegExp(region) }).click();
-  await expect(detail(page).getByRole('heading', { name: region, exact: true })).toBeVisible();
+  await programmeList(page).getByRole('button', { name: new RegExp(region) }).click();
+  await expect(reader(page)).toBeVisible();
 }
 
 async function createFamily(page: Page, titles = [MORDOVIA_TITLE, SAKHALIN_TITLE], name = FAMILY_TITLE) {
@@ -58,67 +74,61 @@ async function publishRegionalVariants(host: Page, participant: Page, mobile = f
   await publishPractice(host, SAKHALIN_TITLE, 'Сахалинский вариант: сравниваем условия без сведения сумм к единому значению.');
 }
 
-test('independent participants contend for one actual map region and a completed review survives reload', async ({
-  page, browser, request,
+test('participants open the same programme and a source-backed publication updates both maps', async ({
+  page, browser,
 }, info) => {
-  const firstContext = await freshContext(browser);
-  const secondContext = await freshContext(browser);
+  const mobileContext = await freshContext(browser, true);
   try {
-    const first = await firstContext.newPage();
-    const second = await secondContext.newPage();
-    audit.watch(first, 'participant-a');
-    audit.watch(second, 'participant-b');
-    await login(page, 'teacher@workshop.test', HOST_NAME, request);
-    const { code } = await createSession(page);
-    await login(first, 'participant-a@workshop.test', ALICE_NAME, request);
-    await joinSession(first, code);
-    await login(second, 'participant-b@workshop.test', BOB_NAME, request);
-    await joinSession(second, code);
-    for (const current of [page, first, second]) {
+    const mobile = await mobileContext.newPage();
+    audit.watch(mobile, 'participant-mobile');
+    await enterSharedWorkshop(page, 'participant-a@workshop.test', ALICE_NAME);
+    await enterSharedWorkshop(mobile, 'participant-b@workshop.test', BOB_NAME);
+    for (const current of [page, mobile]) {
       await workshopTab(current, 'Карта программ');
-      await selectOnMap(current, 'Сахалинская область');
-      await selectOnMap(current, 'Республика Мордовия');
+      await expect(map(current).locator('[data-region-id]')).toHaveCount(89);
+      await expect(mordovia(current)).toHaveAttribute('data-measures', 'unselected');
+      await expect(current.getByRole('button', { name: /^(Взять программу|Освободить программу|Завершить отбор)$/u })).toHaveCount(0);
     }
-    await expect(map(page).getByRole('button')).toHaveCount(89);
-    await expect(detail(first).getByRole('button', { name: 'Взять программу', exact: true })).toBeEnabled();
-    await expect(detail(second).getByRole('button', { name: 'Взять программу', exact: true })).toBeEnabled();
-    audit.expectRejection('dw_region_work', [400, 409]);
-    const responseForClaim = (current: Page) => current.waitForResponse((response) =>
-      response.url() === `${GATEWAY_URL}/rest/v1/rpc/dw_region_work` && response.request().postDataJSON()?.p_action === 'claim');
-    const responses = [responseForClaim(first), responseForClaim(second)];
-    await Promise.all([first, second].map((current) => detail(current).getByRole('button', { name: 'Взять программу', exact: true }).click()));
-    const outcomes = await Promise.all(responses);
-    expect(outcomes.filter((response) => response.status() === 200)).toHaveLength(1);
-    const winningIndex = outcomes[0]!.status() === 200 ? 0 : 1;
-    const winner = [first, second][winningIndex]!;
-    const loser = [first, second][1 - winningIndex]!;
-    expect((await outcomes[1 - winningIndex]!.json()).message).toMatch(/REVISION_CONFLICT|REGION_TAKEN/);
-    const name = winningIndex === 0 ? ALICE_NAME : BOB_NAME;
-    await loser.bringToFront();
-    await expect(detail(loser)).toContainText(name);
-    await expect(detail(loser).getByRole('button', { name: 'Взять программу', exact: true })).toHaveCount(0);
-    await expect(detail(loser).getByRole('button', { name: 'Освободить программу', exact: true })).toHaveCount(0);
-    await winner.bringToFront();
-    await detail(winner).getByRole('button', { name: 'Завершить отбор', exact: true }).click();
-    const completion = winner.getByRole('dialog', { name: 'Завершить отбор практик', exact: true });
-    const confirm = completion.getByRole('button', { name: 'Подтвердить завершение', exact: true });
-    await expect(confirm).toBeDisabled();
-    const note = 'Просмотрены разделы программы; отдельную практику для общего обсуждения пока не выделили.';
-    await completion.getByRole('textbox', { name: /^Результат отбора/ }).fill(note);
-    await confirm.click();
-    await expect(completion).toBeHidden();
-    await expect(detail(winner)).toContainText('Отбор завершён');
-    await page.bringToFront();
-    await expect(detail(page)).toContainText(note);
-    await expect(map(page).getByRole('button', { name: /^Республика Мордовия:/ })).toHaveAccessibleName(/завершён/);
-    await capture(page, info, 'stage3-region-completed-desktop.png');
-    await openSessionAfterReload(winner);
-    await workshopTab(winner, 'Карта программ');
-    await expect(detail(winner)).toContainText(note);
-    await expect(detail(winner).getByRole('button', { name: 'Вернуть в работу', exact: true })).toBeEnabled();
+
+    const moscow = map(page).locator('[data-region-id="moskva"] path');
+    const overview = await moscow.getAttribute('d');
+    const zoomIn = page.getByRole('button', { name: 'Приблизить карту', exact: true });
+    await zoomIn.click();
+    await zoomIn.click();
+    await expect.poll(async () => (await moscow.getAttribute('d'))?.length ?? 0).toBeGreaterThan(overview!.length);
+    await page.getByRole('button', { name: 'Показать всю карту', exact: true }).click();
+    await expect(moscow).toHaveAttribute('d', overview!);
+    await mordovia(page).press('ArrowLeft');
+    await expect(map(page)).toBeVisible();
+    await expect(reader(page)).toHaveCount(0);
+
+    await selectOnMap(page, 'Республика Мордовия');
+    await selectFromList(mobile, 'Республика Мордовия');
+    await mobile.getByRole('button', { name: 'К программам', exact: true }).click();
+    await expect(mobile.getByRole('searchbox', { name: 'Найти регион', exact: true })).toHaveValue('Республика Мордовия');
+    const mobileRegion = programmeList(mobile).getByRole('button', { name: /Республика Мордовия/u });
+    await expect(mobileRegion).toHaveAttribute('data-measures', 'unselected');
+
+    const source = reader(page);
+    await source.getByRole('textbox', { name: 'Поиск в полном тексте', exact: true }).fill('компенсация платы');
+    await source.getByRole('button', { name: /^Страница 59\b/u }).first().click();
+    await source.getByRole('button', { name: 'Выбрать фрагмент 604', exact: true }).click();
+    await source.getByRole('button', { name: 'Связать', exact: true }).click();
+    await inspector(page).getByRole('button', { name: /^Компенсация родительской платы за детский сад.*Есть фрагмент в этой редакции/u }).click();
+    await inspector(page).getByRole('button', { name: 'Отправить в занятие', exact: true }).click();
+    const publication = page.getByRole('dialog', { name: 'Отправить практику в занятие', exact: true });
+    await publication.getByLabel('Комментарий для обсуждения', { exact: true }).fill('Мера с точной цитатой из программы Мордовии.');
+    await publication.getByRole('button', { name: 'Опубликовать в занятии', exact: true }).click();
+    await expect(publication).toBeHidden();
+    await expect(source).toBeVisible();
+    await expect(mordovia(mobile)).toHaveAttribute('data-measures', 'selected');
+    await expect(mobileRegion).toHaveAttribute('data-measures', 'selected');
+    await page.getByRole('button', { name: 'К программам', exact: true }).click();
+    await expect(mordovia(page)).toHaveAttribute('data-measures', 'selected');
+    await noOverflow(mobile, 390);
+    await capture(page, info, 'stage3-programme-source-selected-desktop.png');
   } finally {
-    await firstContext.close();
-    await secondContext.close();
+    await mobileContext.close();
   }
 });
 
@@ -134,22 +144,14 @@ test('desktop curation retains different regional conditions and both source jum
     await login(mobile, 'participant-a@workshop.test', ALICE_NAME, request);
     await joinSession(mobile, code);
     await workshopTab(mobile, 'Карта программ');
+    await expect(mordovia(mobile)).toHaveAttribute('data-measures', 'unselected');
     await selectFromList(mobile, 'Республика Мордовия');
-    await detail(mobile).getByRole('button', { name: 'Взять программу', exact: true }).click();
-    await expect(detail(mobile)).toContainText(ALICE_NAME);
     await noOverflow(mobile, 390);
-    await capture(mobile, info, 'stage3-mobile-map-allocation.png');
-    await detail(mobile).getByRole('button', { name: 'Открыть документ', exact: true }).click();
-    await expect(reader(mobile)).toBeVisible();
+    await capture(mobile, info, 'stage3-mobile-programme-reader.png');
     await expect(reader(mobile).getByRole('textbox', { name: 'Номер страницы', exact: true })).toHaveValue('1');
     await publishRegionalVariants(page, mobile, true);
     await workshopTab(mobile, 'Карта программ');
-    await detail(mobile).getByRole('button', { name: 'Завершить отбор', exact: true }).click();
-    const complete = mobile.getByRole('dialog', { name: 'Завершить отбор практик', exact: true });
-    await expect(complete.getByRole('button', { name: 'Подтвердить завершение', exact: true })).toBeEnabled();
-    await complete.getByRole('button', { name: 'Подтвердить завершение', exact: true }).click();
-    await expect(complete).toBeHidden();
-    await expect(detail(mobile)).toContainText('Отбор завершён');
+    await expect(mordovia(mobile)).toHaveAttribute('data-measures', 'selected');
 
     await workshopTab(page, 'Семейства практик');
     for (const title of [MORDOVIA_TITLE, SAKHALIN_TITLE]) await page.getByRole('checkbox', { name: `Выбрать практику «${title}»`, exact: true }).check();
@@ -290,7 +292,8 @@ test('a blinded round preserves neutral and withdrawn answers, reveals a denomin
     await capture(projector, info, 'stage3-projector-revealed-ranking.png');
     await projector.getByRole('button', { name: 'Карта', exact: true }).click();
     await expect(projector.getByRole('heading', { name: 'Работа с региональными программами', exact: true })).toBeVisible();
-    await expect(map(projector).getByRole('button')).toHaveCount(89);
+    await expect(map(projector).locator('[data-region-id]')).toHaveCount(89);
+    await expect(mordovia(projector)).toHaveAttribute('data-measures', 'selected');
     await capture(projector, info, 'stage3-projector-coverage-map.png');
     await participant.bringToFront();
     await expect(participant.getByRole('heading', { name: 'Оценка участников сессии', exact: true })).toBeVisible();

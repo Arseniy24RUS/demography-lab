@@ -485,12 +485,51 @@ try {
     await expect(vote(b.page, objectiveFirst, 1)).toHaveAttribute('aria-pressed', 'true');
     await expect(vote(b.page, objectiveSecond, -1)).toHaveAttribute('aria-pressed', 'true');
   });
+  await stage('A checkmark removes just its territory and the last removal hides the shared sticker', a.page, async () => {
+    const returnToCards = page => objective(page).getByRole('button', { name: 'Корреляции', exact: true }).click();
+    const openBoard = page => objective(page).getByRole('button', { name: /^Флипчарт факторов/u }).click();
+    const count = page => note(page, objectiveFirst).locator('.flipchart-territory-count');
+    const source = objective(a.page);
+    const housingTitle = 'Общая площадь жилых помещений, приходящаяся в среднем на одного жителя — всего';
+    const originalSticker = await note(b.page, objectiveFirst).getAttribute('data-note-id');
+    const localChoice = () => source.getByRole('listitem')
+      .filter({ has: a.page.getByRole('heading', { name: housingTitle, exact: true }) })
+      .getByRole('button', { name: /^На флипчарт(?:е)?$/u });
+    await expect(count(b.page)).toHaveAttribute('aria-label', 'Территорий: 2');
+    await returnToCards(a.page);
+    await openSaransk(a.page);
+    await source.getByRole('searchbox', { name: 'Показатель', exact: true }).fill(housingTitle);
+    await localChoice().click();
+    await expect(localChoice()).toHaveAttribute('aria-pressed', 'false');
+    await expect(count(b.page)).toHaveAttribute('aria-label', 'Территорий: 1');
+
+    await returnToCards(b.page);
+    const regional = objective(b.page);
+    await regional.getByRole('combobox', { name: 'Уровень территории', exact: true }).selectOption('region');
+    await regional.getByRole('combobox', { name: 'Субъект РФ', exact: true }).selectOption('respublika-mordoviia');
+    const regionalChoice = regional.getByRole('listitem').filter({
+      has: b.page.getByRole('heading', { name: 'Общая площадь жилых помещений на 1 жителя, кв. м', exact: true }),
+    }).getByRole('button', { name: /^На флипчарт(?:е)?$/u });
+    await regionalChoice.click();
+    await expect(regionalChoice).toHaveAttribute('aria-pressed', 'false');
+    await openBoard(b.page);
+    await expect(note(b.page, objectiveFirst)).toHaveCount(0);
+    await expect(note(b.page, objectiveSecond)).toBeVisible();
+
+    await localChoice().click();
+    await expect(localChoice()).toHaveAttribute('aria-pressed', 'true');
+    await expect(count(b.page)).toHaveAttribute('aria-label', 'Территорий: 1');
+    await expect(note(b.page, objectiveFirst)).toHaveAttribute('data-note-id', originalSticker);
+    await expect(vote(b.page, objectiveFirst, 1)).toHaveAttribute('aria-pressed', 'true');
+  });
   expect(legacySurveyRequests).toEqual([]);
   await Promise.allSettled([...responseReads]);
   expect(errors).toEqual([]); expect(failedResponses).toEqual([]); expect(externalRequests).toEqual([]);
   const adds = calls.filter(value => value.path.endsWith('/dw_flipchart_add'));
   expect(adds.filter(value => value.input.p_input.board !== 'objective')).toHaveLength(5);
-  expect(adds.filter(value => value.input.p_input.board === 'objective')).toHaveLength(4);
+  const objectiveChanges = adds.filter(value => value.input.p_input.board === 'objective');
+  expect(objectiveChanges).toHaveLength(7);
+  expect(objectiveChanges.filter(value => value.input.p_input.territorySelected === false)).toHaveLength(2);
   expect(calls.some(value => value.path.endsWith('/dw_flipchart_updates') && Number(value.input.p_after_cursor) > 0)).toBe(true);
   for (const payload of projectorPayloads) privateFree(payload, true);
   for (const payload of participantPayloads) privateFree(payload);

@@ -1,15 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { LockKeyhole } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { WorkshopProjection } from '../../../../../packages/workshop/types';
 import { RankingResults } from './RankingResults';
 import type { RegionMapRenderProps, WorkshopRegionOption } from './workshop-ui';
-import { regionWorkLabels, visibleRegionStatus } from './workshop-ui';
 import '../../workshop.css';
 
 export function WorkshopProjectionView({
   projection,
   regions,
+  measureRegionIds,
   mode,
   renderMap,
   loading = false,
@@ -17,17 +17,13 @@ export function WorkshopProjectionView({
 }: {
   projection: WorkshopProjection | null;
   regions: WorkshopRegionOption[];
+  measureRegionIds: ReadonlySet<string>;
   mode: 'regions' | 'ranking';
   renderMap: (selection: RegionMapRenderProps) => ReactNode;
   loading?: boolean;
   error?: string | null;
 }) {
   const [selected, setSelected] = useState<string | null>(null);
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 15000);
-    return () => window.clearInterval(timer);
-  }, []);
   if (!projection)
     return (
       <section className="workshop-projection-body">
@@ -39,10 +35,7 @@ export function WorkshopProjectionView({
         </div>
       </section>
     );
-  const counts = { available: 0, in_progress: 0, completed: 0, unavailable: 0 };
-  const assignments = new Map(projection.regionWork.map((work) => [work.regionId, work]));
-  for (const region of regions)
-    counts[visibleRegionStatus(region.hasDocument, assignments.get(region.id), now)]++;
+  const covered = regions.filter(region => region.hasDocument && measureRegionIds.has(region.id)).length;
   const selectedRegion = regions.find((region) => region.id === selected);
   const round = projection.round;
   return (
@@ -68,10 +61,10 @@ export function WorkshopProjectionView({
             </div>
             <div className="workshop-projection-coverage">
               <strong>
-                {counts.completed}
+                {covered}
                 <span> / {regions.filter((region) => region.hasDocument).length}</span>
               </strong>
-              <p>отбор завершён</p>
+              <p>регионов с отобранными мерами</p>
             </div>
           </div>
           <div className="workshop-projection-map">
@@ -82,24 +75,13 @@ export function WorkshopProjectionView({
               {selectedRegion ? (
                 <>
                   <strong>{selectedRegion.name}</strong> ·{' '}
-                  {
-                    regionWorkLabels[
-                      visibleRegionStatus(
-                        selectedRegion.hasDocument,
-                        assignments.get(selectedRegion.id),
-                        now,
-                      )
-                    ]
-                  }
+                  {measureRegionIds.has(selectedRegion.id) ? 'Меры отобраны' : 'Меры не отобраны'}
                 </>
               ) : (
                 'Выберите регион для обсуждения'
               )}
             </p>
             <div>
-              <span>
-                В работе <strong>{counts.in_progress}</strong>
-              </span>
               <span>
                 Семейств <strong>{projection.familyCount}</strong>
               </span>
@@ -108,10 +90,6 @@ export function WorkshopProjectionView({
               </span>
             </div>
           </div>
-          <p className="workshop-method-note">
-            Завершение отбора фиксирует вклад группы. Полнота изучения документа и качество
-            источника рассматриваются отдельно.
-          </p>
         </>
       ) : round ? (
         <>

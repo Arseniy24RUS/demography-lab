@@ -1,5 +1,6 @@
 import { Activity, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ArrowLeft,
   BookOpen,
   HelpCircle,
   Library,
@@ -92,6 +93,8 @@ export function App() {
   const [route] = useState(() => new URLSearchParams(location.hash.slice(1)));
   const [projectorMode, setProjectorMode] = useState(() => route.get('projector') === '1');
   const [view, setView] = useState<View>(() => route.has('documents') ? 'documents' : 'sessions');
+  const [programmeReader, setProgrammeReader] = useState(false);
+  const programmeScroll = useRef(0);
   const [mobilePane, setMobilePane] = useState<MobilePane>('document');
   const [selection, setSelection] = useState<TextAnchor | null>(null);
   const [focusAnchor, setFocusAnchor] = useState<TextAnchor | null>(null);
@@ -150,7 +153,7 @@ export function App() {
     sessionId: session.sessionId,
     userId: session.state.auth.userId,
     projector: projectorMode,
-    enabled: Boolean(session.state.bootstrap?.profile) && (view === 'sessions' || projectorMode),
+    enabled: Boolean(session.state.bootstrap?.profile) && (view === 'sessions' || programmeReader || projectorMode),
   });
   const barriers = useBarriers({
     api: session.api,
@@ -423,9 +426,11 @@ export function App() {
         shareDraft.bundle.practice.id,
         shareDraft.expectedRevision,
       );
-      history.replaceState(null, '', `${location.pathname}#sessions=1`);
       setShareDraft(null);
-      setView('sessions');
+      if (!programmeReader) {
+        history.replaceState(null, '', `${location.pathname}#sessions=1`);
+        setView('sessions');
+      }
       notify('Практика с цитатами сохранена в общей работе.');
     } catch (e) {
       fail(e);
@@ -520,7 +525,10 @@ export function App() {
               key={key}
               className={`nav-button ${view === key ? 'active' : ''}`}
               aria-current={view === key ? 'page' : undefined}
-              onClick={() => setView(key)}
+              onClick={() => {
+                setProgrammeReader(false);
+                setView(key);
+              }}
             >
               {label}
             </button>
@@ -542,6 +550,7 @@ export function App() {
             history.replaceState(null, '', `${location.pathname}#sessions=1`);
           }}
           onSignedOut={() => {
+            setProgrammeReader(false);
             setView('sessions');
             history.replaceState(null, '', `${location.pathname}#sessions=1`);
           }}
@@ -553,7 +562,17 @@ export function App() {
             <h1>{titles[view][0]}</h1>
             <p>{titles[view][1]}</p>
           </div>
-          {view === 'documents' ? (
+          {view === 'documents' && programmeReader ? (
+            <button type="button" className="button button-secondary" onClick={() => {
+              setProgrammeReader(false);
+              setView('sessions');
+              history.replaceState(null, '', `${location.pathname}#sessions=1`);
+              requestAnimationFrame(() => window.scrollTo({ top: programmeScroll.current, behavior: 'instant' }));
+            }}>
+              <ArrowLeft size={17} aria-hidden="true" />
+              К программам
+            </button>
+          ) : view === 'documents' ? (
             <button className="button button-secondary" onClick={() => setDialog('atlas')}>
               <MapIcon size={17} />
               Карта программ
@@ -663,9 +682,33 @@ export function App() {
         />
       ) : view === 'territories' ? (
         <Suspense fallback={<main id="main-content" className="loading-screen" aria-busy="true"><p>Открываем территории…</p></main>}><TerritoryExplorer onOpenSession={() => setView('sessions')} /></Suspense>
-      ) : view === 'sessions' ? (
+      ) : view === 'work' ? (
+        <MyWorkView
+          state={state}
+          variants={variants}
+          onOpen={(a) => {
+            setSelectedId(null);
+            void openAnchor(a);
+          }}
+          onOpenCard={(id) => {
+            void openCard(id);
+          }}
+          onEdit={(c) => {
+            void editCard(c);
+          }}
+          saving={saving}
+          savedTo={workspaceTarget}
+          signedIn={session.state.auth.status === 'signed-in'}
+          legacyCount={legacyCount}
+          onAdoptLegacy={() => void adoptLegacy().catch(fail)}
+          onOpenSession={() => setView('sessions')}
+        />
+      ) : null}
+      {view === 'sessions' || (view === 'documents' && programmeReader) ? (
+        <Activity mode={view === 'sessions' ? 'visible' : 'hidden'}>
         <Suspense fallback={sessionLoading}>
           <SessionArea
+            mainContentId={view === 'sessions' ? 'main-content' : 'programme-workspace'}
             state={session.state}
             actions={session.actions}
             renderFlipchart={() => session.state.snapshot && session.state.auth.userId ? (
@@ -713,10 +756,13 @@ export function App() {
                   manifest={manifest}
                   view={workshopView}
                   onOpenDocument={(regionId) => {
-                    const target = manifest.documents.find((item) => item.regionId === regionId);
+                    const target = manifest.documents.find((item) => item.regionId === regionId && readable(item));
                     if (target) {
+                      programmeScroll.current = window.scrollY;
+                      setProgrammeReader(true);
                       selectDocument(target.id);
                       setView('documents');
+                      requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'instant' }));
                     }
                   }}
                 />
@@ -728,28 +774,8 @@ export function App() {
               .sort((a, b) => a.name.localeCompare(b.name, 'ru'))}
           />
         </Suspense>
-      ) : (
-        <MyWorkView
-          state={state}
-          variants={variants}
-          onOpen={(a) => {
-            setSelectedId(null);
-            void openAnchor(a);
-          }}
-          onOpenCard={(id) => {
-            void openCard(id);
-          }}
-          onEdit={(c) => {
-            void editCard(c);
-          }}
-          saving={saving}
-          savedTo={workspaceTarget}
-          signedIn={session.state.auth.status === 'signed-in'}
-          legacyCount={legacyCount}
-          onAdoptLegacy={() => void adoptLegacy().catch(fail)}
-          onOpenSession={() => setView('sessions')}
-        />
-      )}
+        </Activity>
+      ) : null}
       <footer className="workspace-footer">
         <span className="save-status" aria-live="polite">
           <span className={`save-dot ${storageError ? 'error' : saving ? 'busy' : ''}`} />

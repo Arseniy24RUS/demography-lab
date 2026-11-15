@@ -120,7 +120,6 @@ export function useWorkshop(options: { api: SessionApi | null; sessionId: string
     } finally { if (identityRef.current === capturedIdentity) { mutationLock.current = false; setBusy(false); } }
   }
   const actions: WorkshopActions = {
-    regionWork: (input) => mutate((c, id) => c.region(id, input)),
     saveFamily: (input) => mutate((c, id) => c.saveFamily(id, input)),
     deleteFamily: (familyId, revision) => mutate((c, id) => c.deleteFamily(id, familyId, revision)),
     openRound: (input) => mutate((c, id) => c.openRound(id, input)),

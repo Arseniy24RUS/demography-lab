@@ -1,14 +1,19 @@
 import {
   addFlipchartInputSchema,
+  parseFlipchartFactorMutationResult,
   parseFlipchartMutationResult,
   parseFlipchartProjectionUpdates,
   parseFlipchartUpdates,
+  selectFlipchartFactorInputSchema,
   statusFlipchartInputSchema,
   voteFlipchartInputSchema,
 } from '../../../../packages/flipchart/schema';
 import type {
   AddFlipchartInput,
   FlipchartBoardScope,
+  FlipchartFactorSelection,
+  FlipchartKind,
+  FlipchartMutationResult,
   FlipchartNote,
   FlipchartPublicNote,
   FlipchartStatus,
@@ -51,17 +56,25 @@ export class FlipchartApi {
     return this.read(sessionId, afterCursor, true, parseFlipchartProjectionUpdates);
   }
 
-  private mutate(sessionId: string, method: string, args: Record<string, unknown>) {
+  private mutate<TNote extends FlipchartNote | null>(
+    sessionId: string, method: string, args: Record<string, unknown>, parse: (value: unknown) => FlipchartMutationResult<TNote>,
+  ) {
     return this.transport.mutate(method, { p_session_id: sessionId, ...args }, value => {
-      const result = this.match(sessionId, parseFlipchartMutationResult(value));
-      this.matchBoard([result.note]);
+      const result = this.match(sessionId, parse(value));
+      if (result.note) this.matchBoard([result.note]);
       return result;
     });
   }
 
   add(sessionId: string, input: AddFlipchartInput) {
     if (input.board !== this.board) throw new Error('Выбран фактор другой доски.');
-    return this.mutate(sessionId, 'dw_flipchart_add', { p_input: addFlipchartInputSchema.parse(input) });
+    return this.mutate(sessionId, 'dw_flipchart_add', { p_input: addFlipchartInputSchema.parse(input) }, parseFlipchartMutationResult);
+  }
+
+  selectFactor(sessionId: string, kind: FlipchartKind, text: string, selection: FlipchartFactorSelection, selected: boolean) {
+    if (!this.board) throw new Error('Выбран фактор другой доски.');
+    const input = selectFlipchartFactorInputSchema.parse({ board: this.board, kind, text, ...selection, territorySelected: selected });
+    return this.mutate(sessionId, 'dw_flipchart_add', { p_input: input }, parseFlipchartFactorMutationResult);
   }
 
   vote(sessionId: string, note: FlipchartNote, value: FlipchartVote) {
@@ -69,7 +82,7 @@ export class FlipchartApi {
     return this.mutate(sessionId, 'dw_flipchart_vote', {
       p_note_id: note.id, p_expected_revision: note.myVoteRevision,
       p_input: voteFlipchartInputSchema.parse({ value }),
-    });
+    }, parseFlipchartMutationResult);
   }
 
   status(sessionId: string, note: FlipchartNote, status: FlipchartStatus) {
@@ -77,6 +90,6 @@ export class FlipchartApi {
     return this.mutate(sessionId, 'dw_flipchart_status', {
       p_note_id: note.id, p_expected_revision: note.revision,
       p_input: statusFlipchartInputSchema.parse({ status }),
-    });
+    }, parseFlipchartMutationResult);
   }
 }

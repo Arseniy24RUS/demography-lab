@@ -11,7 +11,10 @@ const config = JSON.parse(await readFile(join(root, 'workshop-config.json'), 'ut
 if (config.schemaVersion !== 1 || config.offline || !config.supabaseUrl?.startsWith('https://') ||
   !config.supabasePublishableKey?.startsWith('sb_publishable_'))
   throw new Error('Invalid public online configuration.');
-for (const file of ['survey.html', 'data/corpus/index.json', 'data/territories/index.json', 'favicon.svg'])
+for (const file of [
+  'survey.html', 'data/corpus/index.json', 'data/territories/index.json',
+  'data/regions.map.json', 'data/regions.detail.map.json', 'favicon.svg',
+])
   if (!(await stat(join(root, file))).isFile()) throw new Error(`Missing public asset: ${file}`);
 for (const factors of [join(root, 'data/factors'), join(root, 'data/factors/lower')]) {
   const index = JSON.parse(gunzipSync(await readFile(join(factors, 'index.json.gz'))));

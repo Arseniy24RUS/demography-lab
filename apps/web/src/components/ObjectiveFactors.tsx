@@ -160,12 +160,12 @@ export function ObjectiveFactors({ api, sessionId, userId, regionId, editable }:
     setLimit(batchSize);
   }
 
-  async function addCard(card: Card) {
+  async function selectCard(card: Card, selected: boolean) {
     if (!selectedKey) return;
     const kind = card.factorKey.endsWith('-n') ? 'barrier' : 'condition';
     const details = card.info.filter(value => value !== 'Значение показателя за год').join(' · ');
     const text = short(card.title, 110) + (details ? ` · ${short(details, 66)}` : '');
-    await board.addFactor(kind, text, { factorKey: card.factorKey, territoryKey: selectedKey });
+    await board.selectFactor(kind, text, { factorKey: card.factorKey, territoryKey: selectedKey }, selected);
   }
 
   const failed = regional.failed || upper.failed || lower.failed || hierarchy.failed || packFailed;
@@ -213,8 +213,9 @@ export function ObjectiveFactors({ api, sessionId, userId, regionId, editable }:
               <dl><div><dt>{level === 'region' ? 'Корреляция из исследования' : 'Байесовская корреляция'}</dt><dd>{format.format(card.value)}</dd></div>
                 {card.interval ? <div><dt>95% интервал</dt><dd>{format.format(card.interval[0])} … {format.format(card.interval[1])}</dd></div> : null}
                 <div><dt>Годы наблюдений</dt><dd title={years.join(', ')}>{years.length ? `${years[0]}–${years.at(-1)} · ${years.length}` : 'Не указаны'}</dd></div></dl>
-              <button type="button" className="button button-secondary" disabled={!added && (!editable || board.submitting || board.loading)}
-                onClick={() => added ? setView('board') : void addCard(card)}>
+              <button type="button" className="button button-secondary" disabled={!editable || board.submitting || board.loading}
+                aria-pressed={added} title={added ? 'Убрать с флипчарта для этой территории' : undefined}
+                onClick={() => void selectCard(card, !added)}>
                 {added ? <><CircleCheck size={19} aria-hidden />На флипчарте</> : <><Plus size={16} aria-hidden />На флипчарт</>}
               </button>
             </li>;

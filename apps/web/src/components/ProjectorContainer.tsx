@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ArrowLeft, Maximize2, Pause, Play, RefreshCw } from 'lucide-react';
 import { ProjectorView } from './session/ProjectorView';
 import { WorkshopProjectionView } from './workshop/WorkshopProjectionView';
+import { programmeMeasureRegions } from './workshop/workshop-ui';
 import { RegionMap } from './geography/RegionMap';
 import { readable } from '@/lib/corpus';
 import type { CorpusManifest } from '@/lib/corpus';
@@ -34,16 +35,18 @@ export function ProjectorContainer({
   const [mode, setMode] = useState<
     'stickers' | 'objective' | 'cards' | 'regions' | 'ranking' | 'topics' | 'path' | 'links' | 'solutions' | 'roadmaps'
   >('stickers');
-  const [held, setHeld] = useState<WorkshopProjection | null>(null);
+  const [held, setHeld] = useState<{
+    projection: WorkshopProjection;
+    measureRegionIds: ReadonlySet<string>;
+  } | null>(null);
   const [heldBarriers, setHeldBarriers] = useState<BarriersProjection | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // A revoked reader must not retain a previously frozen display as an active projection.
-  const shown = workshop.projection
-    ? held?.sessionId === workshop.projection.sessionId
-      ? held
-      : workshop.projection
-    : null;
+  const heldWorkshop = held && held.projection.sessionId === workshop.projection?.sessionId ? held : null;
+  const shown = heldWorkshop?.projection ?? workshop.projection;
+  const currentMeasureRegionIds = programmeMeasureRegions(session.projection?.submissions ?? []);
+  const measureRegionIds = heldWorkshop?.measureRegionIds ?? currentMeasureRegionIds;
   const shownBarriers = barriers.projection
     ? heldBarriers?.sessionId === barriers.projection.sessionId
       ? heldBarriers
@@ -53,9 +56,9 @@ export function ProjectorContainer({
   const flipchartScene = mode === 'stickers' || mode === 'objective';
   const frozen = mode === 'ranking' ? false : barrierScene
     ? Boolean(heldBarriers && shownBarriers === heldBarriers)
-    : Boolean(held && shown === held);
+    : Boolean(heldWorkshop);
   const pending =
-    held && workshop.projection ? Math.max(0, workshop.projection.cursor - held.cursor) : 0;
+    heldWorkshop && workshop.projection ? Math.max(0, workshop.projection.cursor - heldWorkshop.projection.cursor) : 0;
   const regions = manifest.documents.map((entry) => ({
     id: entry.regionId,
     name: entry.territory,
@@ -160,7 +163,10 @@ export function ProjectorContainer({
               onClick={() =>
                 barrierScene
                   ? setHeldBarriers(frozen ? null : barriers.projection)
-                  : setHeld(frozen ? null : workshop.projection)
+                  : setHeld(frozen || !workshop.projection ? null : {
+                    projection: workshop.projection,
+                    measureRegionIds: currentMeasureRegionIds,
+                  })
               }
             >
               {frozen ? <Play size={16} /> : <Pause size={16} />}
@@ -202,12 +208,13 @@ export function ProjectorContainer({
               mode={mode}
               projection={shown}
               regions={regions}
+              measureRegionIds={measureRegionIds}
               loading={workshop.loading}
               error={error ?? workshop.error ?? session.state.error}
               renderMap={({ selectedRegionId, onSelect }) => (
                 <RegionMap
                   regions={regions}
-                  work={shown?.regionWork}
+                  measureRegionIds={measureRegionIds}
                   selectedRegionId={selectedRegionId}
                   onSelect={onSelect}
                   compact

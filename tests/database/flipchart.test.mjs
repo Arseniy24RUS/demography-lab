@@ -193,6 +193,79 @@ it('counts each contributing territory once and preserves the shared card, votes
   } finally { await db.close(); }
 });
 
+it('removes one territory by desired state and revives the same sticker and votes after the final removal', async () => {
+  const db = await createTestDatabase({ seedCorpus: false });
+  try {
+    const a = await identify(db), b = await identify(db), sid = await enter(db, a);
+    await enter(db, b);
+    const read = (viewer, after = null, projector = false, board = 'objective-v2') => rpc(db, viewer, 'dw_flipchart_updates', {
+      p_session_id: sid, p_after_cursor: after, p_projector: projector, p_board: board,
+    });
+    const choice = (viewer, territoryKey, territorySelected, operation = op()) => rpc(db, viewer, 'dw_flipchart_add', {
+      p_operation_id: operation, p_session_id: sid,
+      p_input: { board: 'objective', kind: 'condition', text: 'Жильё', factorKey: 'housing-p', territoryKey, territorySelected },
+    });
+    const emptyOperation = op();
+    const empty = await choice(b, 'town-one', false, emptyOperation);
+    assert.deepEqual(empty, { sessionId: sid, cursor: 0, note: null });
+    assert.deepEqual(await choice(b, 'town-one', false, emptyOperation), empty);
+
+    const first = await choice(a, 'region-one', true);
+    const second = await choice(b, 'town-one', true);
+    assert.equal(second.note.id, first.note.id);
+    assert.equal(second.note.territoryCount, 2);
+    const voted = await vote(db, b, sid, first.note.id, 1, 0);
+    const remaining = await choice(a, 'town-one', false);
+    assert.equal(remaining.note.id, first.note.id);
+    assert.equal(remaining.note.territoryCount, 1);
+    assert.deepEqual(remaining.note.territoryKeys, ['region-one']);
+    assert.equal(remaining.note.support, 1);
+    assert.equal(remaining.note.status, 'active');
+    assert.equal(remaining.cursor, voted.cursor + 1);
+    assert.equal((await choice(b, 'town-one', false)).cursor, remaining.cursor);
+    assert.deepEqual((await read(b, voted.cursor)).notes[0].territoryKeys, ['region-one']);
+    assert.equal((await read(b, voted.cursor, true)).notes[0].territoryCount, 1);
+
+    const hideOperation = op();
+    const gone = await choice(b, 'region-one', false, hideOperation);
+    assert.equal(gone.note.id, first.note.id);
+    assert.equal(gone.note.territoryCount, 0);
+    assert.deepEqual(gone.note.territoryKeys, []);
+    assert.equal(gone.note.status, 'withdrawn');
+    assert.equal(gone.note.myVote, 1);
+    assert.equal(gone.cursor, remaining.cursor + 1);
+    assert.deepEqual((await read(a, remaining.cursor)).removedIds, [first.note.id]);
+    assert.deepEqual((await read(a, null, false, 'objective')).notes, []);
+    assert.deepEqual((await read(a, null, true)).notes, []);
+    assert.equal((await choice(a, 'region-one', false)).cursor, gone.cursor);
+    await failure(status(db, a, sid, first.note.id, 'active', gone.note.revision), 'NOTE_WITHDRAWN');
+    await failure(vote(db, b, sid, first.note.id, null, 1), 'NOTE_WITHDRAWN');
+
+    const restored = await choice(b, 'town-one', true);
+    assert.equal(restored.note.id, first.note.id);
+    assert.equal(restored.note.status, 'active');
+    assert.equal(restored.note.support, 1);
+    assert.equal(restored.note.myVote, 1);
+    assert.equal(restored.note.revision, gone.note.revision + 1);
+    assert.deepEqual(restored.note.territoryKeys, ['town-one']);
+    assert.equal(restored.cursor, gone.cursor + 1);
+    assert.deepEqual(await choice(b, 'region-one', false, hideOperation), restored);
+    assert.equal((await choice(b, 'town-one', false, emptyOperation)).note, null);
+    assert.deepEqual((await read(a, gone.cursor)).notes[0].territoryKeys, ['town-one']);
+    assert.equal((await read(a, gone.cursor, true)).notes[0].territoryCount, 1);
+    assert.deepEqual((await updates(db, a, sid)).notes, []);
+    for (const value of ['false', null, 0]) await failure(choice(a, 'town-one', value), 'INVALID_INPUT');
+    await failure(choice(a, undefined, false), 'INVALID_INPUT');
+
+    await status(db, a, sid, first.note.id, 'withdrawn', restored.note.revision);
+    await failure(choice(b, 'region-one', true), 'NOTE_WITHDRAWN');
+    const manualRestore = await choice(a, 'region-one', true);
+    assert.equal(manualRestore.note.id, first.note.id);
+    assert.deepEqual(manualRestore.note.territoryKeys, ['region-one', 'town-one']);
+    assert.equal(manualRestore.note.support, 1);
+  } finally { await db.close(); }
+});
+
 it('first and second ordinary participants share unrestricted multiple short posts, complete/reset/delta snapshots and empty polling', async () => {
   const db = await createTestDatabase({ seedCorpus: false });
   try {

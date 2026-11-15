@@ -291,6 +291,12 @@
   overflow-wrap: anywhere;
 }
 
+.workshop-programmes .workshop-region-row { grid-template-columns: 18px minmax(0, 1fr) 18px; }
+.workshop-programmes .workshop-region-row[data-measures='selected'] { background: #e6f2e4; color: #245337; }
+.workshop-programmes .workshop-region-row[data-measures='selected']:hover { background: #d8ebd6; }
+.workshop-programmes .workshop-region-row[data-measures='selected'] > svg { color: #327246; }
+.workshop-programmes .workshop-region-row-name small { display: block; color: var(--muted); }
+
 .workshop-work-state {
   display: inline-flex;
   align-items: center;

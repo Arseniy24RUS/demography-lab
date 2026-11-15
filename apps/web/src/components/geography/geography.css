@@ -14,17 +14,22 @@
 .geo-region.geo-available { fill: #e8edf4; }
 .geo-region.geo-in_progress { fill: #8bb9f4; }
 .geo-region.geo-completed { fill: #a9d989; }
+.geo-region.geo-measures-selected { fill: #a9d989; }
+.geo-region.geo-measures-unselected { fill: #e8edf4; }
 .geo-region.geo-unavailable circle { fill: #e4e9f0; }
 .geo-region[role='button']:hover path, .geo-region:focus path { stroke: #123c73; stroke-width: 1.8px; }
 .geo-region:focus circle { stroke: #034bb8; stroke-width: 3px; }
 .geo-selected-outline { stroke: #0758ca; stroke-width: 3px; }
 .geo-region.is-selected circle { stroke: #0758ca; stroke-width: 2px; }
+.geo-region circle.geo-region-target { fill: transparent; stroke: none; }
 .geo-legend { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 20px; padding: 12px 0; font-size: 12px; color: #34445d; }
 .geo-legend > span { display: inline-flex; gap: 7px; align-items: center; }
 .geo-swatch { display: inline-block; width: 18px; height: 14px; border-radius: 3px; border: 1px solid #b9c9dc; }
 .geo-swatch.geo-available { background: #e8edf4; }
 .geo-swatch.geo-in_progress { background: #8bb9f4; }
 .geo-swatch.geo-completed { background: #a9d989; }
+.geo-swatch.geo-measures-selected { background: #a9d989; }
+.geo-swatch.geo-measures-unselected { background: #e8edf4; }
 .geo-swatch.geo-unavailable { background: repeating-linear-gradient(135deg, #f1f4f8 0, #f1f4f8 4px, #bec9d8 4px, #bec9d8 5px); }
 .geo-provenance { font-size: 12px; line-height: 1.55; color: #5f6f83; padding: 5px 0; }
 .geo-provenance summary { cursor: pointer; padding: 8px 0; min-height: 34px; }

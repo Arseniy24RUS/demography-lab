@@ -13,8 +13,7 @@ const normalize = (name) => name.toLocaleLowerCase('ru').replaceAll('ё', 'е')
   .replace(/город /gu, '').replace(/\([^)]*\)/gu, '').replace(/[^a-zа-я0-9]/gu, '');
 const byName = new Map(corpus.documents.map((entry) => [normalize(entry.territory), entry]));
 if (byName.size !== corpus.documents.length) throw new Error('Ambiguous normalized corpus names');
-const features = structuredClone(source.features);
-for (const feature of features) {
+function correctWinding(feature) {
   // Normalize EACH ring: the source mixes winding inside the same MultiPolygon.
   // Reversing an entire feature turns correct islands into spherical complements.
   const polygons = feature.geometry.type === 'Polygon'
@@ -26,7 +25,9 @@ for (const feature of features) {
     }
   }
   if (geoArea(feature) > 2 * Math.PI) throw new Error(`Spherical complement: ${feature.properties.name}`);
+  return feature;
 }
+const features = structuredClone(source.features).map(correctWinding);
 const collection = { type: 'FeatureCollection', features };
 const projection = geoConicEqualArea().parallels([50, 70]).rotate([-100, 0]).center([0, 60])
   .fitExtent([[16, 16], [1184, 604]], collection);
@@ -51,6 +52,25 @@ const result = {
     purpose: 'Navigation and declared work allocation; no demographic values or area statistics.' },
   shapes,
 };
-const output = new URL('public/data/regions.map.json', root);
+let output = new URL('public/data/regions.map.json', root);
+if (process.argv[2] === '--detail-input') {
+  const detail = JSON.parse(await readFile(process.argv[3], 'utf8'));
+  const byId = new Map(shapes.map((shape) => [shape.regionId, shape]));
+  const detailPath = geoPath(projection.precision(0.1));
+  result.source = { ...detail.source, overviewInputSha256: result.source.inputSha256 };
+  result.shapes = detail.features.map((input) => {
+    const original = byId.get(input.properties.regionId);
+    if (!original) throw new Error(`Unresolved detail shape: ${input.properties.regionId}`);
+    byId.delete(original.regionId);
+    const feature = correctWinding(input);
+    detailPath.digits(input.properties.smallRegion ? 3 : 2);
+    const d = detailPath(feature);
+    const centroid = detailPath.centroid(feature).map((n) => +n.toFixed(3));
+    const bounds = detailPath.bounds(feature).flat().map((n) => +n.toFixed(3));
+    if (!d || [...centroid, ...bounds].some((n) => !Number.isFinite(n))) throw new Error(`Invalid detail shape: ${original.regionId}`);
+    return { ...original, d, centroid, bounds };
+  });
+  output = new URL('public/data/regions.detail.map.json', root);
+}
 await writeFile(output, JSON.stringify(result));
-console.log(JSON.stringify({ file: fileURLToPath(output), regions: shapes.length, projection: result.projection }));
+console.log(JSON.stringify({ file: fileURLToPath(output), regions: result.shapes.length, projection: result.projection }));
