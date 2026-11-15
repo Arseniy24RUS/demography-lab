@@ -360,6 +360,9 @@ export class SessionApi {
       parseSnapshot,
     );
   }
+  selectCatalog(id: string, catalogId: string) {
+    return this.mutate('dw_select_catalog_practice', { p_session_id: id, p_catalog_id: catalogId }, parseSnapshot);
+  }
   moderate(id: string, submissionId: string, revision: number, status: 'shared' | 'withdrawn') {
     return this.mutate(
       'dw_moderate_submission',

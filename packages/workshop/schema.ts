@@ -94,7 +94,7 @@ function checkRound(value: {
 }
 const snapshot = z.strictObject({
   sessionId: uuid, cursor: count, boardRevision: count,
-  regionWork: z.array(region).max(1000), families: z.array(family).max(200),
+  regionWork: z.array(region).max(1000), families: z.array(family).max(5000),
   rounds: z.array(roundSummary).max(100), round: round.nullable(),
 }).superRefine((value, ctx) => {
   const ids = value.families.flatMap((f) => f.submissionIds);
@@ -107,7 +107,7 @@ const projection = z.strictObject({
   sessionId: uuid, title: text(200, 1), phase: z.enum(['reading', 'review', 'discussion']),
   status: z.enum(['open', 'paused', 'closed']), cursor: count,
   regionWork: z.array(z.strictObject({ regionId: id, status, revision, leaseExpiresAt: nullableTime })).max(1000),
-  familyCount: count.max(200), groupedSubmissionCount: count.max(5000), round: projectedRound.nullable(),
+  familyCount: count.max(5000), groupedSubmissionCount: count.max(5000), round: projectedRound.nullable(),
 });
 function parse<T>(schema: z.ZodType, value: unknown): T {
   const parsed = schema.safeParse(value);

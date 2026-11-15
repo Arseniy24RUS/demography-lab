@@ -44,6 +44,12 @@ jobs:
       - name: Verify the canonical document corpus
         run: node scripts/seed-supabase.mjs --check
 
+      - name: Verify the complete family-support catalogue and grouping
+        run: |
+          node scripts/seed-family-catalog.mjs --check
+          python3 scripts/ingest/group_family_catalog.py --check
+          python3 -m unittest discover -s scripts/ingest -p test_group_family_catalog.py
+
       - name: Verify the sealed territory and statistical dataset
         run: npm run seed:roadmaps:check
 

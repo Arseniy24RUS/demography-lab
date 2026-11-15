@@ -46,9 +46,9 @@ const own = z.strictObject({
 }).refine((value) => !value.needsReview || value.myVote === null);
 const projection = z.strictObject({
   sessionId: z.uuid(), cursor: count, participantCount: count.max(1000),
-  families: z.array(total).max(200),
+  families: z.array(total).max(5000),
 });
-const snapshot = projection.extend({ families: z.array(own).max(200) });
+const snapshot = projection.extend({ families: z.array(own).max(5000) });
 function valid<T extends WorkspaceVotesProjection>(value: T): T {
   if (new Set(value.families.map((family) => family.familyId)).size !== value.families.length
     || value.families.some((family) => family.support + family.oppose + family.unanswered !== value.participantCount

@@ -13,6 +13,7 @@ import type { TextAnchor } from '@domain/index';
 import { anchorQuote, fieldLabels, fieldValue } from '@/lib/workspace-domain';
 import type { SharedSubmission } from '../../../../../packages/collaboration/types';
 import { dateLabel, initials } from './session-ui';
+import { CatalogPracticeSource } from '../workshop/CatalogPracticeSource';
 
 export function SharedPracticeCard({
   submission,
@@ -81,7 +82,12 @@ export function SharedPracticeCard({
           </dl>
         ) : null}
       </div>
-      <section className="session-practice-sources" aria-label="Документальные основания">
+      {bundle.catalogSource ? (
+        <section className="session-practice-sources" aria-label="Источник карточки">
+          <h4>Источник карточки</h4>
+          <CatalogPracticeSource source={bundle.catalogSource} />
+        </section>
+      ) : <section className="session-practice-sources" aria-label="Документальные основания">
         <h4>
           {bundle.occurrences.length === 1
             ? 'Документальное основание'
@@ -206,7 +212,7 @@ export function SharedPracticeCard({
             <p>{bundle.note}</p>
           </div>
         ) : null}
-      </section>
+      </section>}
       <footer className="session-practice-footer">
         <div className="session-person">
           <span className="session-avatar" aria-hidden="true">
@@ -215,6 +221,7 @@ export function SharedPracticeCard({
           <div>
             <strong>{submission.authorName}</strong>
             <small>
+              {bundle.catalogSource ? 'Выбрал(а) · ' : null}
               <time dateTime={submission.updatedAt}>{dateLabel(submission.updatedAt)}</time>
               {submission.revision > 1 ? ' · обновлено' : ''}
             </small>

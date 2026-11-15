@@ -48,6 +48,7 @@ export interface WorkshopAreaProps {
   onOpenSource: (anchor: TextAnchor) => void;
   onOpenDocument: (regionId: string) => void;
   measureRegionIds: ReadonlySet<string>;
+  catalogue?: ReactNode;
   view?: WorkshopView;
   onViewChange?: (view: WorkshopView) => void;
   hideNavigation?: boolean;

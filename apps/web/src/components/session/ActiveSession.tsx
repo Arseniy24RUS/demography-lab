@@ -262,6 +262,7 @@ export function ActiveSession({
           {visible.map((submission) => {
             const own = submission.authorId === state.auth.userId;
             const shared = submission.status === 'shared';
+            const fromCatalog = Boolean(submission.bundle.catalogSource);
             return (
               <SharedPracticeCard
                 key={submission.id}
@@ -288,7 +289,7 @@ export function ActiveSession({
                     : undefined
                 }
                 onWithdraw={
-                  shared && (isHost || (own && canContribute))
+                  shared && (isHost || (own && canContribute && !fromCatalog))
                     ? () => {
                         setModerating(submission);
                         setError('');
@@ -303,7 +304,7 @@ export function ActiveSession({
                         )
                     : undefined
                 }
-                onEdit={own && canContribute && shared ? () => setEditing(submission) : undefined}
+                onEdit={own && canContribute && shared && !fromCatalog ? () => setEditing(submission) : undefined}
               />
             );
           })}
@@ -320,11 +321,14 @@ export function ActiveSession({
               <p>
                 {filter === 'withdrawn'
                   ? 'Здесь преподаватель может восстановить материалы, снятые с общей доски.'
-                  : 'Откройте региональную программу, найдите фрагмент и сопоставьте его с карточкой. Затем отправьте практику в это занятие.'}
+                  : 'Выберите готовую меру в каталоге или добавьте свою карточку с цитатой из программы.'}
               </p>
               {filter !== 'withdrawn' ? (
-                <button className="button button-secondary" onClick={actions.openLocalWork}>
-                  Открыть документы <ArrowLeft size={16} className="session-arrow-forward" />
+                <button className="button button-secondary" onClick={
+                  renderWorkshop ? () => selectWorkspace('regions') : actions.openLocalWork
+                }>
+                  {renderWorkshop ? 'Перейти к программам' : 'Открыть документы'}
+                  <ArrowLeft size={16} className="session-arrow-forward" />
                 </button>
               ) : null}
             </div>

@@ -106,6 +106,7 @@ export const rpcArguments = Object.freeze({
   dw_projector_snapshot: ['p_session_id'],
   dw_update_session: ['p_operation_id', 'p_session_id', 'p_expected_revision', 'p_patch'],
   dw_publish_submission: ['p_operation_id', 'p_session_id', 'p_local_key', 'p_expected_revision', 'p_bundle'],
+  dw_select_catalog_practice: ['p_operation_id', 'p_session_id', 'p_catalog_id'],
   dw_moderate_submission: ['p_operation_id', 'p_session_id', 'p_submission_id', 'p_expected_revision', 'p_status'],
   dw_invitation: ['p_session_id'],
   dw_rotate_invitation: ['p_operation_id', 'p_session_id', 'p_expected_revision'],

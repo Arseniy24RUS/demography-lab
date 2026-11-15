@@ -31,6 +31,7 @@ jobs:
         run: |
           node scripts/seed-supabase.mjs --check
           node scripts/seed-roadmaps.mjs --check
+          node scripts/seed-family-catalog.mjs --check
           node scripts/check-pages.mjs dist
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

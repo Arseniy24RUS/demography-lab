@@ -6,6 +6,7 @@ import { anchorQuote, fieldLabels, fieldValue } from '@/lib/workspace-domain';
 import { Modal } from '@/components/Modal';
 import type { WorkshopRegionOption } from './workshop-ui';
 import { regionName } from './workshop-ui';
+import { CatalogPracticeSource } from './CatalogPracticeSource';
 
 export interface VariantView {
   id: string;
@@ -64,6 +65,7 @@ export function PracticeDetails({
   const evidence = (practice.evidence ?? []).filter(
     (entry) => entry.kind === 'fragment' && entry.occurrenceId === quote?.id,
   );
+  const catalogDetails = bundle.catalogSource?.details;
   return (
     <Modal title={practice.title} onClose={onClose} wide>
       <div className="workshop-practice-detail">
@@ -84,7 +86,18 @@ export function PracticeDetails({
             {practice.conditions?.length ? practice.conditions.join('\n') : 'Не указано в карточке'}
           </dd>
         </dl>
-        <section
+        {bundle.catalogSource ? (
+          <section className="workshop-evidence-section" aria-label="Источник карточки">
+            <h3>Источник карточки</h3>
+            <CatalogPracticeSource source={bundle.catalogSource} />
+            {catalogDetails?.officialLinks.map((link, index) => (
+              <a className="button button-quiet" key={`${link.url}-${index}`} href={link.url}
+                target="_blank" rel="noreferrer">
+                {link.title}<ArrowUpRight size={15} aria-hidden="true" />
+              </a>
+            ))}
+          </section>
+        ) : <section
           className="workshop-evidence-section"
           aria-label="Точные основания регионального варианта"
         >
@@ -162,7 +175,21 @@ export function PracticeDetails({
               Точная цитата недоступна в сохранённом варианте.
             </p>
           )}
-        </section>
+        </section>}
+        {catalogDetails ? (
+          <div className="workshop-catalog-details">
+            {([
+              ['Порядок получения', catalogDetails.steps],
+              ['Документы', catalogDetails.documents],
+              ['Дополнительная информация', catalogDetails.notes],
+            ] as const).map(([heading, items]) => items.length ? (
+              <section key={heading}>
+                <h3>{heading}</h3>
+                <ul>{items.map((item, index) => <li key={`${heading}-${index}`}>{item}</li>)}</ul>
+              </section>
+            ) : null)}
+          </div>
+        ) : null}
         {bundle.note ? (
           <div className="workshop-author-note">
             <strong>Комментарий к публикации</strong>
@@ -201,7 +228,7 @@ export function VariantComparison({
     <div className="workshop-comparison-wrap">
       <table className="workshop-comparison">
         <caption className="session-sr-only">
-          Региональные варианты с сохранением условий и документальных оснований
+          Варианты мер с сохранением условий и источников
         </caption>
         <thead>
           <tr>
@@ -224,7 +251,7 @@ export function VariantComparison({
                   <strong>{practice.title}</strong>
                   {variant.authorName ? <small>{variant.authorName}</small> : null}
                   <button className="button button-quiet" onClick={() => onInspect(variant)}>
-                    Содержание и цитаты
+                    {variant.bundle.catalogSource ? 'Карточка меры' : 'Содержание и цитаты'}
                   </button>
                   {onMove || onRemove ? (
                     <div className="workshop-variant-edit-actions">
@@ -263,7 +290,9 @@ export function VariantComparison({
                   ) : null}
                 </td>
                 <td data-label="Основания">
-                  <span>{variant.bundle.occurrences.length} документальных фрагментов</span>
+                  {variant.bundle.catalogSource ? (
+                    <CatalogPracticeSource source={variant.bundle.catalogSource} />
+                  ) : <span>{variant.bundle.occurrences.length} документальных фрагментов</span>}
                   {firstQuote ? (
                     <button
                       className="button button-quiet"
@@ -273,7 +302,7 @@ export function VariantComparison({
                       <ArrowUpRight size={13} />
                     </button>
                   ) : null}
-                  <small>Сопоставление полей доступно в подробной карточке.</small>
+                  {firstQuote ? <small>Сопоставление полей доступно в подробной карточке.</small> : null}
                 </td>
               </tr>
             );

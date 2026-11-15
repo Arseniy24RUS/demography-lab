@@ -1108,6 +1108,18 @@
   margin-bottom: 10px;
 }
 
+.workshop-catalog-details {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.workshop-catalog-details ul {
+  margin: 7px 0 0;
+  padding-inline-start: 22px;
+  overflow-wrap: anywhere;
+}
+
 .workshop-quote-selectors {
   display: flex;
   align-items: center;

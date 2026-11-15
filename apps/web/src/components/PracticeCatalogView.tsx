@@ -4,6 +4,9 @@ import type { PracticeFamily } from '@domain/index';
 import type { CorpusManifest, RichVariant } from '@/lib/corpus';
 import { isFamilyCatalogVariant } from '@/lib/family-catalog';
 import { implementationLabel } from '@/lib/practice-status';
+import { useCatalogSelection } from '@/hooks/useCatalogSelection';
+import type { SessionSnapshot } from '../../../../packages/collaboration/types';
+import { CatalogSelectButton } from './CatalogSelectButton';
 
 export function PracticeCatalogView({
   variants,
@@ -14,6 +17,8 @@ export function PracticeCatalogView({
   catalogLoaded,
   catalogBusy,
   onLoadCatalog,
+  session,
+  onSelectCatalog,
 }: {
   variants: RichVariant[];
   families: PracticeFamily[];
@@ -23,12 +28,15 @@ export function PracticeCatalogView({
   catalogLoaded: boolean;
   catalogBusy: boolean;
   onLoadCatalog: () => Promise<void>;
+  session?: SessionSnapshot;
+  onSelectCatalog: (id: string) => Promise<void>;
 }) {
   const [query, setQuery] = useState('');
   const [region, setRegion] = useState('');
   const [family, setFamily] = useState('');
   const [scope, setScope] = useState('all');
   const [page, setPage] = useState(1);
+  const selection = useCatalogSelection(session, onSelectCatalog);
   const regionNames = useMemo(
     () =>
       new Map<string, string>([
@@ -66,8 +74,8 @@ export function PracticeCatalogView({
           <h2>Библиотека решений</h2>
           <p>
             {catalogLoaded
-              ? 'Полный каталог загружен. Карточки каталога и варианты с подготовленными цитатами доступны для сопоставления.'
-              : 'Сначала доступны варианты с подготовленными цитатами. Полный каталог мер загружается по запросу.'}
+              ? 'Меры из каталога и карточки с подготовленными цитатами доступны для сопоставления.'
+              : catalogBusy ? 'Загружаем полный каталог мер…' : 'Доступны карточки с подготовленными цитатами.'}
           </p>
         </div>
         {!catalogLoaded ? (
@@ -147,14 +155,17 @@ export function PracticeCatalogView({
       <p className="catalog-count" aria-live="polite">
         Найдено карточек: {items.length.toLocaleString('ru')}. Страница {safePage} из {maxPage}.
       </p>
+      {selection.error ? <p className="session-message" data-tone="error" role="alert">{selection.error}</p> : null}
       <div className="practice-grid">
-        {visible.map((v) => (
-          <article className="practice-tile" key={v.id}>
+        {visible.map((v) => {
+          const fromCatalog = isFamilyCatalogVariant(v);
+          const selected = fromCatalog && selection.chosen.has(v.catalogId);
+          return <article className="practice-tile programme-catalogue-card" data-selected={selected || undefined} key={v.id}>
             <span className="status blue" style={{ alignSelf: 'flex-start' }}>
               <Layers size={12} />
               {families.find((f) => f.id === v.familyId)?.title ?? 'Авторское решение'}
             </span>
-            <p className="tile-region">{regionNames.get(v.regionId) ?? v.regionId}</p>
+            <p className="tile-region">{(fromCatalog ? v.regionName : undefined) ?? regionNames.get(v.regionId) ?? v.regionId}</p>
             <h2>{v.title}</h2>
             {implementationLabel(v) ? (
               <p
@@ -175,9 +186,10 @@ export function PracticeCatalogView({
               <button className="button button-quiet small" onClick={() => onOpen(v.id)}>
                 Проверить <ArrowUpRight size={14} />
               </button>
+              {fromCatalog ? <CatalogSelectButton id={v.catalogId} selection={selection} /> : null}
             </div>
-          </article>
-        ))}
+          </article>;
+        })}
       </div>
       {!items.length ? (
         <div className="empty-state">

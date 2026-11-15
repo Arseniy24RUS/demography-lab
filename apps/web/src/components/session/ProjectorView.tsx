@@ -15,6 +15,7 @@ import type {
 } from '../../../../../packages/collaboration/types';
 import { SessionConnection } from './SessionConnection';
 import { initials, messageFromError, phaseLabels, statusLabels, timeLabel } from './session-ui';
+import { CatalogPracticeSource } from '../workshop/CatalogPracticeSource';
 
 /** Exact text is paginated at whitespace; pagination never rewrites the source. */
 function textPages(value: string, limit: number): string[] {
@@ -279,6 +280,10 @@ export function ProjectorView({
                   </div>
                 </div>
               </section>
+            ) : selected.bundle.catalogSource ? (
+              <div className="projector-source-context">
+                <CatalogPracticeSource source={selected.bundle.catalogSource} />
+              </div>
             ) : (
               <p className="projector-no-evidence">
                 К этой публикации пока не приложены точные цитаты.
@@ -291,7 +296,7 @@ export function ProjectorView({
                 </span>
                 <div>
                   {selected.authorName}
-                  <small>Автор публикации</small>
+                  <small>{selected.bundle.catalogSource ? 'Выбрал(а) меру' : 'Автор публикации'}</small>
                 </div>
               </div>
             ) : null}

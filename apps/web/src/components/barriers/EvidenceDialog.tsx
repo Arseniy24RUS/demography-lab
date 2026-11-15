@@ -75,7 +75,7 @@ export function EvidenceDialog({
             <p>{evidence.mechanism}</p>
             {evidence.rationale ? <p className="barrier-muted">{evidence.rationale}</p> : null}
             <p className="barrier-muted">
-              Редакция семейства {evidence.familyRevision} · региональных вариантов: {evidence.variants.length}
+              Редакция семейства {evidence.familyRevision} · Вариантов {evidence.variants.length}
             </p>
             <div className="barrier-evidence-variants">
               {evidence.variants.map((item) => (
@@ -89,8 +89,10 @@ export function EvidenceDialog({
                     <strong>{item.bundle.practice.title}</strong>
                     <small>
                       {context.regions.find((region) => region.id === item.bundle.practice.regionId)
-                        ?.name ?? item.bundle.practice.regionId}{' '}
-                      · редакция {item.submissionRevision} · цитат: {item.bundle.occurrences.length}
+                        ?.name ?? (item.bundle.practice.regionId === 'federal'
+                        ? 'Федеральный уровень' : item.bundle.practice.regionId)}{' '}
+                      · редакция {item.submissionRevision} · {item.bundle.catalogSource
+                        ? item.bundle.catalogSource.sourceName : `цитат ${item.bundle.occurrences.length}`}
                     </small>
                   </span>
                   <ArrowUpRight size={18} />

@@ -5,6 +5,7 @@ import { dirname, resolve, relative, isAbsolute, basename } from 'node:path';
 import { homedir, platform } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { seedCanonicalDocument, validateCanonicalDocument } from '../seed-supabase.mjs';
+import { seedFamilyCatalog } from '../seed-family-catalog.mjs';
 import { loadRoadmapDataset, seedRoadmapDataset, TERRITORY_INDEX_SHA256 } from '../seed-roadmaps.mjs';
 import { purgeExpiredSurveys } from '../purge-expired-surveys.mjs';
 import { discoverRpc, HttpError } from './rpc.mjs';
@@ -209,6 +210,7 @@ export async function openRuntime({ dataDir=process.env.DW_OFFLINE_DATA_DIR ?? d
     await db.transaction(tx => tx.exec(refreshSql));
     await db.transaction(tx => tx.exec(identifySql));
     const seed = testSeed ? await testSeed(db) : await seedProduction(db, progress);
+    if (!testSeed) await seedFamilyCatalog(db);
     await purgeExpiredSurveys(db, { apply:true });
     const catalogue = await discoverRpc(db);
     const ready = { schemaVersion:1, instanceId:operator.instanceId, migrations:migrationManifest,

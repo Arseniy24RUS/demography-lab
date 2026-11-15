@@ -11,7 +11,7 @@ const NAMES = [
   'dw_flipchart_updates', 'dw_flipchart_add', 'dw_flipchart_vote', 'dw_flipchart_status',
   'dw_available_sessions', 'dw_join_open_session',
   'dw_session_snapshot', 'dw_session_cursor', 'dw_projector_snapshot', 'dw_update_session',
-  'dw_publish_submission', 'dw_moderate_submission', 'dw_invitation', 'dw_rotate_invitation',
+  'dw_publish_submission', 'dw_select_catalog_practice', 'dw_moderate_submission', 'dw_invitation', 'dw_rotate_invitation',
   'dw_set_member_role', 'dw_revoke_member',
   'dw_workshop_snapshot', 'dw_workshop_cursor', 'dw_workshop_projector_snapshot',
   'dw_workshop_round_snapshot', 'dw_region_work', 'dw_save_family', 'dw_delete_family',

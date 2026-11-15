@@ -10,7 +10,6 @@
 .live-vote-position { display: grid; place-items: center; flex: 0 0 36px; height: 36px; border-radius: 50%; background: #edf3fa; color: #2b568a; font-weight: 700; font-size: 17px; }
 .live-vote-card h3 { margin: 4px 0 8px; font-size: 18px; line-height: 1.4; overflow-wrap: anywhere; }
 .live-vote-card-main p { margin: 0 0 8px; line-height: 1.6; color: #526173; overflow-wrap: anywhere; }
-.live-vote-variant-count { color: #64748b; font-size: 12px; }
 .live-vote-controls { display: flex; align-items: flex-start; gap: 7px; }
 .live-vote-button { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; min-width: 68px; border: 1px solid #dce5ed; border-radius: 11px; background: #f9fbfd; cursor: pointer; font: inherit; font-weight: 700; }
 .live-vote-button.positive { color: #196c54; }

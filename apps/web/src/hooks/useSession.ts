@@ -507,6 +507,10 @@ export function useSession(options: {
         applySnapshot(await requireApi().publish(requireSession(), localKey, revision, bundle));
         setState((s) => ({ ...s, notice: 'Практика и её цитаты сохранены в занятии.' }));
       }),
+    selectCatalog: (catalogId) =>
+      run('Отбираем меру', async () => {
+        applySnapshot(await requireApi().selectCatalog(requireSession(), catalogId));
+      }),
     moderateSubmission: (id, revision, status) =>
       run('Обновляем показ', async () => {
         applySnapshot(await requireApi().moderate(requireSession(), id, revision, status));

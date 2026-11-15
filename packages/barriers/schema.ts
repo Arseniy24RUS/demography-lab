@@ -69,13 +69,13 @@ const summary = manifestBase.extend({ revision, responseCount: count.min(5).max(
   .refine((v) => (!v.canRespond || (v.status === 'open' && !v.expired))
     && (!(v.expired || v.status === 'purged') || v.responseCount === null));
 const snapshot = z.strictObject({
-  sessionId: uuid, cursor: count, barriers: z.array(barrier).max(200), families: z.array(family).max(200),
+  sessionId: uuid, cursor: count, barriers: z.array(barrier).max(200), families: z.array(family).max(5000),
   links: z.array(link).max(600), solutions: z.array(solution).max(200), survey: summary.nullable(),
 }).superRefine(checkBoard);
 const projection = z.strictObject({
   sessionId: uuid, title: text(200, 1), scope: z.enum(['municipality', 'region', 'federal']), regionId: text(160, 1).nullable(),
   phase: z.enum(['reading', 'review', 'discussion']), status: z.enum(['open', 'paused', 'closed']), cursor: count,
-  barriers: z.array(projectedBarrier).max(200), families: z.array(family).max(200),
+  barriers: z.array(projectedBarrier).max(200), families: z.array(family).max(5000),
   links: z.array(projectedLink).max(600), solutions: z.array(projectedSolution).max(200),
   survey: z.strictObject({ title: nonempty(240, 5), status: z.enum(['draft', 'open', 'closed', 'purged']), responseCount: count.min(5).max(250).nullable() }).nullable(),
 }).superRefine(checkBoard);

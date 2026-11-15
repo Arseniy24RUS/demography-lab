@@ -74,7 +74,7 @@ export function FamilyWorkbench({
             id: item.id,
             revision: item.revision,
             bundle: item.bundle,
-            authorName: item.authorName,
+              authorName: item.bundle.catalogSource ? undefined : item.authorName,
           },
         ]),
       ),
@@ -183,7 +183,7 @@ export function FamilyWorkbench({
       <div className="workshop-section-heading">
         <div>
           <h2>Сопоставьте механизмы и сохраните различия</h2>
-          <p>Каждый региональный вариант сохраняет условия, авторство и точные цитаты.</p>
+          <p>Внутри семейства можно сравнить условия и источники всех вариантов.</p>
         </div>
         {host ? (
           <div className="workshop-selection-actions">

@@ -41,11 +41,25 @@ export interface SharedSourceReference {
   sourceUrl?: string;
   regionId?: string;
 }
+export interface SharedCatalogSource {
+  id: string;
+  sourceName: string;
+  sourceUrl: string;
+  commit: string;
+  category: string;
+  details?: {
+    steps: string[];
+    documents: string[];
+    notes: string[];
+    officialLinks: Array<{ title: string; url: string; service: string }>;
+  };
+}
 export interface SharedPracticeBundle {
   schemaVersion: 1;
   practice: PracticeVariant;
   occurrences: PracticeOccurrence[];
   sources: SharedSourceReference[];
+  catalogSource?: SharedCatalogSource;
   note: string;
 }
 export interface SharedSubmission {
@@ -148,6 +162,7 @@ export interface SessionAreaActions {
     localKey: string,
     expectedRevision: number | null,
   ): Promise<void>;
+  selectCatalog(catalogId: string): Promise<void>;
   moderateSubmission(id: string, revision: number, status: 'shared' | 'withdrawn'): Promise<void>;
   setMemberRole(userId: string, revision: number, role: 'participant' | 'observer'): Promise<void>;
   revokeMember(userId: string, revision: number): Promise<void>;

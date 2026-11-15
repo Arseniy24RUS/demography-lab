@@ -1,18 +1,31 @@
-import { useId, useState } from 'react';
-import { BookOpen, Check, ChevronRight, Search } from 'lucide-react';
+import { Activity, useId, useState } from 'react';
+import { BookOpen, Check, ChevronRight, List, Search } from 'lucide-react';
 import type { WorkshopAreaProps } from './workshop-ui';
 
 const searchText = (value: string) => value.trim().toLocaleLowerCase('ru').replaceAll('ё', 'е');
 
-export function RegionWorkView({ regions, renderMap, onOpenDocument, measureRegionIds }:
-  Pick<WorkshopAreaProps, 'regions' | 'renderMap' | 'onOpenDocument' | 'measureRegionIds'>) {
+export function RegionWorkView({ regions, renderMap, onOpenDocument, measureRegionIds, catalogue }:
+  Pick<WorkshopAreaProps, 'regions' | 'renderMap' | 'onOpenDocument' | 'measureRegionIds' | 'catalogue'>) {
   const searchId = useId();
   const [query, setQuery] = useState('');
+  const [catalogueOpen, setCatalogueOpen] = useState(false);
+  const [catalogueVisited, setCatalogueVisited] = useState(false);
   const needle = searchText(query);
   const visible = regions.filter(region => searchText(region.name).includes(needle))
     .sort((a, b) => a.name.localeCompare(b.name, 'ru'));
 
-  return <div className="workshop-map-layout workshop-programmes">
+  return <>
+    {catalogue ? <div className="programme-catalogue-toolbar">
+      <button className="button button-secondary" type="button" onClick={() => {
+        setCatalogueVisited(true);
+        setCatalogueOpen(value => !value);
+      }}>
+        {catalogueOpen ? <BookOpen size={16} aria-hidden="true" /> : <List size={16} aria-hidden="true" />}
+        {catalogueOpen ? 'К карте и списку программ' : 'Каталог мер'}
+      </button>
+    </div> : null}
+    <Activity mode={catalogueOpen ? 'hidden' : 'visible'}>
+    <div className="workshop-map-layout workshop-programmes">
     <section className="workshop-map-panel" aria-label="Карта программ">
       {renderMap({ selectedRegionId: null, onSelect: onOpenDocument })}
     </section>
@@ -43,5 +56,8 @@ export function RegionWorkView({ regions, renderMap, onOpenDocument, measureRegi
         {!visible.length ? <p className="workshop-muted workshop-list-empty">Регион не найден.</p> : null}
       </div>
     </section>
-  </div>;
+    </div>
+    </Activity>
+    {catalogueVisited ? <Activity mode={catalogueOpen ? 'visible' : 'hidden'}>{catalogue}</Activity> : null}
+  </>;
 }

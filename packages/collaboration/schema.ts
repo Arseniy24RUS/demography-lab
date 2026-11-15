@@ -92,7 +92,7 @@ const practice = z.strictObject({
   eligibility: text().nullable().optional(),
   amount: text().nullable().optional(),
   conditions: z.array(text(5000)).max(500).optional(),
-  occurrenceIds: z.array(id).min(1).max(128),
+  occurrenceIds: z.array(id).max(128),
   evidence: z.array(evidence).max(256).optional(),
   reviewStatus: review.optional(),
 });
@@ -116,16 +116,39 @@ const source = z.strictObject({
   sourceUrl: safeUrl.optional(),
   regionId: id.optional(),
 });
+const catalogSource = z.strictObject({
+  id,
+  sourceName: text(1000).min(1),
+  sourceUrl: safeUrl,
+  commit: z.string().regex(/^[0-9a-f]{40}$/u),
+  category: text(300).min(1),
+  details: z.strictObject({
+    steps: z.array(text(5000)).max(128),
+    documents: z.array(text(5000)).max(128),
+    notes: z.array(text(5000)).max(128),
+    officialLinks: z.array(z.strictObject({
+      title: text(1000).min(1), url: safeUrl, service: text(500).min(1),
+    })).max(128),
+  }).optional(),
+});
 export const bundleSchema = z
   .strictObject({
     schemaVersion: z.literal(1),
     practice,
-    occurrences: z.array(occurrence).min(1).max(128),
-    sources: z.array(source).min(1).max(128),
+    occurrences: z.array(occurrence).max(128),
+    sources: z.array(source).max(128),
+    catalogSource: catalogSource.optional(),
     note: text(4000),
   })
   .superRefine((v, ctx) => {
     const issue = (message: string) => ctx.addIssue({ code: 'custom', message });
+    if (v.catalogSource) {
+      if (v.occurrences.length || v.sources.length || v.practice.occurrenceIds.length || v.practice.evidence?.length
+          || v.practice.reviewStatus === 'verified' || v.note)
+        issue('Карточка из каталога имеет собственный источник без утверждений о тексте программы.');
+    } else if (!v.occurrences.length || !v.sources.length || !v.practice.occurrenceIds.length) {
+      issue('У карточки должны быть редакция источника и фрагмент.');
+    }
     const os = new Map(v.occurrences.map((o) => [o.id, o]));
     const ss = new Map(v.sources.map((s) => [s.editionId, s]));
     if (

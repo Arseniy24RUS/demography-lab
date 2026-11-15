@@ -340,6 +340,66 @@ try {
     await noOverflow(teacher.page, 1440);
     await screenshot(teacher.page, 'shared-teacher-live-board.png');
   });
+  await stage('Regional and federal catalogue selections reach one shared rating with intact variants', a.page, async () => {
+    const catalogue = page => page.getByRole('region', { name: 'Каталог мер', exact: true });
+    const ranking = page => page.getByRole('region', { name: 'Рейтинг практик', exact: true });
+    const familyName = 'Региональный материнский (семейный) капитал';
+    const amur = 'Региональный материнский капитал при рождении второго ребёнка (Амурская область)';
+    const arkhangelsk = 'Региональный материнский (семейный) капитал (Архангельская область)';
+    const federal = 'Декретные выплаты для ИП и самозанятых';
+    const measures = JSON.parse(await readFile(new URL('../../public/data/corpus/family-catalog.json', import.meta.url), 'utf8')).measures;
+    const total = new RegExp(measures.length.toLocaleString('ru').replace(/\s+/gu, '\\s*'), 'u');
+
+    await navigation(a.page).getByRole('button', { name: 'Практики', exact: true }).click();
+    await expect(a.page.getByText(new RegExp(`${total.source} карточки каталога`, 'u'))).toBeVisible();
+    for (const page of [a.page, b.page]) {
+      await workspace(page);
+      await scene(page, 'Программы');
+      await page.getByRole('button', { name: 'Каталог мер', exact: true }).click();
+      await expect(catalogue(page).getByRole('status')).toContainText(total);
+    }
+
+    async function findCard(page, territory, title) {
+      await catalogue(page).getByRole('combobox', { name: 'Территория меры' }).selectOption({ label: territory });
+      await catalogue(page).getByRole('searchbox', { name: 'Поиск мер' }).fill(title);
+      return catalogue(page).getByRole('article').filter({ has: page.getByRole('heading', { name: title, exact: true }) });
+    }
+    async function select(page, card) {
+      const pending = rpc(page, 'dw_select_catalog_practice');
+      await card.getByRole('button', { name: 'Отобрать меру' }).click();
+      const response = await pending;
+      expect(response.status(), await response.text()).toBe(200);
+      await expect(card.getByRole('button', { name: 'Мера отобрана' })).toHaveAttribute('aria-pressed', 'true');
+    }
+
+    await select(a.page, await findCard(a.page, 'Амурская область', amur));
+    const sharedCard = await findCard(b.page, 'Амурская область', amur);
+    await expect(sharedCard.getByRole('button', { name: 'Мера отобрана' })).toBeVisible();
+    await select(b.page, await findCard(b.page, 'Архангельская область', arkhangelsk));
+    await select(a.page, await findCard(a.page, 'Федеральные меры', federal));
+    for (const page of [a.page, b.page]) await scene(page, 'Рейтинг');
+
+    const group = ranking(a.page).getByRole('article', { name: familyName, exact: true });
+    await expect(group).toHaveCount(1);
+    await expect(ranking(a.page).getByRole('article', { name: federal, exact: true })).toBeVisible();
+    await group.getByText('Варианты мер · 2', { exact: true }).click();
+    await expect(group).toContainText(amur);
+    await expect(group).toContainText('30 % от федерального материнского капитала');
+    await expect(group).toContainText(arkhangelsk);
+    await expect(group).toContainText('124 608,81 ₽ (индексируется ежегодно)');
+    await group.getByRole('button', { name: 'Подробности варианта' }).first().click();
+    const details = a.page.getByRole('dialog');
+    await expect(details.getByRole('region', { name: 'Источник карточки' })).toBeVisible();
+    await details.getByRole('button', { name: 'Закрыть окно', exact: true }).click();
+
+    await group.getByRole('button', { name: `Поддержать: ${familyName}`, exact: true }).click();
+    const otherGroup = ranking(b.page).getByRole('article', { name: familyName, exact: true });
+    await expect(otherGroup.getByRole('button', { name: `Поддержать: ${familyName}`, exact: true })).toHaveText('1');
+    await noOverflow(b.page, 320);
+    await b.page.setViewportSize({ width: 390, height: 844 });
+    await noOverflow(b.page, 390);
+    await screenshot(a.page, 'family-catalog-shared-ranking.png');
+  });
   expect(externalRequests).toEqual([]);
   expect(failedResponses).toEqual([]);
   expect(errors).toEqual([]);

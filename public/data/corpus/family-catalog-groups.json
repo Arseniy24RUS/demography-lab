@@ -1,0 +1,1150 @@
+{
+  "schemaVersion": 1,
+  "catalogCommit": "5dde46ae663b7652a448ec982585e64d61a26a61",
+  "cardCount": 2274,
+  "groups": [
+    {
+      "id": "regional-disabled-child-utility-compensation",
+      "title": "Компенсация расходов на ЖКУ семьям с детьми-инвалидами",
+      "kind": "mechanism",
+      "catalogIds": [
+        "sovetmam:bsh-008",
+        "sovetmam:dagestan-010",
+        "sovetmam:hmao-012",
+        "sovetmam:ryaz-036",
+        "sovetmam:smol-016",
+        "sovetmam:ulyan-025"
+      ]
+    },
+    {
+      "id": "regional-equipment-lending-infant",
+      "title": "Прокат детских вещей для детей до двух лет",
+      "kind": "mechanism",
+      "catalogIds": [
+        "sovetmam:brn-016",
+        "sovetmam:mari-001",
+        "sovetmam:orl-022",
+        "sovetmam:pnz-020",
+        "sovetmam:sev-012",
+        "sovetmam:spb-012",
+        "sovetmam:tomsk-020"
+      ]
+    },
+    {
+      "id": "regional-equipment-lending-newborn",
+      "title": "Прокат вещей для новорождённых",
+      "kind": "mechanism",
+      "catalogIds": [
+        "sovetmam:krasn-016",
+        "sovetmam:lpc-021",
+        "sovetmam:mgd-008",
+        "sovetmam:reg-kaliningradskaya-oblast-021",
+        "sovetmam:tula-010",
+        "sovetmam:vld-003"
+      ]
+    },
+    {
+      "id": "regional-first-birth-payment",
+      "title": "Единовременная выплата при рождении первого ребёнка",
+      "kind": "mechanism",
+      "catalogIds": [
+        "sovetmam:amur-002",
+        "sovetmam:bur-006",
+        "sovetmam:chao-001",
+        "sovetmam:eao-001",
+        "sovetmam:irkutsk-003",
+        "sovetmam:kam-007",
+        "sovetmam:khab-001",
+        "sovetmam:mgd-001",
+        "sovetmam:mord-001",
+        "sovetmam:prim-002",
+        "sovetmam:sah-023",
+        "sovetmam:saha-005",
+        "sovetmam:zab-001"
+      ]
+    },
+    {
+      "id": "regional-gas-equipment-subsidy",
+      "title": "Субсидия на газовое оборудование при догазификации",
+      "kind": "mechanism",
+      "catalogIds": [
+        "sovetmam:astra-016",
+        "sovetmam:blg-005",
+        "sovetmam:bsh-022",
+        "sovetmam:chuv-013",
+        "sovetmam:kar-014",
+        "sovetmam:khers-006",
+        "sovetmam:lnr-009",
+        "sovetmam:orl-018",
+        "sovetmam:pnz-025",
+        "sovetmam:psk-024",
+        "sovetmam:reg-kaliningradskaya-oblast-013",
+        "sovetmam:smol-015"
+      ]
+    },
+    {
+      "id": "regional-in-kind-newborn-kit",
+      "title": "Подарочный набор для новорождённого",
+      "kind": "mechanism",
+      "catalogIds": [
+        "sovetmam:amur-021",
+        "sovetmam:arh-008",
+        "sovetmam:bsh-014",
+        "sovetmam:khab-007",
+        "sovetmam:kirov-023",
+        "sovetmam:klm-013",
+        "sovetmam:komi-039",
+        "sovetmam:kostroma-020",
+        "sovetmam:mgd-004",
+        "sovetmam:mrm-008",
+        "sovetmam:nao-007",
+        "sovetmam:tat-008",
+        "sovetmam:tuva-add-nabor",
+        "sovetmam:tver-018",
+        "sovetmam:ulyan-009"
+      ]
+    },
+    {
+      "id": "regional-kindergarten-fee-compensation",
+      "title": "Компенсация родительской платы за детский сад",
+      "kind": "mechanism",
+      "catalogIds": [
+        "sovetmam:amur-031",
+        "sovetmam:arh-016",
+        "sovetmam:astra-002",
+        "sovetmam:bur-004",
+        "sovetmam:chech-005",
+        "sovetmam:chuv-032",
+        "sovetmam:kbr-005",
+        "sovetmam:khab-010",
+        "sovetmam:klm-012",
+        "sovetmam:komi-036",
+        "sovetmam:kostroma-010",
+        "sovetmam:krym-016",
+        "sovetmam:lenobl-035",
+        "sovetmam:lpc-010",
+        "sovetmam:mari-011",
+        "sovetmam:mgd-007",
+        "sovetmam:mo-kompensaciya-platy-detsad",
+        "sovetmam:mord-004",
+        "sovetmam:msk-kompensaciya-detsad",
+        "sovetmam:orl-029",
+        "sovetmam:osetia-004",
+        "sovetmam:reg-novosibirskaya-oblast-015",
+        "sovetmam:rstadd-002",
+        "sovetmam:rtadd-008",
+        "sovetmam:ryaz-004",
+        "sovetmam:sah-001",
+        "sovetmam:saha-003",
+        "sovetmam:samara-010",
+        "sovetmam:sev-001",
+        "sovetmam:smol-008",
+        "sovetmam:stavropol-006",
+        "sovetmam:tamb-006",
+        "sovetmam:tomsk-006",
+        "sovetmam:vol-015",
+        "sovetmam:volgograd-022",
+        "sovetmam:yamal-021",
+        "sovetmam:yarosl-020"
+      ]
+    },
+    {
+      "id": "regional-kindergarten-fee-waiver-svo",
+      "title": "Освобождение от платы за детский сад детям участников СВО",
+      "kind": "mechanism",
+      "catalogIds": [
+        "sovetmam:altadd-006",
+        "sovetmam:chuv-025",
+        "sovetmam:dagestan-015",
+        "sovetmam:ivn-037",
+        "sovetmam:kchr-015",
+        "sovetmam:khab-018",
+        "sovetmam:krdadd-011",
+        "sovetmam:tamb-007",
+        "sovetmam:tuva-add-detsad-svo",
+        "sovetmam:yarosl-028"
+      ]
+    },
+    {
+      "id": "regional-kindergarten-priority-large-family",
+      "title": "Первоочередной приём в детский сад для многодетных семей",
+      "kind": "mechanism",
+      "catalogIds": [
+        "sovetmam:chech-020",
+        "sovetmam:eao-012",
+        "sovetmam:ivn-018",
+        "sovetmam:khab-011",
+        "sovetmam:kostroma-026",
+        "sovetmam:mari-021",
+        "sovetmam:mord-019",
+        "sovetmam:tula-014",
+        "sovetmam:zapor-006"
+      ]
+    },
+    {
+      "id": "regional-large-family-child-free-medicine",
+      "title": "Бесплатные лекарства детям до 6 лет из многодетных семей",
+      "kind": "mechanism",
+      "catalogIds": [
+        "sovetmam:bsh-013",
+        "sovetmam:bur-014",
+        "sovetmam:chuv-031",
+        "sovetmam:dagestan-018",
+        "sovetmam:kemerovo-008",
+        "sovetmam:kirov-015",
+        "sovetmam:krd-017",
+        "sovetmam:krg-021",
+        "sovetmam:mari-019",
+        "sovetmam:moadd-006",
+        "sovetmam:orl-030",
+        "sovetmam:perm-011",
+        "sovetmam:ralt-006",
+        "sovetmam:ryaz-024",
+        "sovetmam:saha-018",
+        "sovetmam:tat-003",
+        "sovetmam:tula-012",
+        "sovetmam:zapor-004"
+      ]
+    },
+    {
+      "id": "regional-large-family-child-free-transport",
+      "title": "Бесплатный проезд детям из многодетных семей",
+      "kind": "mechanism",
+      "catalogIds": [
+        "sovetmam:bur-009",
+        "sovetmam:dagestan-019",
+        "sovetmam:eao-015",
+        "sovetmam:kemerovo-007",
+        "sovetmam:krg-024",
+        "sovetmam:lpc-017",
+        "sovetmam:ralt-002",
+        "sovetmam:saha-026",
+        "sovetmam:smol-021",
+        "sovetmam:spb-026",
+        "sovetmam:tuva-005"
+      ]
+    },
+    {
+      "id": "regional-large-family-id",
+      "title": "Удостоверение многодетной семьи",
+      "kind": "mechanism",
+      "catalogIds": [
+        "sovetmam:chech-003",
+        "sovetmam:chel-011",
+        "sovetmam:chuv-036",
+        "sovetmam:kbr-017",
+        "sovetmam:khab-029",
+        "sovetmam:khers-008",
+        "sovetmam:krasn-011",
+        "sovetmam:krg-013",
+        "sovetmam:mgd-012",
+        "sovetmam:orl-009",
+        "sovetmam:psk-035",
+        "sovetmam:ryaz-014",
+        "sovetmam:tamb-004",
+        "sovetmam:tver-007",
+        "sovetmam:zapor-003"
+      ]
+    },
+    {
+      "id": "regional-large-family-land",
+      "title": "Бесплатный земельный участок многодетным семьям",
+      "kind": "mechanism",
+      "catalogIds": [
+        "sovetmam:brn-017",
+        "sovetmam:bur-016",
+        "sovetmam:dagestan-020",
+        "sovetmam:krd-006",
+        "sovetmam:krym-017",
+        "sovetmam:psk-005",
+        "sovetmam:rtadd-002",
+        "sovetmam:saratov-008",
+        "sovetmam:udm-030",
+        "sovetmam:ulyan-012"
+      ]
+    },
+    {
+      "id": "regional-large-family-land-or-payment",
+      "title": "Земельный участок или выплата по выбору многодетной семьи",
+      "kind": "mechanism",
+      "catalogIds": [
+        "sovetmam:ivn-012",
+        "sovetmam:khab-022",
+        "sovetmam:mari-022",
+        "sovetmam:mrm-019",
+        "sovetmam:nao-018",
+        "sovetmam:tula-019"
+      ]
+    },
+    {
+      "id": "regional-large-family-land-payment",
+      "title": "Денежная выплата вместо земельного участка многодетным семьям",
+      "kind": "mechanism",
+      "catalogIds": [
+        "sovetmam:arh-027",
+        "sovetmam:brn-014",
+        "sovetmam:hak-add-uchastok",
+        "sovetmam:kirov-008",
+        "sovetmam:mo-vyplata-vzamen-uchastka",
+        "sovetmam:oren-005",
+        "sovetmam:orl-004",
+        "sovetmam:reg-kaliningradskaya-oblast-024",
+        "sovetmam:saha-031",
+        "sovetmam:smol-009",
+        "sovetmam:ulyan-013",
+        "sovetmam:vld-010",
+        "sovetmam:yamal-019",
+        "sovetmam:yarosl-013"
+      ]
+    },
+    {
+      "id": "regional-large-family-utility-compensation",
+      "title": "Компенсация расходов на ЖКУ многодетным семьям",
+      "kind": "mechanism",
+      "catalogIds": [
+        "sovetmam:bsh-007",
+        "sovetmam:eao-008",
+        "sovetmam:hmao-006",
+        "sovetmam:kirov-011",
+        "sovetmam:klm-003",
+        "sovetmam:komi-011",
+        "sovetmam:krasn-009",
+        "sovetmam:krd-003",
+        "sovetmam:krg-001",
+        "sovetmam:krym-004",
+        "sovetmam:lnr-004",
+        "sovetmam:lpc-013",
+        "sovetmam:orl-010",
+        "sovetmam:perm-007",
+        "sovetmam:pnz-016",
+        "sovetmam:ralt-001",
+        "sovetmam:reg-altayskiy-kray-013",
+        "sovetmam:rst-010",
+        "sovetmam:ryaz-019",
+        "sovetmam:smol-014",
+        "sovetmam:sve-006",
+        "sovetmam:tyumen-008",
+        "sovetmam:ulyan-014",
+        "sovetmam:vol-012",
+        "sovetmam:zhku-mnogodetnym-chukotka",
+        "sovetmam:zhku-mnogodetnym-mordovia",
+        "sovetmam:zhku-mnogodetnym-omsk",
+        "sovetmam:zhku-mnogodetnym-orenburg",
+        "sovetmam:zhku-mnogodetnym-saratov",
+        "sovetmam:zhku-mnogodetnym-sevastopol",
+        "sovetmam:zhku-mnogodetnym-tambov",
+        "sovetmam:zhku-mnogodetnym-yaroslavl"
+      ]
+    },
+    {
+      "id": "regional-maternal-capital",
+      "title": "Региональный материнский (семейный) капитал",
+      "kind": "mechanism",
+      "catalogIds": [
+        "sovetmam:amur-006",
+        "sovetmam:amur-007",
+        "sovetmam:arh-021",
+        "sovetmam:blg-014",
+        "sovetmam:brn-013",
+        "sovetmam:bur-007",
+        "sovetmam:bur-008",
+        "sovetmam:chao-005",
+        "sovetmam:chao-006",
+        "sovetmam:chel-001",
+        "sovetmam:chuv-030",
+        "sovetmam:eao-002",
+        "sovetmam:eao-003",
+        "sovetmam:hak-018",
+        "sovetmam:hmao-001",
+        "sovetmam:irkutsk-001",
+        "sovetmam:ivn-008",
+        "sovetmam:kam-001",
+        "sovetmam:kam-002",
+        "sovetmam:kam-003",
+        "sovetmam:kar-003",
+        "sovetmam:kchr-003",
+        "sovetmam:kchr-013",
+        "sovetmam:kemerovo-001",
+        "sovetmam:khab-005",
+        "sovetmam:kirov-001",
+        "sovetmam:klg-015",
+        "sovetmam:klm-002",
+        "sovetmam:komi-008",
+        "sovetmam:komi-035",
+        "sovetmam:kostroma-009",
+        "sovetmam:krasn-001",
+        "sovetmam:krd-001",
+        "sovetmam:krsk-006",
+        "sovetmam:lenobl-011",
+        "sovetmam:lenobl-012",
+        "sovetmam:lpc-003",
+        "sovetmam:mari-009",
+        "sovetmam:mgd-009",
+        "sovetmam:mgd-010",
+        "sovetmam:mgd-011",
+        "sovetmam:mo-regionalnyy-matkapital",
+        "sovetmam:mrm-004",
+        "sovetmam:nao-005",
+        "sovetmam:nnov-003",
+        "sovetmam:omsk-001",
+        "sovetmam:oren-001",
+        "sovetmam:orl-008",
+        "sovetmam:prim-003",
+        "sovetmam:prim-004",
+        "sovetmam:psk-036",
+        "sovetmam:ralt-005",
+        "sovetmam:reg-altayskiy-kray-001",
+        "sovetmam:reg-kaliningradskaya-oblast-002",
+        "sovetmam:reg-novosibirskaya-oblast-007",
+        "sovetmam:rst-011",
+        "sovetmam:ryaz-045",
+        "sovetmam:saha-006",
+        "sovetmam:saha-015",
+        "sovetmam:samara-003",
+        "sovetmam:saratov-001",
+        "sovetmam:sev-014",
+        "sovetmam:smol-019",
+        "sovetmam:spb-013",
+        "sovetmam:sve-001",
+        "sovetmam:tomsk-005",
+        "sovetmam:tula-018",
+        "sovetmam:tuva-002",
+        "sovetmam:tver-016",
+        "sovetmam:tyumen-001",
+        "sovetmam:tyumen-002",
+        "sovetmam:ulyan-011",
+        "sovetmam:vld-007",
+        "sovetmam:volgograd-001",
+        "sovetmam:voronezh-001",
+        "sovetmam:yarosl-008",
+        "sovetmam:zab-002"
+      ]
+    },
+    {
+      "id": "regional-social-contract",
+      "title": "Социальный контракт",
+      "kind": "mechanism",
+      "catalogIds": [
+        "sovetmam:astra-018",
+        "sovetmam:blg-022",
+        "sovetmam:bur-001",
+        "sovetmam:chuv-011",
+        "sovetmam:hak-005",
+        "sovetmam:ivn-016",
+        "sovetmam:kar-017",
+        "sovetmam:khab-033",
+        "sovetmam:khers-007",
+        "sovetmam:kirov-018",
+        "sovetmam:klm-008",
+        "sovetmam:komi-004",
+        "sovetmam:krasn-019",
+        "sovetmam:krdadd-004",
+        "sovetmam:krg-006",
+        "sovetmam:krym-010",
+        "sovetmam:lenobl-048",
+        "sovetmam:lnr-010",
+        "sovetmam:mari-012",
+        "sovetmam:mgd-055",
+        "sovetmam:mord-026",
+        "sovetmam:nao-001",
+        "sovetmam:perm-016",
+        "sovetmam:psk-034",
+        "sovetmam:reg-altayskiy-kray-017",
+        "sovetmam:rstadd-001",
+        "sovetmam:ryaz-007",
+        "sovetmam:saha-012",
+        "sovetmam:sev-019",
+        "sovetmam:smol-020",
+        "sovetmam:tomsk-015",
+        "sovetmam:udm-010",
+        "sovetmam:vld-022",
+        "sovetmam:yarosl-023",
+        "sovetmam:zab-007"
+      ]
+    },
+    {
+      "id": "regional-social-nanny",
+      "title": "Социальная няня",
+      "kind": "mechanism",
+      "catalogIds": [
+        "sovetmam:chuv-005",
+        "sovetmam:mari-002",
+        "sovetmam:orl-023",
+        "sovetmam:pnz-021",
+        "sovetmam:reg-kaliningradskaya-oblast-022",
+        "sovetmam:rtadd-006",
+        "sovetmam:sev-011",
+        "sovetmam:spb-011",
+        "sovetmam:tomsk-019",
+        "sovetmam:tver-005",
+        "sovetmam:udm-006",
+        "sovetmam:vld-004",
+        "sovetmam:vol-019"
+      ]
+    },
+    {
+      "id": "regional-student-birth-payment",
+      "title": "Выплата при рождении ребёнка в студенческой семье",
+      "kind": "mechanism",
+      "catalogIds": [
+        "sovetmam:blg-012",
+        "sovetmam:kemerovo-002",
+        "sovetmam:krsk-018",
+        "sovetmam:mgd-051",
+        "sovetmam:pnz-013",
+        "sovetmam:saratov-010",
+        "sovetmam:stavropol-005"
+      ]
+    },
+    {
+      "id": "regional-student-pregnancy-payment",
+      "title": "Выплата беременным студенткам",
+      "kind": "mechanism",
+      "catalogIds": [
+        "sovetmam:ivn-002",
+        "sovetmam:kchr-010",
+        "sovetmam:klg-017",
+        "sovetmam:mari-003",
+        "sovetmam:mgd-049",
+        "sovetmam:nnov-004",
+        "sovetmam:orl-011",
+        "sovetmam:pnz-012",
+        "sovetmam:psk-022",
+        "sovetmam:reg-kaliningradskaya-oblast-007",
+        "sovetmam:rst-014",
+        "sovetmam:ryaz-001",
+        "sovetmam:samara-002",
+        "sovetmam:sev-013",
+        "sovetmam:smol-013",
+        "sovetmam:spb-009",
+        "sovetmam:tamb-002",
+        "sovetmam:tat-012",
+        "sovetmam:tomsk-016",
+        "sovetmam:tula-009",
+        "sovetmam:tver-017",
+        "sovetmam:udm-001",
+        "sovetmam:ulyan-001",
+        "sovetmam:vld-001",
+        "sovetmam:volgograd-020",
+        "sovetmam:yarosl-011"
+      ]
+    },
+    {
+      "id": "regional-title-09109b9402722ebf",
+      "title": "Выплата на школьную одежду многодетным",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:khab-030",
+        "sovetmam:klg-012",
+        "sovetmam:mari-006",
+        "sovetmam:mgd-015",
+        "sovetmam:orl-005",
+        "sovetmam:saha-011",
+        "sovetmam:ulyan-016"
+      ]
+    },
+    {
+      "id": "regional-title-0b3b0dd5ee3b8e3e",
+      "title": "Компенсация затрат на обучение ребёнка-инвалида на дому",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:krasn-024",
+        "sovetmam:omsk-016"
+      ]
+    },
+    {
+      "id": "regional-title-0cc2d47e5f21d8c9",
+      "title": "Выплата на питание беременным женщинам",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:ivn-001",
+        "sovetmam:kam-004"
+      ]
+    },
+    {
+      "id": "regional-title-0d15f48c95537665",
+      "title": "Выплата за звание «Мать-героиня»",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:kar-009",
+        "sovetmam:saha-020"
+      ]
+    },
+    {
+      "id": "regional-title-0df17ed2c5b017b1",
+      "title": "Компенсация на питание беременным, кормящим и детям до 3 лет",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:kostroma-021",
+        "sovetmam:vld-020",
+        "sovetmam:voronezh-022"
+      ]
+    },
+    {
+      "id": "regional-title-0df9acda2de91c59",
+      "title": "Бесплатные музеи и парки многодетным",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:ryaz-029",
+        "sovetmam:tula-017",
+        "sovetmam:yamal-012"
+      ]
+    },
+    {
+      "id": "regional-title-1187d2fbf8407a8c",
+      "title": "Выплата детям с фенилкетонурией",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:brn-011",
+        "sovetmam:mord-011",
+        "sovetmam:orl-016"
+      ]
+    },
+    {
+      "id": "regional-title-139846eaae5e3a7b",
+      "title": "Дополнительная выплата на погашение ипотеки многодетным",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:sev-026",
+        "sovetmam:vld-005"
+      ]
+    },
+    {
+      "id": "regional-title-17fbf77b22e7efd3",
+      "title": "Бесплатное питание школьников и студентов из многодетных семей",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:nao-022",
+        "sovetmam:ralt-003",
+        "sovetmam:ryaz-023",
+        "sovetmam:saha-013"
+      ]
+    },
+    {
+      "id": "regional-title-19a87617a8416410",
+      "title": "Бесплатная психологическая помощь семьям СВО",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:smol-027",
+        "sovetmam:yarosl-025"
+      ]
+    },
+    {
+      "id": "regional-title-1b16043ca76ade25",
+      "title": "Ежемесячная выплата на третьего ребёнка до 3 лет",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:bur-012",
+        "sovetmam:sve-002",
+        "sovetmam:voronezh-021"
+      ]
+    },
+    {
+      "id": "regional-title-2df55fb251fa08a7",
+      "title": "Ежемесячное пособие по уходу за ребёнком-инвалидом",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:arh-006",
+        "sovetmam:bsh-005"
+      ]
+    },
+    {
+      "id": "regional-title-2ff8fc2d84b54a86",
+      "title": "Бесплатные кружки и секции детям участников СВО",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:ivn-044",
+        "sovetmam:mord-025"
+      ]
+    },
+    {
+      "id": "regional-title-363cbe166d2c8d96",
+      "title": "Выплата на питание беременным и детям до 3 лет",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:smol-002",
+        "sovetmam:tamb-001"
+      ]
+    },
+    {
+      "id": "regional-title-375f729715f99991",
+      "title": "Льготный проезд детям-инвалидам",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:ivn-029",
+        "sovetmam:komi-021"
+      ]
+    },
+    {
+      "id": "regional-title-3a2394e7cea61795",
+      "title": "Обеспечение школьной формой многодетным",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:krym-002",
+        "sovetmam:tver-006"
+      ]
+    },
+    {
+      "id": "regional-title-3ca5f9847cdfd1a0",
+      "title": "Выплата при рождении тройни и более",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:krsk-007",
+        "sovetmam:lpc-005",
+        "sovetmam:sah-013",
+        "sovetmam:tomsk-002"
+      ]
+    },
+    {
+      "id": "regional-title-3d421c873d4a61d8",
+      "title": "Профобучение родителей в декрете и ищущих работу",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:pnz-004",
+        "sovetmam:psk-008"
+      ]
+    },
+    {
+      "id": "regional-title-41828e92fe3f36e9",
+      "title": "Освобождение от транспортного налога многодетным",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:chuv-037",
+        "sovetmam:mgd-026",
+        "sovetmam:tver-012"
+      ]
+    },
+    {
+      "id": "regional-title-4316e8f96dd9779d",
+      "title": "Ежемесячная выплата на ребёнка-инвалида",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:reg-novosibirskaya-oblast-009",
+        "sovetmam:yarosl-017"
+      ]
+    },
+    {
+      "id": "regional-title-4347cb8f1e50f49f",
+      "title": "Субсидия на догазификацию жилого дома",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:oren-011",
+        "sovetmam:udm-016"
+      ]
+    },
+    {
+      "id": "regional-title-4eeff1af974d2efa",
+      "title": "Выплата на питание детей до 3 лет",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:ryaz-003",
+        "sovetmam:sah-019"
+      ]
+    },
+    {
+      "id": "regional-title-575743417f1bb7b9",
+      "title": "Ежемесячное пособие студенческим семьям с детьми",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:omsk-004",
+        "sovetmam:reg-kaliningradskaya-oblast-008"
+      ]
+    },
+    {
+      "id": "regional-title-5fdf4f75baeebef7",
+      "title": "Выплата на питание детям до 3 лет",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:kam-006",
+        "sovetmam:pnz-007"
+      ]
+    },
+    {
+      "id": "regional-title-611f474d6c8b9f0e",
+      "title": "Пособие на школьную одежду многодетным",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:krg-014",
+        "sovetmam:tuva-004"
+      ]
+    },
+    {
+      "id": "regional-title-627b3f037d661a4d",
+      "title": "Выплата при рождении двойни или тройни",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:ingushetia-002",
+        "sovetmam:yarosl-009"
+      ]
+    },
+    {
+      "id": "regional-title-63b38643f7cbba6f",
+      "title": "Компенсация обучения детей из многодетных семей по СПО",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:astra-012",
+        "sovetmam:blg-016",
+        "sovetmam:bur-010",
+        "sovetmam:hak-017",
+        "sovetmam:kar-007",
+        "sovetmam:klm-006",
+        "sovetmam:pnz-029"
+      ]
+    },
+    {
+      "id": "regional-title-652d77ebe35dee15",
+      "title": "Детский сад бесплатно для многодетных",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:chao-024",
+        "sovetmam:kbr-006"
+      ]
+    },
+    {
+      "id": "regional-title-66deafc65ef7331f",
+      "title": "Выплата на жильё при рождении тройни и более",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:kar-004",
+        "sovetmam:psk-037",
+        "sovetmam:saha-028"
+      ]
+    },
+    {
+      "id": "regional-title-6b1d361ae15a4e17",
+      "title": "Выплата на лекарства детям до 6 лет в многодетных семьях",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:kam-008",
+        "sovetmam:vld-014"
+      ]
+    },
+    {
+      "id": "regional-title-6baf145126bd5067",
+      "title": "Субсидия на жильё при рождении тройни и более",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:arh-025",
+        "sovetmam:krg-011"
+      ]
+    },
+    {
+      "id": "regional-title-6ece624c221d21be",
+      "title": "Компенсация проезда детям участников СВО",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:tuva-007",
+        "sovetmam:voronezh-026"
+      ]
+    },
+    {
+      "id": "regional-title-72ea64bb91817533",
+      "title": "Компенсация найма жилья студенческим семьям",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:pnz-011",
+        "sovetmam:sve-011"
+      ]
+    },
+    {
+      "id": "regional-title-77f15ef2c00e723d",
+      "title": "Профобучение многодетных родителей",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:ivn-022",
+        "sovetmam:saha-027"
+      ]
+    },
+    {
+      "id": "regional-title-7914534a3bad7d9c",
+      "title": "Выплата при рождении двойни и более",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:eao-005",
+        "sovetmam:tuva-001"
+      ]
+    },
+    {
+      "id": "regional-title-7c9ab1e39a7a9bda",
+      "title": "Единовременная выплата при рождении ребёнка в семье участника СВО",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:irkutsk-014",
+        "sovetmam:perm-002"
+      ]
+    },
+    {
+      "id": "regional-title-7f0010f9c8aea5d2",
+      "title": "Выплата на питание кормящим матерям",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:ivn-003",
+        "sovetmam:kam-005",
+        "sovetmam:pnz-006"
+      ]
+    },
+    {
+      "id": "regional-title-80baba1e09e8a059",
+      "title": "Автомобиль семьям с 7 и более детьми",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:hak-021",
+        "sovetmam:kam-015"
+      ]
+    },
+    {
+      "id": "regional-title-810aee5d0cfa4ae2",
+      "title": "Бесплатное горячее питание в школе для детей участников СВО",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:samara-019",
+        "sovetmam:volgograd-015"
+      ]
+    },
+    {
+      "id": "regional-title-8227a3cbadac8590",
+      "title": "Бесплатные лекарства детям до 3 лет и многодетным до 6",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:khab-008",
+        "sovetmam:psk-001",
+        "sovetmam:tamb-005",
+        "sovetmam:tver-029"
+      ]
+    },
+    {
+      "id": "regional-title-84061420feb8a394",
+      "title": "Бесплатное питание школьников из многодетных семей",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:eao-016",
+        "sovetmam:klm-004",
+        "sovetmam:mari-020",
+        "sovetmam:mord-016",
+        "sovetmam:perm-010"
+      ]
+    },
+    {
+      "id": "regional-title-8e401352c00a4bdd",
+      "title": "Выплата за орден «Родительская слава»",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:komi-009",
+        "sovetmam:mrm-006",
+        "sovetmam:ulyan-020",
+        "sovetmam:vld-011"
+      ]
+    },
+    {
+      "id": "regional-title-918c9829b93e756e",
+      "title": "Компенсация проезда школьникам из многодетных семей",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:oren-018",
+        "sovetmam:prim-010"
+      ]
+    },
+    {
+      "id": "regional-title-92cfaf822824f82a",
+      "title": "Бесплатное посещение музеев многодетным",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:mari-016",
+        "sovetmam:orl-019",
+        "sovetmam:sah-038"
+      ]
+    },
+    {
+      "id": "regional-title-990d7308825e7e08",
+      "title": "Единовременная материальная помощь детям участников СВО",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:krdadd-010",
+        "sovetmam:perm-003"
+      ]
+    },
+    {
+      "id": "regional-title-9dd4cacc5f974665",
+      "title": "Компенсация расходов на газификацию домовладения",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:krd-010",
+        "sovetmam:rstadd-005"
+      ]
+    },
+    {
+      "id": "regional-title-b489680d7e135400",
+      "title": "Бесплатное питание студентов СПО из многодетных семей",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:pnz-028",
+        "sovetmam:smol-030"
+      ]
+    },
+    {
+      "id": "regional-title-b69a48269a1c341a",
+      "title": "Временное трудоустройство подростков 14–18 лет",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:brn-001",
+        "sovetmam:chuv-015",
+        "sovetmam:ivn-023",
+        "sovetmam:smol-022"
+      ]
+    },
+    {
+      "id": "regional-title-c054aac28d1a7b8f",
+      "title": "Возмещение проезда к санаторному лечению",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:kar-023",
+        "sovetmam:mari-013",
+        "sovetmam:tamb-020"
+      ]
+    },
+    {
+      "id": "regional-title-c7f1bc606287ffc7",
+      "title": "Выплата при рождении первого ребёнка маме до 25 лет",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:psk-031",
+        "sovetmam:vol-001"
+      ]
+    },
+    {
+      "id": "regional-title-d2571a8cd6e39888",
+      "title": "Компенсация 50% стоимости обучения ребёнка из многодетной семьи",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:rst-017",
+        "sovetmam:spb-024"
+      ]
+    },
+    {
+      "id": "regional-title-d69b88e744fdee0e",
+      "title": "Выплата на школьную форму многодетным",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:ryaz-018",
+        "sovetmam:smol-004"
+      ]
+    },
+    {
+      "id": "regional-title-db2a2da06babb11d",
+      "title": "Единовременная выплата при одновременном рождении трёх и более детей",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:chech-002",
+        "sovetmam:dagestan-004"
+      ]
+    },
+    {
+      "id": "regional-title-dfc6e5022081f45c",
+      "title": "Компенсация ЖКУ и капремонта семьям с ребёнком-инвалидом",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:kam-018",
+        "sovetmam:mgd-030"
+      ]
+    },
+    {
+      "id": "regional-title-e2e98e4753cae5f0",
+      "title": "Единовременное пособие при рождении ребёнка",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:kbr-001",
+        "sovetmam:lenobl-006"
+      ]
+    },
+    {
+      "id": "regional-title-e64bfd0dc6821979",
+      "title": "Выплата на питание беременным",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:pnz-005",
+        "sovetmam:ryaz-002",
+        "sovetmam:sah-016",
+        "sovetmam:tver-003"
+      ]
+    },
+    {
+      "id": "regional-title-e82584f0f0aeee56",
+      "title": "Выплата на жильё семьям с 10+ детьми",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:ryaz-031",
+        "sovetmam:saha-030"
+      ]
+    },
+    {
+      "id": "regional-title-eac400c4bfadbfee",
+      "title": "Бесплатное питание студентов колледжей",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:khab-013",
+        "sovetmam:mord-015",
+        "sovetmam:osetia-003"
+      ]
+    },
+    {
+      "id": "regional-title-ee014a6f073e2ded",
+      "title": "Выплата за знак «Материнская слава»",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:saha-021",
+        "sovetmam:tula-013"
+      ]
+    },
+    {
+      "id": "regional-title-fd549d9943f0c59b",
+      "title": "Ежемесячная выплата по уходу за ребёнком-инвалидом",
+      "kind": "same-title",
+      "catalogIds": [
+        "sovetmam:irkutsk-007",
+        "sovetmam:msk-uhod-rebenok-invalid"
+      ]
+    },
+    {
+      "id": "regional-young-family-rent-compensation",
+      "title": "Компенсация найма жилья молодым семьям",
+      "kind": "mechanism",
+      "catalogIds": [
+        "sovetmam:ivn-010",
+        "sovetmam:lpc-019",
+        "sovetmam:mgd-005",
+        "sovetmam:reg-altayskiy-kray-014",
+        "sovetmam:reg-kaliningradskaya-oblast-023",
+        "sovetmam:tomsk-017",
+        "sovetmam:tula-008",
+        "sovetmam:tver-021",
+        "sovetmam:vol-005"
+      ]
+    },
+    {
+      "id": "regional-young-family-third-birth-payment",
+      "title": "Выплата при рождении третьего ребёнка в молодой семье",
+      "kind": "mechanism",
+      "catalogIds": [
+        "sovetmam:blg-011",
+        "sovetmam:brn-015",
+        "sovetmam:ivn-009",
+        "sovetmam:kchr-009",
+        "sovetmam:krsk-017",
+        "sovetmam:lpc-004",
+        "sovetmam:orl-012",
+        "sovetmam:psk-025",
+        "sovetmam:reg-altayskiy-kray-005",
+        "sovetmam:ryaz-012",
+        "sovetmam:sev-016",
+        "sovetmam:smol-012",
+        "sovetmam:tomsk-018",
+        "sovetmam:tver-019",
+        "sovetmam:udm-003",
+        "sovetmam:ulyan-005",
+        "sovetmam:vld-002",
+        "sovetmam:vol-002",
+        "sovetmam:yarosl-021"
+      ]
+    }
+  ]
+}

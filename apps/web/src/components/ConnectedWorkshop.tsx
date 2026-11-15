@@ -1,4 +1,5 @@
 import { WorkshopArea } from './workshop/WorkshopArea';
+import PracticeSelectionCatalog from './workshop/PracticeSelectionCatalog';
 import { RegionMap } from './geography/RegionMap';
 import { programmeMeasureRegions } from './workshop/workshop-ui';
 import type { WorkshopView } from './workshop/workshop-ui';
@@ -20,6 +21,7 @@ export function ConnectedWorkshop({ state, sessionActions, workshop, manifest, v
     currentUserId={state.auth.userId} regions={regions} busy={workshop.busy || state.busy !== null}
     loading={workshop.loading} error={workshop.error} actions={workshop.actions}
     onOpenSource={sessionActions.openSource} onOpenDocument={onOpenDocument} measureRegionIds={measureRegionIds}
+    catalogue={<PracticeSelectionCatalog manifest={manifest} session={state.snapshot} onSelect={sessionActions.selectCatalog} />}
     renderMap={({ selectedRegionId, onSelect }) => <RegionMap regions={regions} measureRegionIds={measureRegionIds}
       selectedRegionId={selectedRegionId} onSelect={onSelect} />} />;
 }
