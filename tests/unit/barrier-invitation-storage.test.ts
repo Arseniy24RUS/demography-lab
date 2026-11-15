@@ -124,9 +124,11 @@ function mount() {
   });
   const actions: BarrierActions = {
     saveBarrier: vi.fn(),
+    importFlipchart: vi.fn(),
     vote: vi.fn(),
     saveLink: vi.fn(),
     saveSolution: vi.fn(),
+    setSolutionBarrier: vi.fn(),
     readEvidence: vi.fn(),
     saveSurvey: save,
     manageSurvey: manage,

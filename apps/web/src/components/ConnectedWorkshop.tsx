@@ -12,16 +12,18 @@ export function ConnectedWorkshop({ state, sessionActions, workshop, manifest, v
   state: SessionAreaState; sessionActions: SessionAreaActions; workshop: ReturnType<typeof useWorkshop>;
   manifest: CorpusManifest; view: WorkshopView; onOpenDocument: (regionId: string) => void;
 }) {
-  if (!state.snapshot || !state.auth.userId) return null;
-  const measureRegionIds = programmeMeasureRegions(state.snapshot.submissions.filter(item => item.status === 'shared'));
+  const { snapshot } = state;
+  if (!snapshot || !state.auth.userId) return null;
+  const measureRegionIds = programmeMeasureRegions(snapshot.submissions.filter(item => item.status === 'shared'));
   const regions = manifest.documents.map((entry) => ({
     id: entry.regionId, name: entry.territory, hasDocument: readable(entry), documentTitle: entry.title,
   }));
-  return <WorkshopArea view={view} hideNavigation sharedWorkspace session={state.snapshot} snapshot={workshop.snapshot}
+  return <WorkshopArea view={view} hideNavigation sharedWorkspace session={snapshot} snapshot={workshop.snapshot}
     currentUserId={state.auth.userId} regions={regions} busy={workshop.busy || state.busy !== null}
     loading={workshop.loading} error={workshop.error} actions={workshop.actions}
     onOpenSource={sessionActions.openSource} onOpenDocument={onOpenDocument} measureRegionIds={measureRegionIds}
-    catalogue={<PracticeSelectionCatalog manifest={manifest} session={state.snapshot} onSelect={sessionActions.selectCatalog} />}
+    renderCatalogue={(regionId) => <PracticeSelectionCatalog key={regionId} manifest={manifest} session={snapshot}
+      initialRegionId={regionId} onSelect={sessionActions.selectCatalog} onOpenProgramme={onOpenDocument} />}
     renderMap={({ selectedRegionId, onSelect }) => <RegionMap regions={regions} measureRegionIds={measureRegionIds}
       selectedRegionId={selectedRegionId} onSelect={onSelect} />} />;
 }

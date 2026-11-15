@@ -17,6 +17,7 @@ export function SessionArea({
   regions,
   renderWorkshop,
   renderBarriers,
+  renderSolutions,
   renderRoadmaps,
   renderFlipchart,
   renderObjectiveFactors,
@@ -28,6 +29,7 @@ export function SessionArea({
   regions: SessionRegionOption[];
   renderWorkshop?: (view: WorkshopView) => ReactNode;
   renderBarriers?: () => ReactNode;
+  renderSolutions?: () => ReactNode;
   renderRoadmaps?: () => ReactNode;
   renderFlipchart?: () => ReactNode;
   renderObjectiveFactors?: () => ReactNode;
@@ -116,6 +118,7 @@ export function SessionArea({
           regions={regions}
           renderWorkshop={renderWorkshop}
           renderBarriers={renderBarriers}
+          renderSolutions={renderSolutions}
           renderRoadmaps={renderRoadmaps}
           renderFlipchart={renderFlipchart}
           renderObjectiveFactors={renderObjectiveFactors}

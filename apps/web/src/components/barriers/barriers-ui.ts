@@ -8,6 +8,8 @@ import type {
   BarriersProjection,
   BarriersSnapshot,
   SaveBarrierInput,
+  ImportFlipchartInput,
+  SetSolutionBarrierInput,
   SaveBarrierLinkInput,
   SaveSolutionInput,
   SurveyActionInput,
@@ -21,6 +23,8 @@ import type { WorkshopRegionOption } from '../workshop/workshop-ui';
 
 export interface BarrierActions {
   saveBarrier(input: SaveBarrierInput): Promise<unknown>;
+  importFlipchart(input: ImportFlipchartInput): Promise<unknown>;
+  setSolutionBarrier(input: SetSolutionBarrierInput): Promise<unknown>;
   vote(input: BarrierVoteInput): Promise<unknown>;
   saveLink(input: SaveBarrierLinkInput): Promise<unknown>;
   saveSolution(input: SaveSolutionInput): Promise<unknown>;
@@ -96,5 +100,6 @@ export function solutionInput(card: AuthorSolution): SaveSolutionInput {
     successIndicator: card.successIndicator,
     risks: card.risks,
     status: card.status,
+    ...(card.format ? { format: card.format } : {}),
   };
 }

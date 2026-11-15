@@ -33,6 +33,7 @@ export function RegionMap({ regions, work = emptyWork, selectedRegionId, onSelec
   const [clock, setClock] = useState(Date.now());
   const [keyboardRegionId, setKeyboardRegionId] = useState<string | null>(null);
   const hatch = useId().replaceAll(':', '');
+  const selectedHatch = `${hatch}-selected`;
   const isTerritoryPicker = purpose === 'territories';
   const showMeasures = !isTerritoryPicker && measureRegionIds !== undefined;
   const showWork = allocation && !isTerritoryPicker && !showMeasures;
@@ -63,7 +64,7 @@ export function RegionMap({ regions, work = emptyWork, selectedRegionId, onSelec
     ? data?.shapes.map(shape => detail.shapes.get(shape.regionId) ?? shape) : data?.shapes, [data, detailEnabled, detail]);
   const selected = showMeasures ? undefined : shapes?.find((shape) => shape.regionId === selectedRegionId);
   const selectable = (regionId: string) => {
-    if (showMeasures) return Boolean(regionById.get(regionId)?.hasDocument);
+    if (showMeasures) return regionById.has(regionId);
     return !isTerritoryPicker || regionById.has(regionId);
   };
   const focusRegionId = showMeasures ? keyboardRegionId ?? selectedRegionId : selected?.regionId;
@@ -96,7 +97,7 @@ export function RegionMap({ regions, work = emptyWork, selectedRegionId, onSelec
     if (!showMeasures) onSelect(next.regionId);
     requestAnimationFrame(() => svg.current?.querySelector<SVGGElement>(`[data-region-id="${CSS.escape(next.regionId)}"]`)?.focus());
   }
-  const legend: MapStatus[] = showMeasures ? ['measures-selected', 'measures-unselected']
+  const legend: MapStatus[] = showMeasures ? ['measures-selected', 'measures-unselected', 'unavailable']
     : showWork ? ['available', 'in_progress', 'completed', 'unavailable'] : ['available', 'unavailable'];
   if (error) return <div className="geo-fallback" role="status"><p>{error}</p><button className="button button-secondary" onClick={() => setAttempt((value) => value + 1)}>Повторить загрузку карты</button></div>;
   if (!data) return <div className="geo-fallback" aria-busy="true">{isTerritoryPicker ? 'Загружаем карту России…' : 'Загружаем карту программ…'}</div>;
@@ -113,16 +114,32 @@ export function RegionMap({ regions, work = emptyWork, selectedRegionId, onSelec
     </div>
     <svg ref={svg} className="geo-canvas" viewBox={box.join(' ')} aria-label={isTerritoryPicker ? 'Карта России' : 'Карта региональных программ'}
       role="group" tabIndex={0} data-pannable={scale > 1} style={{ touchAction: scale > 1 ? 'none' : 'pan-y' }} {...canvasEvents}>
-      <defs><pattern id={hatch} patternUnits="userSpaceOnUse" width="8" height="8"><rect width="8" height="8" fill="#f1f4f8" /><path d="M-2 2L2-2M0 8L8 0M6 10L10 6" stroke="#bec9d8" strokeWidth="1" /></pattern></defs>
+      <defs>
+        {[
+          [hatch, '#edf1f6', '#9aa9be'],
+          [selectedHatch, '#a9d989', '#608653'],
+        ].map(([id, background, stroke]) => (
+          <pattern key={id} id={id} patternUnits="userSpaceOnUse" width="8" height="8">
+            <rect width="8" height="8" fill={background} />
+            <path d="M-2 2L2-2M0 8L8 0M6 10L10 6" stroke={stroke} strokeWidth="1.2" />
+          </pattern>
+        ))}
+      </defs>
       {(shapes ?? data.shapes).map((shape) => {
         const status = statusOf(shape.regionId);
+        const hasDocument = Boolean(regionById.get(shape.regionId)?.hasDocument);
+        const unavailable = status === 'unavailable' || (showMeasures && !hasDocument);
+        const fill = unavailable
+          ? `url(#${status === 'measures-selected' ? selectedHatch : hatch})`
+          : undefined;
         const chosen = shape.regionId === selected?.regionId;
         const enabled = selectable(shape.regionId);
         const small = (shape.bounds[2] - shape.bounds[0]) * (shape.bounds[3] - shape.bounds[1]) < 90;
         const detailed = detailEnabled && detail?.shapes.has(shape.regionId);
         const label = isTerritoryPicker ? (enabled ? shape.name : `${shape.name} — отсутствует в списке`)
-          : `${shape.name}: ${!showWork && status === 'available' ? 'текст доступен' : labels[status]}`;
+          : `${shape.name}: ${!showWork && status === 'available' ? 'текст доступен' : labels[status]}${showMeasures && !hasDocument ? '. Текст программы недоступен' : ''}`;
         return <g key={shape.regionId} data-region-id={shape.regionId} className={`geo-region geo-${status}${chosen ? ' is-selected' : ''}`}
+          data-document={showMeasures ? (hasDocument ? 'available' : 'unavailable') : undefined}
           data-measures={showMeasures ? (status === 'measures-selected' ? 'selected' : 'unselected') : undefined}
           role={enabled ? 'button' : undefined} aria-label={label} aria-pressed={enabled && !showMeasures ? chosen : undefined}
           tabIndex={enabled ? (tabbable === shape.regionId ? 0 : -1) : undefined}
@@ -133,7 +150,7 @@ export function RegionMap({ regions, work = emptyWork, selectedRegionId, onSelec
             if (event.key.startsWith('Arrow')) { event.preventDefault(); selectKeyboard(shape.regionId, event.key); }
           } : undefined}>
           <title>{label}</title>
-          <path d={shape.d} fill={status === 'unavailable' ? `url(#${hatch})` : undefined} fillRule="evenodd" vectorEffect="non-scaling-stroke" />
+          <path d={shape.d} fill={fill} fillRule="evenodd" vectorEffect="non-scaling-stroke" />
           {small ? <circle className={detailed ? 'geo-region-target' : undefined}
             cx={shape.centroid[0]} cy={shape.centroid[1]} r={chosen ? 5 : 3.5}
             pointerEvents={detailed ? 'all' : undefined} vectorEffect="non-scaling-stroke" /> : null}

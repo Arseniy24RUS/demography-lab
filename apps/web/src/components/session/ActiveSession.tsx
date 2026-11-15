@@ -28,6 +28,7 @@ export function ActiveSession({
   regions,
   renderWorkshop,
   renderBarriers,
+  renderSolutions,
   renderRoadmaps,
   renderFlipchart,
   renderObjectiveFactors,
@@ -39,6 +40,7 @@ export function ActiveSession({
   regions: SessionRegionOption[];
   renderWorkshop?: (view: WorkshopView) => ReactNode;
   renderBarriers?: () => ReactNode;
+  renderSolutions?: () => ReactNode;
   renderRoadmaps?: () => ReactNode;
   renderFlipchart?: () => ReactNode;
   renderObjectiveFactors?: () => ReactNode;
@@ -52,12 +54,12 @@ export function ActiveSession({
   const [error, setError] = useState('');
   const [working, setWorking] = useState(false);
   const [contextOpen, setContextOpen] = useResponsiveDisclosure();
-  const [workspaceView, setWorkspaceView] = useState<'flipchart' | 'objective' | 'board' | 'barriers' | 'roadmaps' | WorkshopView>(renderFlipchart ? 'flipchart' : 'board');
+  const [workspaceView, setWorkspaceView] = useState<'flipchart' | 'objective' | 'board' | 'barriers' | 'solutions' | 'roadmaps' | WorkshopView>(renderFlipchart ? 'flipchart' : 'board');
   const sceneNavigation = useRef<HTMLElement>(null);
   function selectWorkspace(next: typeof workspaceView) {
     setWorkspaceView(next);
     if (state.notice && !state.error) actions.clearError();
-    if (next === 'objective' || next === 'barriers' || next === 'roadmaps')
+    if (next === 'objective' || next === 'barriers' || next === 'solutions' || next === 'roadmaps')
       requestAnimationFrame(() => sceneNavigation.current?.scrollIntoView({ block: 'start' }));
   }
   const disabled = state.busy !== null || working;
@@ -131,6 +133,7 @@ export function ActiveSession({
               ['board', 'Практики'],
               ['families', 'Группировка'],
               ['voting', 'Рейтинг'],
+              ...(renderSolutions ? ([['solutions', 'Решения']] as const) : []),
               ...(renderRoadmaps ? ([['roadmaps', 'Дорожные карты']] as const) : []),
             ] as const
           ).map(([key, label]) => (
@@ -153,6 +156,8 @@ export function ActiveSession({
         ? renderRoadmaps?.()
         : workspaceView === 'barriers'
         ? renderBarriers?.()
+        : workspaceView === 'solutions'
+        ? renderSolutions?.()
         : workspaceView === 'voting' && renderLiveVotes
           ? renderLiveVotes()
           : renderWorkshop && workspaceView !== 'board'

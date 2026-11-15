@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { bundleSchema } from '../collaboration/schema';
-import { lifeStages } from './types';
+import { lifeStages, modernLifeStages } from './types';
 import type {
   BarrierEvidence, BarriersProjection, BarriersSnapshot, SurveyHostState,
   SurveyOwnResponse, SurveyPublicManifest, SurveyResearchExport, SurveyInvitationState, WorkshopSurveyEntry,
@@ -12,6 +12,7 @@ const revision = count.min(1);
 const text = (max: number, min = 0) => z.string().min(min).max(max)
   .refine((v) => !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u.test(v));
 const nonempty = (max: number, min: number) => text(max, min).refine((v) => v.trim().length >= min);
+const codePointTitle = (max: number) => nonempty(max * 2, 1).refine((v) => Array.from(v).length <= max);
 const fingerprint = z.string().regex(/^[a-f0-9]{64}$/u);
 const timestamp = z.string().min(20).max(40).refine((v) => Number.isFinite(Date.parse(v)));
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/u)
@@ -19,27 +20,31 @@ const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/u)
 const stage = z.enum(lifeStages);
 const state = z.enum(['active', 'archived']);
 const vote = z.union([z.literal(-1), z.literal(0), z.literal(1), z.null()]);
-const stageIds = z.array(stage).min(1).max(8).refine((v) => new Set(v).size === v.length);
-const barrierIds = z.array(uuid).min(1).max(20).refine((v) => new Set(v).size === v.length);
+const stageIds = z.array(stage).min(1).max(lifeStages.length).refine((v) => new Set(v).size === v.length);
+const barrierIds = z.array(uuid).max(200).refine((v) => new Set(v).size === v.length);
+const factorBoard = z.enum(['parenthood', 'objective']);
 const totals = z.strictObject({ support: count, oppose: count, neutral: count, cast: count })
   .refine((v) => v.cast === v.support + v.oppose + v.neutral);
 const barrierBase = z.strictObject({
-  id: uuid, title: nonempty(240, 5), description: text(4000), primaryStage: stage, stageIds,
+  id: uuid, title: codePointTitle(240), description: text(4000), primaryStage: stage, stageIds,
   evidenceKind: z.enum(['observation', 'hypothesis', 'survey_summary']), status: state,
   priority: z.boolean(), revision, contentRevision: revision, totals,
-  createdAt: timestamp, updatedAt: timestamp,
+  createdAt: timestamp, updatedAt: timestamp, sourceNoteId: uuid.optional(), sourceBoard: factorBoard.optional(),
 });
+const validBarrier = (v: { stageIds: string[]; primaryStage: string; contentRevision: number; revision: number; sourceNoteId?: string; sourceBoard?: string; title: string }) =>
+  v.stageIds.includes(v.primaryStage) && v.contentRevision <= v.revision
+  && Boolean(v.sourceNoteId) === Boolean(v.sourceBoard) && (v.sourceNoteId || v.title.trim().length >= 5);
 const barrier = barrierBase.extend({ authorId: uuid, authorName: text(200, 1), myVote: vote, myVoteRevision: count })
-  .refine((v) => v.stageIds.includes(v.primaryStage) && v.contentRevision <= v.revision);
+  .refine(validBarrier);
 const projectedBarrier = barrierBase.extend({ authorName: text(200, 1).nullable() })
-  .refine((v) => v.stageIds.includes(v.primaryStage) && v.contentRevision <= v.revision);
+  .refine(validBarrier);
 const family = z.strictObject({
   id: uuid, title: text(300, 1), mechanism: text(4000, 1), revision, fingerprint,
   variantCount: count.min(1).max(5000), regionNames: z.array(text(300, 1)).min(1).max(1000),
 });
 const linkBase = z.strictObject({
   id: uuid, barrierId: uuid, familyId: uuid, relationship: z.enum(['potential', 'partial', 'needs_adaptation']),
-  explanation: nonempty(4000, 10), prerequisites: text(4000), status: state, revision,
+  explanation: z.union([z.literal(''), nonempty(4000, 10)]), prerequisites: text(4000), status: state, revision,
   barrierContentRevision: revision, evidenceId: uuid, familyFingerprint: fingerprint, familyTitle: text(300, 1),
   staleReasons: z.array(z.enum(['barrier_changed', 'barrier_archived', 'family_changed', 'family_missing'])).max(4)
     .refine((v) => new Set(v).size === v.length), createdAt: timestamp, updatedAt: timestamp,
@@ -47,13 +52,17 @@ const linkBase = z.strictObject({
 const link = linkBase.extend({ authorId: uuid, authorName: text(200, 1) });
 const projectedLink = linkBase.extend({ authorName: text(200, 1).nullable() });
 const solutionFields = {
-  title: nonempty(240, 5), targetGroup: nonempty(1000, 3), mechanism: nonempty(4000, 10),
-  firstStep: nonempty(2000, 3), responsible: nonempty(2000, 3), resources: nonempty(2000, 3),
-  successIndicator: nonempty(2000, 3), risks: text(2000),
+  title: nonempty(240, 1), targetGroup: text(1000), mechanism: text(4000),
+  firstStep: text(2000), responsible: text(2000), resources: text(2000),
+  successIndicator: text(2000), risks: text(2000), format: z.literal('brief').optional(),
 };
+const validSolution = (v: { title: string; mechanism: string; targetGroup: string; firstStep: string; responsible: string; resources: string; successIndicator: string; format?: string }) =>
+  v.format === 'brief' || (v.title.trim().length >= 5 && v.mechanism.trim().length >= 10
+    && [v.targetGroup, v.firstStep, v.responsible, v.resources, v.successIndicator].every((s) => s.trim().length >= 3));
 const solutionBase = z.strictObject({ id: uuid, barrierIds, ...solutionFields, status: state, revision, createdAt: timestamp, updatedAt: timestamp });
-const solution = solutionBase.extend({ authorId: uuid, authorName: text(200, 1) });
-const projectedSolution = solutionBase.extend({ authorName: text(200, 1).nullable() });
+const solution = solutionBase.extend({ authorId: uuid, authorName: text(200, 1) }).refine(validSolution);
+const projectedSolution = solutionBase.extend({ authorName: text(200, 1).nullable() }).refine(validSolution);
+const greenFactorLinks = z.array(z.strictObject({ noteId: uuid, barrierId: uuid, sourceBoard: factorBoard, title: codePointTitle(180) })).max(2000);
 const questions = z.strictObject({
   q00: text(1000, 1), q05_12m: text(1000, 1), q05_36m: text(1000, 1), q01: nonempty(1000, 10),
   q02: nonempty(1000, 10), q03: text(1000, 1), q04: text(1000, 1), q06: text(1000, 1), q07: text(1000, 1), q08: text(1000, 1),
@@ -70,23 +79,27 @@ const summary = manifestBase.extend({ revision, responseCount: count.min(5).max(
     && (!(v.expired || v.status === 'purged') || v.responseCount === null));
 const snapshot = z.strictObject({
   sessionId: uuid, cursor: count, barriers: z.array(barrier).max(200), families: z.array(family).max(5000),
-  links: z.array(link).max(600), solutions: z.array(solution).max(200), survey: summary.nullable(),
+  links: z.array(link).max(600), solutions: z.array(solution).max(200), greenFactorLinks: greenFactorLinks.optional(), survey: summary.nullable(),
 }).superRefine(checkBoard);
 const projection = z.strictObject({
   sessionId: uuid, title: text(200, 1), scope: z.enum(['municipality', 'region', 'federal']), regionId: text(160, 1).nullable(),
   phase: z.enum(['reading', 'review', 'discussion']), status: z.enum(['open', 'paused', 'closed']), cursor: count,
   barriers: z.array(projectedBarrier).max(200), families: z.array(family).max(5000),
   links: z.array(projectedLink).max(600), solutions: z.array(projectedSolution).max(200),
+  greenFactorLinks: greenFactorLinks.optional(),
   survey: z.strictObject({ title: nonempty(240, 5), status: z.enum(['draft', 'open', 'closed', 'purged']), responseCount: count.min(5).max(250).nullable() }).nullable(),
 }).superRefine(checkBoard);
 function checkBoard(value: {
   barriers: Array<{ id: string; contentRevision: number; status: string }>; families: Array<{ id: string; fingerprint: string }>;
   links: Array<{ id: string; barrierId: string; familyId: string; barrierContentRevision: number; familyFingerprint: string; staleReasons: string[] }>;
   solutions: Array<{ id: string; barrierIds: string[] }>;
+  greenFactorLinks?: Array<{ noteId: string; barrierId: string }>;
 }, ctx: z.RefinementCtx) {
   const barrierSet = new Set(value.barriers.map((v) => v.id));
   if ([value.barriers, value.families, value.links, value.solutions].some((items) => new Set(items.map((v) => v.id)).size !== items.length)
     || value.links.some((l) => !barrierSet.has(l.barrierId))
+    || value.greenFactorLinks?.some((l) => !barrierSet.has(l.barrierId))
+    || (value.greenFactorLinks && new Set(value.greenFactorLinks.map((l) => `${l.noteId}:${l.barrierId}`)).size !== value.greenFactorLinks.length)
     || value.solutions.some((s) => s.barrierIds.some((id) => !barrierSet.has(id)))) {
     ctx.addIssue({ code: 'custom', message: 'Нарушена целостность связей доски.' });
   }
@@ -156,17 +169,23 @@ const researchExport = z.strictObject({
 });
 
 export const saveBarrierInputSchema = z.strictObject({
-  barrierId: uuid.nullable(), expectedRevision: count, title: nonempty(240, 5), description: text(4000),
+  barrierId: uuid.nullable(), expectedRevision: count, title: codePointTitle(240), description: text(4000),
   primaryStage: stage, stageIds, evidenceKind: z.enum(['observation', 'hypothesis', 'survey_summary']), status: state, priority: z.boolean(),
-}).refine((v) => v.stageIds.includes(v.primaryStage) && ((v.barrierId === null) === (v.expectedRevision === 0)));
+}).refine((v) => v.stageIds.includes(v.primaryStage) && ((v.barrierId === null) === (v.expectedRevision === 0))
+  && (v.barrierId !== null || v.title.trim().length >= 5));
+export const importFlipchartInputSchema = z.strictObject({ noteId: uuid,
+  stageIds: z.array(z.enum(modernLifeStages)).min(1).max(modernLifeStages.length).refine((v) => new Set(v).size === v.length),
+});
+export const setSolutionBarrierInputSchema = z.strictObject({ kind: z.enum(['factor', 'author']), measureId: uuid, barrierId: uuid, linked: z.boolean() });
 export const barrierVoteInputSchema = z.strictObject({ barrierId: uuid, expectedRevision: count, value: vote });
 export const saveBarrierLinkInputSchema = z.strictObject({
   linkId: uuid.nullable(), expectedRevision: count, barrierId: uuid, expectedBarrierRevision: revision,
   familyId: uuid, expectedFamilyFingerprint: fingerprint, relationship: z.enum(['potential', 'partial', 'needs_adaptation']),
-  explanation: nonempty(4000, 10), prerequisites: text(4000), status: state,
+  explanation: z.union([z.literal(''), nonempty(4000, 10)]), prerequisites: text(4000), status: state,
 }).refine((v) => (v.linkId === null) === (v.expectedRevision === 0));
 export const saveSolutionInputSchema = z.strictObject({ solutionId: uuid.nullable(), expectedRevision: count, barrierIds,
-  ...solutionFields, status: state }).refine((v) => (v.solutionId === null) === (v.expectedRevision === 0));
+  ...solutionFields, status: state }).refine((v) => (v.solutionId === null) === (v.expectedRevision === 0)
+    && (v.solutionId !== null || v.format === 'brief' || v.barrierIds.length > 0) && validSolution(v));
 export const surveyConfigInputSchema = z.strictObject({
   surveyId: uuid.nullable(), expectedRevision: count, title: nonempty(240, 5), purpose: nonempty(4000, 20),
   organizerContact: nonempty(1000, 5), retentionUntil: date, questionBarrier: nonempty(1000, 10), questionSupport: nonempty(1000, 10), invitationToken: fingerprint.optional(),

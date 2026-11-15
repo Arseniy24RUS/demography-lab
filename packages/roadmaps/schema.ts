@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { canonicalMunicipalSeriesSchema } from '../territories/schema';
 import { statisticsHeadsSchema, teamStatisticalSeriesSchema } from '../statistics/schema';
 import { parseBarrierEvidence } from '../barriers/schema';
+import { lifeStages } from '../barriers/types';
 import type {
   FrozenRoadmapData,
   RoadmapSnapshot,
@@ -329,45 +330,31 @@ export const roadmapTerritorySchema = z.strictObject({
 });
 const barrierGround = z.strictObject({
   id: uuid,
-  title: text(240, 5),
+  title: text(480, 1).refine((v) => Array.from(v).length <= 240),
   description: text(4000),
-  stageIds: z
-    .array(
-      z.enum([
-        'life_plans',
-        'first_child',
-        'preparation_pregnancy',
-        'infancy',
-        'early_childhood',
-        'preschool',
-        'school',
-        'next_child',
-      ]),
-    )
-    .min(1)
-    .max(8),
+  stageIds: z.array(z.enum(lifeStages)).min(1).max(lifeStages.length),
   evidenceKind: z.enum(['observation', 'hypothesis', 'survey_summary']),
   contentRevision: revision,
   status: itemStatus,
 });
 const solutionGround = z.strictObject({
   id: uuid,
-  title: text(240, 5),
-  targetGroup: text(1000, 3),
-  mechanism: text(4000, 10),
-  firstStep: text(2000, 3),
-  responsible: text(2000, 3),
-  resources: text(2000, 3),
-  successIndicator: text(2000, 3),
+  title: text(240, 1),
+  targetGroup: text(1000),
+  mechanism: text(4000),
+  firstStep: text(2000),
+  responsible: text(2000),
+  resources: text(2000),
+  successIndicator: text(2000),
   risks: text(2000),
   revision,
   status: itemStatus,
-  barriers: z.array(barrierGround).min(1).max(20),
+  barriers: z.array(barrierGround).max(200),
 });
 const linkGround = z.strictObject({
   id: uuid,
   relationship: z.enum(['potential', 'partial', 'needs_adaptation']),
-  explanation: text(4000, 10),
+  explanation: z.union([z.literal(''), text(4000, 10)]),
   prerequisites: text(4000),
   revision,
   status: itemStatus,

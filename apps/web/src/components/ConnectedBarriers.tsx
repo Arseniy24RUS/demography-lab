@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { BarrierArea } from './barriers/BarrierArea';
+import { LifecycleBarrierStage } from './barriers/LifecycleBarrierStage';
 import type { BarrierActions } from './barriers/barriers-ui';
 import type { CorpusManifest } from '../lib/corpus';
 import { readable } from '../lib/corpus';
@@ -27,6 +28,7 @@ export function ConnectedBarriers({
   barriers,
   manifest,
   api,
+  lifecycleOnly = false,
   surveyOnly = false,
   legacySurvey = false,
 }: {
@@ -35,6 +37,7 @@ export function ConnectedBarriers({
   barriers: ReturnType<typeof useBarriers>;
   manifest: CorpusManifest;
   api: SessionApi | null;
+  lifecycleOnly?: boolean;
   surveyOnly?: boolean;
   /** Explicit compatibility path; ordinary barrier work never loads an old invitation. */
   legacySurvey?: boolean;
@@ -132,6 +135,12 @@ export function ConnectedBarriers({
     };
   }, [key, api, current?.role, current?.id, survey?.id, survey?.revision, surveyOnly, legacySurvey]);
   if (!current || !userId || !api || !key) return null;
+  if (lifecycleOnly && !surveyOnly) {
+    return <LifecycleBarrierStage key={`${current.id}:${userId}`} api={api} session={current} userId={userId}
+      snapshot={barriers.snapshot} actions={barriers.actions} loading={barriers.loading} error={barriers.error}
+      onImport={({ noteId, stageIds }) => barriers.actions.importFlipchart({ noteId, stageIds })}
+      onRefresh={barriers.refresh} />;
+  }
   function candidate(attempt: string) {
     let token: string | null = null;
     try {

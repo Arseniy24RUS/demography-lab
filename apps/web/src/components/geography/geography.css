@@ -30,7 +30,7 @@
 .geo-swatch.geo-completed { background: #a9d989; }
 .geo-swatch.geo-measures-selected { background: #a9d989; }
 .geo-swatch.geo-measures-unselected { background: #e8edf4; }
-.geo-swatch.geo-unavailable { background: repeating-linear-gradient(135deg, #f1f4f8 0, #f1f4f8 4px, #bec9d8 4px, #bec9d8 5px); }
+.geo-swatch.geo-unavailable { background: repeating-linear-gradient(135deg, #edf1f6 0, #edf1f6 4px, #9aa9be 4px, #9aa9be 5.2px); }
 .geo-fallback { padding: 30px 16px; min-height: 240px; display: grid; align-content: center; text-align: center; background: #f5f8fc; border-radius: 8px; }
 .geo-fallback .button { justify-self: center; }
 .region-map-compact .geo-canvas { height: min(62vh, 630px); }

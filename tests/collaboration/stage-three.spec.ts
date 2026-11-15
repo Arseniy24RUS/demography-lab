@@ -29,6 +29,7 @@ async function workshopTab(page: Page, name: 'Карта программ' | 'С
 }
 const map = (page: Page) => page.getByRole('group', { name: 'Карта региональных программ', exact: true });
 const programmeList = (page: Page) => page.getByRole('group', { name: 'Выбрать программу по названию', exact: true });
+const catalogue = (page: Page) => page.getByRole('region', { name: 'Каталог мер', exact: true });
 const mordovia = (page: Page) => map(page).locator('[data-region-id="respublika-mordoviia"]');
 
 async function enterSharedWorkshop(page: Page, email: string, name: string) {
@@ -45,13 +46,32 @@ async function selectOnMap(page: Page, region: string) {
   const target = map(page).getByRole('button', { name: new RegExp(`^${region}:`) });
   await target.focus();
   await page.keyboard.press('Enter');
-  await expect(reader(page)).toBeVisible();
+  await expectRegionalCatalogue(page, region);
 }
 
 async function selectFromList(page: Page, region: string) {
   await page.getByRole('searchbox', { name: 'Найти регион', exact: true }).fill(region);
   await programmeList(page).getByRole('button', { name: new RegExp(region) }).click();
+  await expectRegionalCatalogue(page, region);
+}
+
+async function expectRegionalCatalogue(page: Page, region: string) {
+  await expect(catalogue(page)).toBeVisible();
+  await expect(catalogue(page).getByRole('combobox', { name: 'Территория меры', exact: true })
+    .locator('option:checked')).toHaveText(region);
+  await expect(reader(page)).toBeHidden();
+}
+
+async function openProgrammeText(page: Page) {
+  await catalogue(page).getByRole('button', { name: 'Текст программы', exact: true }).click();
   await expect(reader(page)).toBeVisible();
+}
+
+async function returnToProgrammeMap(page: Page, region: string) {
+  await page.getByRole('button', { name: 'К карточкам', exact: true }).click();
+  await expectRegionalCatalogue(page, region);
+  await page.getByRole('button', { name: 'К карте и списку программ', exact: true }).click();
+  await expect(map(page)).toBeVisible();
 }
 
 async function createFamily(page: Page, titles = [MORDOVIA_TITLE, SAKHALIN_TITLE], name = FAMILY_TITLE) {
@@ -104,7 +124,9 @@ test('participants open the same programme and a source-backed publication updat
 
     await selectOnMap(page, 'Республика Мордовия');
     await selectFromList(mobile, 'Республика Мордовия');
-    await mobile.getByRole('button', { name: 'К программам', exact: true }).click();
+    await openProgrammeText(page);
+    await openProgrammeText(mobile);
+    await returnToProgrammeMap(mobile, 'Республика Мордовия');
     await expect(mobile.getByRole('searchbox', { name: 'Найти регион', exact: true })).toHaveValue('Республика Мордовия');
     const mobileRegion = programmeList(mobile).getByRole('button', { name: /Республика Мордовия/u });
     await expect(mobileRegion).toHaveAttribute('data-measures', 'unselected');
@@ -123,7 +145,7 @@ test('participants open the same programme and a source-backed publication updat
     await expect(source).toBeVisible();
     await expect(mordovia(mobile)).toHaveAttribute('data-measures', 'selected');
     await expect(mobileRegion).toHaveAttribute('data-measures', 'selected');
-    await page.getByRole('button', { name: 'К программам', exact: true }).click();
+    await returnToProgrammeMap(page, 'Республика Мордовия');
     await expect(mordovia(page)).toHaveAttribute('data-measures', 'selected');
     await noOverflow(mobile, 390);
     await capture(page, info, 'stage3-programme-source-selected-desktop.png');
@@ -146,6 +168,7 @@ test('desktop curation retains different regional conditions and both source jum
     await workshopTab(mobile, 'Карта программ');
     await expect(mordovia(mobile)).toHaveAttribute('data-measures', 'unselected');
     await selectFromList(mobile, 'Республика Мордовия');
+    await openProgrammeText(mobile);
     await noOverflow(mobile, 390);
     await capture(mobile, info, 'stage3-mobile-programme-reader.png');
     await expect(reader(mobile).getByRole('textbox', { name: 'Номер страницы', exact: true })).toHaveValue('1');

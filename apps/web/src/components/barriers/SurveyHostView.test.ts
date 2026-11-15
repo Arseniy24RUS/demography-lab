@@ -102,9 +102,11 @@ function context(id: string, readSurvey: BarrierActions['readSurvey']): BarrierB
     onOpenSource: vi.fn(),
     actions: {
       saveBarrier: vi.fn(),
+      importFlipchart: vi.fn(),
       vote: vi.fn(),
       saveLink: vi.fn(),
       saveSolution: vi.fn(),
+      setSolutionBarrier: vi.fn(),
       readEvidence: vi.fn(),
       saveSurvey: vi.fn(),
       manageSurvey: vi.fn(),

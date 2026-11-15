@@ -237,6 +237,8 @@ export function useBarriers(options: {
   }
   const actions: BarrierActions = {
     saveBarrier: (input) => mutate((c, id) => c.saveBarrier(id, input)),
+    importFlipchart: (input) => mutate((c, id) => c.importFlipchart(id, input)),
+    setSolutionBarrier: (input) => mutate((c, id) => c.setSolutionBarrier(id, input)),
     vote: (input) => mutate((c, id) => c.vote(id, input)),
     saveLink: (input) => mutate((c, id) => c.saveLink(id, input)),
     saveSolution: (input) => mutate((c, id) => c.saveSolution(id, input)),

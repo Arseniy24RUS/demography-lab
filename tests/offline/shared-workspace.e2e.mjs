@@ -32,6 +32,7 @@ const NAME_B = 'Второй участник мастерской';
 const NAME_TEACHER = 'Преподаватель общей мастерской';
 const PRACTICE = 'Компенсация родительской платы за детский сад';
 const FAMILY = 'Доступный уход за детьми';
+const RENT_BARRIER = 'Дорогая аренда жилья. Съёмное жильё недоступно многим семьям.';
 const navigation = page => page.getByRole('navigation', { name: 'Основная навигация' });
 const scenes = page => page.getByRole('navigation', { name: 'Этапы коллективной работы' });
 const inspector = page => page.getByRole('complementary', { name: 'Связь цитаты и практики' });
@@ -124,19 +125,19 @@ async function workspace(page) {
 async function scene(page, name) {
   await scenes(page).getByRole('button', { name, exact: true }).click();
 }
-async function barrier(page, title, description) {
+async function barrier(page, title) {
   await workspace(page);
   await scene(page, 'Барьеры');
   await page.getByRole('button', { name: 'Добавить барьер', exact: true }).click();
   const editor = page.getByRole('dialog', { name: 'Добавить барьер', exact: true });
-  await editor.getByLabel('Краткое название', { exact: true }).fill(title);
-  await editor.getByLabel('Описание и адресат', { exact: true }).fill(description);
+  await editor.getByLabel('Текст барьера', { exact: true }).fill(title);
+  await editor.getByRole('checkbox', { name: 'Работа', exact: true }).check();
   const saving = rpc(page, 'dw_save_barrier');
   await editor.getByRole('button', { name: 'Сохранить барьер', exact: true }).click();
   const response = await saving;
   expect(response.status(), await response.text()).toBe(200);
   await expect(editor).toBeHidden();
-  await expect(page.locator('.barrier-card').filter({ hasText: title })).toBeVisible();
+  await expect(page.getByRole('article', { name: title, exact: true })).toBeVisible();
 }
 
 const a = await participant();
@@ -165,7 +166,7 @@ try {
     await expect(scenes(a.page)).toBeVisible();
     await cleanInterface(a.page);
   });
-  await stage('Two participants open the same programme from the map and list without claiming it', a.page, async () => {
+  await stage('Map and list open regional cards first and mark missing programme texts', a.page, async () => {
     await scene(a.page, 'Программы');
     await scene(b.page, 'Программы');
     const map = a.page.getByRole('group', { name: 'Карта региональных программ', exact: true });
@@ -183,15 +184,41 @@ try {
     await expect.poll(async () => (await lengths()).every((length, i) => length > overviewLengths[i] * 3)).toBe(true);
     await layer.getByRole('button', { name: 'Показать всю карту', exact: true }).click();
     await expect.poll(lengths).toEqual(overviewLengths);
+    const catalogue = page => page.getByRole('region', { name: 'Каталог мер', exact: true });
+    const moscow = map.locator('[data-region-id="moskva"]');
+    await expect(moscow).toHaveAttribute('data-document', 'unavailable');
+    await expect(moscow.locator('path').first()).toHaveAttribute('fill', /^url\(#.+\)$/u);
+    const moscowRow = a.page.getByRole('group', { name: 'Выбрать программу по названию' }).locator('[data-region-id="moskva"]');
+    await expect(moscowRow).toHaveAttribute('data-document', 'unavailable');
+    await expect(moscowRow).toHaveCSS('background-image', /^repeating-linear-gradient/u);
+    await moscow.press('Enter');
+    await expect(catalogue(a.page).getByRole('combobox', { name: 'Территория меры' })).toHaveValue('moskva');
+    await expect(catalogue(a.page).getByRole('button', { name: 'Текст программы' })).toHaveCount(0);
+    const selecting = rpc(a.page, 'dw_select_catalog_practice');
+    await catalogue(a.page).getByRole('button', { name: 'Отобрать меру' }).first().click();
+    expect((await selecting).status()).toBe(200);
+    await a.page.getByRole('button', { name: 'К карте и списку программ' }).click();
+    await expect(moscow).toHaveAttribute('data-measures', 'selected');
+    await expect(moscow.locator('path').first()).toHaveAttribute('fill', /-selected\)$/u);
+    await expect(moscowRow).toHaveCSS('background-image', /^repeating-linear-gradient/u);
+
     await map.getByRole('button', { name: /^Республика Мордовия:/u }).click();
     const reader = page => page.getByRole('region', { name: 'Полный текст программы', exact: true });
+    await expect(catalogue(a.page).getByRole('combobox', { name: 'Территория меры' })).toHaveValue('respublika-mordoviia');
+    await expect(reader(a.page)).toHaveCount(0);
+    await catalogue(a.page).getByRole('button', { name: 'Текст программы' }).click();
     await expect(reader(a.page)).toBeVisible();
     const search = b.page.getByRole('searchbox', { name: 'Найти регион' });
     await search.fill('Мордовия');
     const list = b.page.getByRole('group', { name: 'Выбрать программу по названию' });
     await list.getByRole('button', { name: 'Республика Мордовия', exact: true }).click();
+    await expect(catalogue(b.page).getByRole('combobox', { name: 'Территория меры' })).toHaveValue('respublika-mordoviia');
+    await expect(reader(b.page)).toHaveCount(0);
+    await catalogue(b.page).getByRole('button', { name: 'Текст программы' }).click();
     await expect(reader(b.page)).toBeVisible();
-    await b.page.getByRole('button', { name: 'К программам', exact: true }).click();
+    await b.page.getByRole('button', { name: 'К карточкам', exact: true }).click();
+    await expect(catalogue(b.page).getByRole('combobox', { name: 'Территория меры' })).toHaveValue('respublika-mordoviia');
+    await b.page.getByRole('button', { name: 'К карте и списку программ' }).click();
     await expect(search).toHaveValue('Мордовия');
     await expect(list.getByRole('button', { name: 'Республика Мордовия', exact: true })).toHaveAttribute('data-measures', 'unselected');
     await noOverflow(b.page, 390);
@@ -221,7 +248,7 @@ try {
     await expect(list.getByRole('button', { name: /Республика Мордовия.*меры отобраны/u })).toHaveAttribute('data-measures', 'selected');
     await expect(b.page.getByRole('group', { name: 'Карта региональных программ', exact: true })
       .locator('[data-region-id="respublika-mordoviia"]')).toHaveAttribute('data-measures', 'selected');
-    await a.page.getByRole('button', { name: 'К программам', exact: true }).click();
+    await a.page.getByRole('button', { name: 'К карточкам', exact: true }).click();
     await expect(scenes(a.page).getByRole('button', { name: 'Программы', exact: true })).toHaveAttribute('aria-current', 'page');
     await scene(a.page, 'Практики');
     await scene(b.page, 'Практики');
@@ -254,7 +281,8 @@ try {
     await expect(positiveB).toHaveText('1');
     await negativeB.click();
     await expect(negativeA).toHaveText('1');
-    await expect(a.page.getByLabel('Баланс голосов: 0', { exact: true })).toBeVisible();
+    await expect(a.page.getByRole('article', { name: FAMILY, exact: true })
+      .getByLabel('Баланс голосов: 0', { exact: true })).toBeVisible();
     await b.page.getByRole('button', { name: `Снять оценку: ${FAMILY}`, exact: true }).click();
     await expect(negativeA).toHaveText('0');
     await expect(a.page.getByLabel('Баланс голосов: 1', { exact: true })).toBeVisible();
@@ -266,14 +294,14 @@ try {
     await b.page.setViewportSize({ width: 390, height: 844 });
   });
   await stage('Public barrier words appear on the projector and update from the second participant', a.page, async () => {
-    await barrier(a.page, 'Дорогая аренда жилья', 'Жильё съёмное. Жильё требует больших расходов; трудно планировать семейный бюджет.');
+    await barrier(a.page, RENT_BARRIER);
     projector = await a.page.context().newPage(); watch(projector); lastPage = projector;
     await projector.goto(`${url}#sessions=1&projector=1`);
     await expect(projector.getByRole('region', { name: 'Флипчарт на проекторе', exact: true })).toBeVisible();
     await projector.getByRole('button', { name: 'Темы', exact: true }).click();
     await expect(projector.getByRole('heading', { name: 'Темы общей доски', exact: true })).toBeVisible();
     await expect(projector.getByRole('button', { name: 'жилье: 1 карточка', exact: true })).toBeVisible();
-    await barrier(b.page, 'Жильё далеко от работы', 'Долгая дорога затрудняет уход за ребёнком.');
+    await barrier(b.page, 'Жильё далеко от работы');
     await expect(projector.getByRole('button', { name: 'жилье: 2 карточки', exact: true })).toBeVisible();
     await projector.getByRole('button', { name: 'жилье: 2 карточки', exact: true }).click();
     await expect(projector.locator('.topic-cloud-cards article')).toHaveCount(2);
@@ -399,6 +427,87 @@ try {
     await b.page.setViewportSize({ width: 390, height: 844 });
     await noOverflow(b.page, 390);
     await screenshot(a.page, 'family-catalog-shared-ranking.png');
+  });
+  await stage('One barrier spans several life stages and keeps reusable links and both gap lists', a.page, async () => {
+    const red = 'Нестабильный график работы';
+    const green = 'Гибкий график для родителей';
+    const unusedGreen = 'Прокат семейных велосипедов';
+    const authored = 'Дежурная группа для детей сотрудников';
+    const oldBarrier = RENT_BARRIER;
+    const rankedFamily = 'Региональный материнский (семейный) капитал';
+    const lifecycle = page => page.getByRole('region', { name: 'Барьеры по этапам жизни', exact: true });
+    const solutions = page => page.getByRole('region', { name: 'Решения', exact: true });
+
+    async function sticker(page, type, text) {
+      await scene(page, 'Субъективные факторы');
+      const form = page.getByRole('form', { name: 'Новый тезис', exact: true });
+      await form.getByRole('button', { name: type, exact: true }).click();
+      await form.getByRole('textbox', { name: 'Короткий тезис', exact: true }).fill(text);
+      const pending = rpc(page, 'dw_flipchart_add');
+      await form.getByRole('button', { name: 'Добавить', exact: true }).click();
+      expect((await pending).status()).toBe(200);
+    }
+    async function importBarrier(page, stages) {
+      await scene(page, 'Барьеры');
+      await expect(lifecycle(page).getByRole('tablist')).toHaveCount(0);
+      await lifecycle(page).getByRole('button', { name: 'Добавить барьер', exact: true }).click();
+      const dialog = page.getByRole('dialog', { name: 'Добавить барьер', exact: true });
+      await dialog.getByLabel('Источник барьера').selectOption('subjective');
+      await dialog.getByRole('radio', { name: red, exact: true }).check();
+      for (const stage of stages) await dialog.getByRole('checkbox', { name: stage, exact: true }).check();
+      const pending = rpc(page, 'dw_import_flipchart_barrier');
+      await dialog.getByRole('button', { name: 'Сохранить барьер', exact: true }).click();
+      expect((await pending).status()).toBe(200);
+      await expect(dialog).toBeHidden();
+    }
+    async function connect(page, barrierTitle, measure, method) {
+      const row = solutions(page).locator('.solutions-barrier')
+        .filter({ has: page.getByRole('heading', { name: barrierTitle, exact: true }) });
+      await row.getByRole('button', { name: 'Связать с мерой', exact: true }).click();
+      const dialog = page.getByRole('dialog', { name: 'Связать с мерой', exact: true });
+      await dialog.getByRole('searchbox', { name: 'Найти меру', exact: true }).fill(measure);
+      const pending = rpc(page, method);
+      await dialog.getByRole('button', { name: `Связать: ${measure}`, exact: true }).click();
+      expect((await pending).status()).toBe(200);
+      await expect(dialog).toBeHidden();
+      await expect(row.getByRole('list', { name: 'Связанные меры', exact: true })).toContainText(measure);
+    }
+
+    await sticker(a.page, 'Что мешает?', red);
+    await sticker(b.page, 'Что помогло бы?', green);
+    await sticker(b.page, 'Что помогло бы?', unusedGreen);
+    await importBarrier(a.page, ['Работа', 'Первый ребёнок']);
+    await importBarrier(b.page, ['Второй ребёнок']);
+    const imported = lifecycle(a.page).getByRole('article', { name: red, exact: true });
+    await expect(imported).toHaveCount(1);
+    await expect(imported).toContainText('Второй ребёнок');
+    await expect(lifecycle(a.page).getByRole('list', { name: 'Этапы, связанные с первым ребёнком' })).toContainText('Зачатие');
+
+    const steps = await scenes(a.page).getByRole('button').allTextContents();
+    expect(steps.map(name => name.trim()).slice(-3)).toEqual(['Рейтинг', 'Решения', 'Дорожные карты']);
+    await scene(a.page, 'Решения');
+    await expect(solutions(a.page).getByRole('region', { name: 'Барьеры без решений' })).toContainText(red);
+    await expect(solutions(a.page).getByRole('region', { name: 'Меры без связей' })).toContainText(green);
+    await connect(a.page, red, rankedFamily, 'dw_save_barrier_link');
+    await connect(a.page, red, green, 'dw_set_solution_barrier');
+    await connect(a.page, oldBarrier, green, 'dw_set_solution_barrier');
+    await expect(solutions(a.page).getByRole('region', { name: 'Барьеры без решений' })).not.toContainText(red);
+    await expect(solutions(a.page).getByRole('region', { name: 'Меры без связей' })).toContainText(unusedGreen);
+
+    await scene(b.page, 'Решения');
+    await solutions(b.page).getByRole('button', { name: 'Второй ребёнок', exact: true }).click();
+    await expect(solutions(b.page).getByRole('region', { name: 'Второй ребёнок', exact: true })).toContainText(green);
+    await expect(solutions(b.page).getByRole('region', { name: 'Второй ребёнок', exact: true })).toContainText(rankedFamily);
+    const unused = solutions(b.page).getByRole('region', { name: 'Меры без связей' });
+    await unused.getByRole('button', { name: 'Предложить меру', exact: true }).click();
+    const authorForm = b.page.getByRole('dialog', { name: 'Предложить меру', exact: true });
+    await authorForm.getByLabel('Название меры', { exact: true }).fill(authored);
+    const saved = rpc(b.page, 'dw_save_solution');
+    await authorForm.getByRole('button', { name: 'Сохранить меру', exact: true }).click();
+    expect((await saved).status()).toBe(200);
+    await expect(unused).toContainText(authored);
+    await noOverflow(b.page, 390);
+    await screenshot(a.page, 'shared-lifecycle-solutions.png');
   });
   expect(externalRequests).toEqual([]);
   expect(failedResponses).toEqual([]);

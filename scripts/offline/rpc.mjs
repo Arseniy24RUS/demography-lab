@@ -19,6 +19,7 @@ const NAMES = [
   'dw_workshop_projector_updates', 'dw_cast_vote_updates',
   'dw_barriers_snapshot', 'dw_barriers_cursor', 'dw_barriers_projector_snapshot',
   'dw_save_barrier', 'dw_barrier_vote', 'dw_save_barrier_link', 'dw_save_solution',
+  'dw_import_flipchart_barrier', 'dw_set_solution_barrier',
   'dw_barrier_evidence', 'dw_save_survey', 'dw_manage_survey', 'dw_survey_host_state',
   'dw_survey_invitation_state', 'dw_survey_research_export', ...SURVEY_RPCS,
   'dw_roadmaps_index', 'dw_roadmaps_cursor', 'dw_roadmap_snapshot', 'dw_roadmap_version',

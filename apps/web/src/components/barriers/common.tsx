@@ -7,9 +7,11 @@ import type {
   LifeStage,
 } from '../../../../../packages/barriers/types';
 import { lifeStages } from '../../../../../packages/barriers/types';
+import { lifecycleStageLabels } from './lifecycle-stages';
 
 export { lifeStages };
 export const stageLabels: Record<LifeStage, string> = {
+  ...lifecycleStageLabels,
   life_plans: 'Жизненные планы',
   first_child: 'Первый ребёнок',
   preparation_pregnancy: 'Подготовка и беременность',
@@ -20,8 +22,14 @@ export const stageLabels: Record<LifeStage, string> = {
   next_child: 'Следующий ребёнок',
 };
 export const stageDescriptions: Record<LifeStage, string> = {
+  education: 'Учёба в вузе или сузе и возможности совмещать её с семейной жизнью.',
+  work: 'Занятость, условия труда и баланс между работой и семьёй.',
   life_plans: 'Планы, отношения, представления о семье и доступные возможности.',
   first_child: 'Условия принятия решения о первом ребёнке.',
+  second_child: 'Решение о втором ребёнке и возможности семьи после рождения первенца.',
+  third_plus_child: 'Условия для третьего и последующих детей.',
+  conception: 'Репродуктивное здоровье и доступ к помощи при планировании беременности.',
+  pregnancy: 'Медицинская помощь и условия жизни во время беременности.',
   preparation_pregnancy: 'Подготовка к зачатию, репродуктивное здоровье и беременность.',
   infancy: 'Рождение ребёнка, восстановление и уход в первый год.',
   early_childhood: 'Уход за ребёнком от года до трёх и возвращение к занятости.',

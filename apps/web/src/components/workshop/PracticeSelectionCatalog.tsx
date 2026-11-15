@@ -1,6 +1,7 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
-import { ArrowUpRight, Search } from 'lucide-react';
+import { ArrowUpRight, BookOpen, Search } from 'lucide-react';
 import type { CorpusManifest } from '@/lib/corpus';
+import { readable } from '@/lib/corpus';
 import { isFamilyCatalogVariant, loadFamilyCatalog } from '@/lib/family-catalog';
 import type { FamilyCatalogVariant } from '@/lib/family-catalog';
 import { useCatalogSelection } from '@/hooks/useCatalogSelection';
@@ -18,11 +19,12 @@ function territoryKey(card: FamilyCatalogVariant) {
 
 type Catalogue = { status: 'loading' | 'error' } | { status: 'ready'; cards: FamilyCatalogVariant[] };
 
-export default function PracticeSelectionCatalog({ manifest, session, initialRegionId = '', onSelect }: {
+export default function PracticeSelectionCatalog({ manifest, session, initialRegionId = '', onSelect, onOpenProgramme }: {
   manifest: CorpusManifest;
   session: SessionSnapshot;
   initialRegionId?: string;
   onSelect: (catalogId: string) => Promise<void>;
+  onOpenProgramme?: (regionId: string) => void;
 }) {
   const [catalogue, setCatalogue] = useState<Catalogue>({ status: 'loading' });
   const [attempt, setAttempt] = useState(0);
@@ -31,6 +33,7 @@ export default function PracticeSelectionCatalog({ manifest, session, initialReg
   const [page, setPage] = useState(1);
   const selection = useCatalogSelection(session, onSelect);
   const needle = useDeferredValue(searchText(query));
+  const programme = onOpenProgramme && manifest.documents.find(entry => entry.regionId === territory && readable(entry));
 
   useEffect(() => {
     let active = true;
@@ -92,6 +95,11 @@ export default function PracticeSelectionCatalog({ manifest, session, initialReg
             {territories.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
           </optgroup>
         </select>
+        {programme && onOpenProgramme ? (
+          <button className="button button-secondary" type="button" onClick={() => onOpenProgramme(programme.regionId)}>
+            <BookOpen size={16} aria-hidden="true" /> Текст программы
+          </button>
+        ) : null}
       </div>
       {selection.error ? <p className="session-message" data-tone="error" role="alert">{selection.error}</p> : null}
       <p className="catalog-count" role="status">Найдено мер: {matches.length.toLocaleString('ru')}</p>

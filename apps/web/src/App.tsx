@@ -4,7 +4,6 @@ import {
   BookOpen,
   HelpCircle,
   Library,
-  List,
   FileText,
   Link2,
   CheckCircle2,
@@ -60,9 +59,11 @@ const ProjectorContainer = lazy(() =>
 const ConnectedWorkshop = lazy(() =>
   import('./components/ConnectedWorkshop').then((m) => ({ default: m.ConnectedWorkshop })),
 );
-const PracticeSelectionCatalog = lazy(() => import('./components/workshop/PracticeSelectionCatalog'));
 const ConnectedBarriers = lazy(() =>
   import('./components/ConnectedBarriers').then((m) => ({ default: m.ConnectedBarriers })),
+);
+const LifecycleSolutions = lazy(() =>
+  import('./components/barriers/LifecycleSolutions').then((m) => ({ default: m.LifecycleSolutions })),
 );
 const ConnectedRoadmaps = lazy(() => import('./components/ConnectedRoadmaps').then(m => ({ default: m.ConnectedRoadmaps })));
 const ConnectedFlipchart = lazy(() => import('./components/ConnectedFlipchart').then(m => ({ default: m.ConnectedFlipchart })));
@@ -97,7 +98,6 @@ export function App() {
   const [projectorMode, setProjectorMode] = useState(() => route.get('projector') === '1');
   const [view, setView] = useState<View>(() => route.has('documents') ? 'documents' : 'sessions');
   const [programmeReader, setProgrammeReader] = useState(false);
-  const [programmeCatalogueOpen, setProgrammeCatalogueOpen] = useState(false);
   const programmeScroll = useRef(0);
   const [mobilePane, setMobilePane] = useState<MobilePane>('document');
   const [selection, setSelection] = useState<TextAnchor | null>(null);
@@ -250,7 +250,6 @@ export function App() {
   const selected = variants.find((v) => v.id === selectedId) ?? null;
   function selectDocument(id: string) {
     setDocumentId(id);
-    setProgrammeCatalogueOpen(false);
     setSelection(null);
     setFocusAnchor(null);
     setSelectedId(null);
@@ -280,7 +279,6 @@ export function App() {
       setFocusAnchor(anchor);
       setFocusNonce((n) => n + 1);
       setSelection(anchor);
-      setProgrammeCatalogueOpen(false);
       setView('documents');
       setMobilePane(pane);
       history.replaceState(null, '', `#document=${encodeURIComponent(target.id)}`);
@@ -480,7 +478,6 @@ export function App() {
     ],
   };
   const currentWorkshop = session.state.snapshot?.session;
-  const showProgrammeCatalogue = programmeReader && programmeCatalogueOpen && Boolean(session.state.snapshot);
   const sessionRegions = manifest.documents
     .map(entry => ({ id: entry.regionId, name: entry.territory }))
     .filter((region, index, all) => all.findIndex(candidate => candidate.id === region.id) === index)
@@ -580,20 +577,14 @@ export function App() {
           </div>
           {view === 'documents' && programmeReader ? (
             <div className="programme-reader-actions">
-              {session.state.snapshot ? <button type="button" className="button button-secondary"
-                onClick={() => setProgrammeCatalogueOpen(value => !value)}>
-                {showProgrammeCatalogue ? <BookOpen size={17} aria-hidden="true" /> : <List size={17} aria-hidden="true" />}
-                {showProgrammeCatalogue ? 'Текст программы' : 'Меры региона'}
-              </button> : null}
               <button type="button" className="button button-secondary" onClick={() => {
                 setProgrammeReader(false);
-                setProgrammeCatalogueOpen(false);
                 setView('sessions');
                 history.replaceState(null, '', `${location.pathname}#sessions=1`);
                 requestAnimationFrame(() => window.scrollTo({ top: programmeScroll.current, behavior: 'instant' }));
               }}>
                 <ArrowLeft size={17} aria-hidden="true" />
-                К программам
+                К карточкам
               </button>
             </div>
           ) : view === 'documents' ? (
@@ -614,13 +605,6 @@ export function App() {
       ) : null}
       {view === 'documents' ? (
         <>
-          {showProgrammeCatalogue && session.state.snapshot ? <main id="main-content" className="content-page programme-reader-catalogue">
-            <Suspense fallback={<p role="status" aria-busy="true">Открываем каталог мер…</p>}>
-              <PracticeSelectionCatalog key={entry.regionId} manifest={manifest} session={session.state.snapshot}
-                initialRegionId={entry.regionId} onSelect={session.actions.selectCatalog} />
-            </Suspense>
-          </main> : null}
-          <Activity mode={showProgrammeCatalogue ? 'hidden' : 'visible'}>
           <nav className="mobile-tabs" aria-label="Панели рабочей области">
             {(
               [
@@ -643,7 +627,7 @@ export function App() {
               </button>
             ))}
           </nav>
-          <main id={showProgrammeCatalogue ? undefined : 'main-content'} className={`workspace mobile-${mobilePane}`}>
+          <main id="main-content" className={`workspace mobile-${mobilePane}`}>
             <LibraryPanel
               manifest={manifest}
               selected={entry}
@@ -697,7 +681,6 @@ export function App() {
               busy={saving}
             />
           </main>
-          </Activity>
         </>
       ) : view === 'practices' ? (
         <PracticeCatalogView
@@ -771,16 +754,25 @@ export function App() {
               </Suspense>
             )}
             renderBarriers={() => (
-              <Suspense fallback={<p aria-busy="true">Открываем барьеры и решения…</p>}>
+              <Suspense fallback={<p aria-busy="true">Открываем барьеры…</p>}>
                 <ConnectedBarriers
                   state={session.state}
                   sessionActions={session.actions}
                   barriers={barriers}
                   manifest={manifest}
                   api={session.api}
+                  lifecycleOnly
                 />
               </Suspense>
             )}
+            renderSolutions={() => session.state.snapshot ? (
+              <Suspense fallback={<p aria-busy="true">Открываем решения…</p>}>
+                <LifecycleSolutions key={`${session.sessionId}:${session.state.auth.userId}`}
+                  api={session.api} sessionId={session.sessionId} userId={session.state.auth.userId}
+                  barriers={barriers} isHost={session.state.snapshot.session.role === 'host'}
+                  editable={session.state.snapshot.session.role !== 'observer' && session.state.snapshot.session.status === 'open'} />
+              </Suspense>
+            ) : null}
             renderWorkshop={(workshopView) => (
               <Suspense fallback={<p aria-busy="true">Открываем этап…</p>}>
                 <ConnectedWorkshop

@@ -1,0 +1,233 @@
+.lifecycle-stage {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.lifecycle-track-scroll {
+  min-width: 0;
+  overflow-x: auto;
+  padding: 3px;
+  scrollbar-width: thin;
+}
+
+.lifecycle-diagram {
+  min-width: 650px;
+  --lifecycle-track-gap: 25px;
+  --lifecycle-connector: #8299b5;
+}
+
+.lifecycle-track {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--lifecycle-track-gap);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.lifecycle-track li {
+  position: relative;
+  display: flex;
+  min-width: 0;
+}
+
+.lifecycle-track button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid #c3d3e7;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--navy);
+  padding: 9px 12px;
+  width: 100%;
+  min-height: 52px;
+  text-align: left;
+  font: inherit;
+  font-size: .9rem;
+  font-weight: 650;
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+.lifecycle-track button:hover {
+  background: #f3f7fc;
+  border-color: #94afd0;
+}
+
+.lifecycle-track button[aria-pressed='true'] {
+  background: #e8f1ff;
+  border-color: #6089bd;
+  box-shadow: inset 0 0 0 1px #6089bd;
+}
+
+.lifecycle-stage-count {
+  flex: none;
+  color: #32557f;
+  background: #e8eff8;
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-size: .78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.lifecycle-stage-arrow {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + (var(--lifecycle-track-gap) - 16px) / 2);
+  transform: translateY(-50%);
+  color: var(--lifecycle-connector);
+  pointer-events: none;
+}
+
+.lifecycle-branch-stem {
+  position: relative;
+  height: 30px;
+  margin-left: calc((100% - 4 * var(--lifecycle-track-gap)) / 10);
+  width: calc(40% + 2 * var(--lifecycle-track-gap) / 5);
+  border-color: var(--lifecycle-connector);
+}
+
+.lifecycle-branch-stem span {
+  position: absolute;
+  inset: 50% 0 0;
+  border-top: 1px solid var(--lifecycle-connector);
+  border-left: 1px solid var(--lifecycle-connector);
+  border-radius: 7px 0 0;
+}
+
+.lifecycle-branch-stem::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 50% auto;
+  border-right: 1px solid var(--lifecycle-connector);
+}
+
+.lifecycle-branch-stem::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  left: -3px;
+  width: 6px;
+  height: 6px;
+  border-right: 1px solid var(--lifecycle-connector);
+  border-bottom: 1px solid var(--lifecycle-connector);
+  transform: rotate(45deg);
+}
+
+.lifecycle-barrier-tools, .lifecycle-card-stages {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.lifecycle-barrier-tools {
+  justify-content: space-between;
+}
+
+.lifecycle-barrier-tools h2 {
+  font-size: 1.13rem;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.lifecycle-barrier-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr));
+  gap: 12px;
+}
+
+.lifecycle-barrier-card {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: 9px;
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  overflow-wrap: anywhere;
+}
+
+.lifecycle-barrier-card h3 {
+  font-size: 1rem;
+  margin: 0;
+  white-space: pre-line;
+}
+
+.lifecycle-barrier-card p {
+  margin: 0;
+  white-space: pre-line;
+}
+
+.lifecycle-card-stages {
+  margin-top: auto;
+}
+
+.lifecycle-stage-chip {
+  padding: 4px 8px;
+  background: #eef3f9;
+  color: #355274;
+  border-radius: 5px;
+  font-size: .77rem;
+}
+
+.lifecycle-barrier-editor {
+  display: grid;
+  gap: 14px;
+}
+
+.lifecycle-barrier-editor > label {
+  display: grid;
+  gap: 5px;
+}
+
+.lifecycle-barrier-editor fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 8px 10px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.lifecycle-stage-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 185px), 1fr));
+  gap: 5px 10px;
+}
+
+.lifecycle-stage-choices label, .lifecycle-note-choices label {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-height: 30px;
+  padding: 3px;
+}
+
+.lifecycle-note-choices {
+  max-height: 13rem;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  margin-top: 5px;
+}
+
+.lifecycle-note-choices label {
+  border-bottom: 1px solid var(--line);
+  content-visibility: auto;
+  contain-intrinsic-size: auto 36px;
+}
+
+@media (max-width: 600px) {
+  .lifecycle-stage {
+    gap: 12px;
+  }
+
+  .lifecycle-diagram {
+    --lifecycle-track-gap: 22px;
+    min-width: 625px;
+  }
+}

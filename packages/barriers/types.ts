@@ -1,8 +1,10 @@
 import type { FrozenVariant, VoteValue } from '../workshop/types';
 import type { SessionPhase, SessionScope, SessionStatus } from '../collaboration/types';
 
-export const lifeStages = ['life_plans', 'first_child', 'preparation_pregnancy', 'infancy', 'early_childhood', 'preschool', 'school', 'next_child'] as const;
+export const modernLifeStages = ['education', 'work', 'first_child', 'second_child', 'third_plus_child', 'conception', 'pregnancy', 'early_childhood', 'preschool', 'school'] as const;
+export const lifeStages = [...modernLifeStages, 'life_plans', 'preparation_pregnancy', 'infancy', 'next_child'] as const;
 export type LifeStage = (typeof lifeStages)[number];
+export type FactorBoard = 'parenthood' | 'objective';
 export type BarrierEvidenceKind = 'observation' | 'hypothesis' | 'survey_summary';
 export type BarrierStatus = 'active' | 'archived';
 export type BarrierRelationship = 'potential' | 'partial' | 'needs_adaptation';
@@ -15,6 +17,7 @@ export interface BarrierCard {
   status: BarrierStatus; priority: boolean; revision: number; contentRevision: number;
   totals: DiscussionTotals; myVote: VoteValue; myVoteRevision: number;
   createdAt: string; updatedAt: string;
+  sourceNoteId?: string; sourceBoard?: FactorBoard;
 }
 export interface BarrierFamilyOption {
   id: string; title: string; mechanism: string; revision: number;
@@ -38,10 +41,15 @@ export interface AuthorSolution {
   title: string; targetGroup: string; mechanism: string; firstStep: string;
   responsible: string; resources: string; successIndicator: string; risks: string;
   status: BarrierStatus; revision: number; createdAt: string; updatedAt: string;
+  format?: 'brief';
+}
+export interface GreenFactorLink {
+  noteId: string; barrierId: string; sourceBoard: FactorBoard; title: string;
 }
 export interface BarriersSnapshot {
   sessionId: string; cursor: number;
   barriers: BarrierCard[]; families: BarrierFamilyOption[]; links: BarrierPracticeLink[]; solutions: AuthorSolution[];
+  greenFactorLinks?: GreenFactorLink[];
   /** Configuration only. Raw survey answers are never included in the collaborative board. */
   survey: SurveySummary | null;
 }
@@ -52,6 +60,7 @@ export interface BarriersProjection {
   sessionId: string; title: string; scope: SessionScope; regionId: string | null;
   phase: SessionPhase; status: SessionStatus; cursor: number;
   barriers: ProjectionBarrier[]; families: BarrierFamilyOption[]; links: ProjectionBarrierLink[]; solutions: ProjectionSolution[];
+  greenFactorLinks?: GreenFactorLink[];
   survey: ProjectionSurveySummary | null;
 }
 export interface ProjectionSurveySummary { title: string; status: SurveyStatus; responseCount: number | null }
@@ -59,6 +68,10 @@ export interface SaveBarrierInput {
   barrierId: string | null; expectedRevision: number; title: string; description: string;
   primaryStage: LifeStage; stageIds: LifeStage[]; evidenceKind: BarrierEvidenceKind;
   status: BarrierStatus; priority: boolean;
+}
+export interface ImportFlipchartInput { noteId: string; stageIds: LifeStage[] }
+export interface SetSolutionBarrierInput {
+  kind: 'factor' | 'author'; measureId: string; barrierId: string; linked: boolean;
 }
 export interface BarrierVoteInput { barrierId: string; expectedRevision: number; value: VoteValue }
 export interface SaveBarrierLinkInput {
@@ -70,6 +83,7 @@ export interface SaveSolutionInput {
   solutionId: string | null; expectedRevision: number; barrierIds: string[];
   title: string; targetGroup: string; mechanism: string; firstStep: string;
   responsible: string; resources: string; successIndicator: string; risks: string; status: BarrierStatus;
+  format?: 'brief';
 }
 
 export type SurveyStatus = 'draft' | 'open' | 'closed' | 'purged';

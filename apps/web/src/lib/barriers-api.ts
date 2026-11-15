@@ -7,6 +7,8 @@ import {
   parseWorkshopSurveyEntry,
   parseSurveyResearchExport,
   saveBarrierInputSchema,
+  importFlipchartInputSchema,
+  setSolutionBarrierInputSchema,
   barrierVoteInputSchema,
   saveBarrierLinkInputSchema,
   saveSolutionInputSchema,
@@ -17,6 +19,8 @@ import type {
   BarrierEvidence,
   BarrierVoteInput,
   SaveBarrierInput,
+  ImportFlipchartInput,
+  SetSolutionBarrierInput,
   SaveBarrierLinkInput,
   SaveSolutionInput,
   SurveyActionInput,
@@ -55,6 +59,12 @@ export class BarriersApi {
   }
   saveBarrier(id: string, input: SaveBarrierInput) {
     return this.mutate(id, 'dw_save_barrier', saveBarrierInputSchema.parse(input));
+  }
+  importFlipchart(id: string, input: ImportFlipchartInput) {
+    return this.mutate(id, 'dw_import_flipchart_barrier', importFlipchartInputSchema.parse(input));
+  }
+  setSolutionBarrier(id: string, input: SetSolutionBarrierInput) {
+    return this.mutate(id, 'dw_set_solution_barrier', setSolutionBarrierInputSchema.parse(input));
   }
   vote(id: string, input: BarrierVoteInput) {
     return this.mutate(id, 'dw_barrier_vote', barrierVoteInputSchema.parse(input));

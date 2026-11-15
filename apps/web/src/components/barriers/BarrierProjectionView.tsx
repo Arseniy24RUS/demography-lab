@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Modal } from '@/components/Modal';
 import { ArrowLeft, ArrowRight, GitBranch, Lightbulb, Route } from 'lucide-react';
-import type { LifeStage } from '../../../../../packages/barriers/types';
 import type { BarrierProjectionViewProps } from './barriers-ui';
+import { isLifecycleStage, lifecycleStages, type LifecycleStage } from './lifecycle-stages';
 import {
   Empty,
   evidenceLabels,
-  lifeStages,
   relationshipLabels,
   stageLabels,
   StageChips,
@@ -15,7 +14,7 @@ import '../../barriers.css';
 
 export function BarrierProjectionView({ snapshot, mode }: BarrierProjectionViewProps) {
   const [localMode, setLocalMode] = useState<'path' | 'links' | 'solutions'>('path');
-  const [stage, setStage] = useState<LifeStage | 'all'>('all');
+  const [stage, setStage] = useState<LifecycleStage | 'all' | 'unassigned'>('all');
   const [page, setPage] = useState(0);
   const [viewportWidth, setViewportWidth] = useState(() =>
     typeof window === 'undefined' ? 1536 : window.innerWidth,
@@ -26,18 +25,46 @@ export function BarrierProjectionView({ snapshot, mode }: BarrierProjectionViewP
     return () => window.removeEventListener('resize', resize);
   }, []);
   const currentMode = mode ?? localMode;
-  const barriers = snapshot.barriers.filter(
-    (card) => card.status === 'active' && (stage === 'all' || card.stageIds.includes(stage)),
-  );
-  const links = snapshot.links.filter(
-    (link) => link.status === 'active' && barriers.some((card) => card.id === link.barrierId),
-  );
+  const activeBarriers = snapshot.barriers.filter(card => card.status === 'active');
+  const unassigned = activeBarriers.filter(card => !card.stageIds.some(isLifecycleStage));
+  const barriers = stage === 'all' ? activeBarriers : stage === 'unassigned' ? unassigned
+    : activeBarriers.filter(card => card.stageIds.includes(stage));
+  const visibleBarrierIds = new Set(barriers.map(card => card.id));
   const solutions = snapshot.solutions.filter(
     (card) =>
       card.status === 'active' &&
       (stage === 'all' ||
         card.barrierIds.some((id) => barriers.some((barrier) => barrier.id === id))),
   );
+  const links = [
+    ...snapshot.links.filter(link => link.status === 'active' && visibleBarrierIds.has(link.barrierId)).map(link => ({
+      id: link.id,
+      barrierId: link.barrierId,
+      title: link.familyTitle,
+      source: 'Практика',
+      explanation: link.explanation,
+      relation: relationshipLabels[link.relationship],
+      stale: Boolean(link.staleReasons.length),
+    })),
+    ...(snapshot.greenFactorLinks ?? []).filter(link => visibleBarrierIds.has(link.barrierId)).map(link => ({
+      id: `${link.noteId}:${link.barrierId}`,
+      barrierId: link.barrierId,
+      title: link.title,
+      source: link.sourceBoard === 'objective' ? 'Объективные факторы' : 'Субъективные факторы',
+      explanation: '',
+      relation: '',
+      stale: false,
+    })),
+    ...solutions.flatMap(solution => solution.barrierIds.filter(id => visibleBarrierIds.has(id)).map(barrierId => ({
+      id: `${solution.id}:${barrierId}`,
+      barrierId,
+      title: solution.title,
+      source: 'Предложение участника',
+      explanation: solution.mechanism,
+      relation: '',
+      stale: false,
+    }))),
+  ];
   const count =
     currentMode === 'solutions'
       ? solutions.length
@@ -59,8 +86,8 @@ export function BarrierProjectionView({ snapshot, mode }: BarrierProjectionViewP
   const safePage = Math.min(page, Math.max(0, Math.ceil(count / limit) - 1));
   const titles = {
     path: 'Барьеры на пути родительства',
-    links: 'От барьеров к практикам',
-    solutions: 'Авторские гипотезы решений',
+    links: 'От барьеров к решениям',
+    solutions: 'Предложения участников',
   };
   return (
     <section className="barrier-projection">
@@ -137,7 +164,7 @@ export function BarrierProjectionView({ snapshot, mode }: BarrierProjectionViewP
         >
           Все этапы
         </button>
-        {lifeStages.map((item) => (
+        {lifecycleStages.map((item) => (
           <button
             key={item}
             aria-pressed={stage === item}
@@ -149,13 +176,16 @@ export function BarrierProjectionView({ snapshot, mode }: BarrierProjectionViewP
             {stageLabels[item]}
             <span>
               {
-                snapshot.barriers.filter(
-                  (card) => card.status === 'active' && card.stageIds.includes(item),
-                ).length
+                activeBarriers.filter(card => card.stageIds.includes(item)).length
               }
             </span>
           </button>
         ))}
+        {unassigned.length ? (
+          <button aria-pressed={stage === 'unassigned'} onClick={() => { setStage('unassigned'); setPage(0); }}>
+            Этап не уточнён <span>{unassigned.length}</span>
+          </button>
+        ) : null}
       </div>
       {!count ? (
         <Empty title="Пока нет результатов для этого вида">
@@ -198,7 +228,7 @@ export function BarrierProjectionView({ snapshot, mode }: BarrierProjectionViewP
           {links.slice(safePage * limit, (safePage + 1) * limit).map((link) => (
             <article
               key={link.id}
-              className={`barrier-projection-link${link.staleReasons.length ? ' stale' : ''}`}
+              className={`barrier-projection-link${link.stale ? ' stale' : ''}`}
             >
               <div>
                 <span>Барьер</span>
@@ -215,24 +245,20 @@ export function BarrierProjectionView({ snapshot, mode }: BarrierProjectionViewP
                   <circle cx="3" cy="18" r="3" />
                   <circle cx="117" cy="18" r="3" />
                 </svg>
-                <strong>
-                  {link.staleReasons.length
-                    ? 'Требует проверки'
-                    : relationshipLabels[link.relationship]}
-                </strong>
+                {link.stale || link.relation ? <strong>{link.stale ? 'Требует проверки' : link.relation}</strong> : null}
               </div>
               <div>
-                <span>Семейство практик</span>
-                <ProjectionTitle text={link.familyTitle} />
+                <span>{link.source}</span>
+                <ProjectionTitle text={link.title} />
               </div>
-              <div className="barrier-projection-mechanism">
+              {link.explanation ? <div className="barrier-projection-mechanism">
                 <ProjectionText
                   text={link.explanation}
                   label="Полное объяснение связи"
                   limit={260}
                 />
-              </div>
-              {link.staleReasons.length ? (
+              </div> : null}
+              {link.stale ? (
                 <p className="barrier-projection-stale-note">
                   Не включается в актуальные связи до проверки новой редакции.
                 </p>
@@ -249,17 +275,18 @@ export function BarrierProjectionView({ snapshot, mode }: BarrierProjectionViewP
                 {card.authorName ? <span>{card.authorName}</span> : null}
               </div>
               <ProjectionTitle text={card.title} />
-              <ProjectionText text={card.mechanism} label={`Механизм решения «${card.title}»`} />
-              <div className="barrier-solution-first">
+              {card.mechanism ? <ProjectionText text={card.mechanism} label={`Механизм решения «${card.title}»`} /> : null}
+              {card.firstStep ? <div className="barrier-solution-first">
                 <span>Первый шаг</span>
                 <ProjectionText text={card.firstStep} label="Первый шаг решения" limit={180} />
-              </div>
-              <strong>Проверим:</strong>
-              <ProjectionText
+              </div> : null}
+              {card.successIndicator ? <><strong>Проверим</strong>
+                <ProjectionText
                 text={card.successIndicator}
                 label="Проверяемый результат решения"
                 limit={170}
-              />
+                />
+              </> : null}
             </article>
           ))}
         </div>
