@@ -31,10 +31,6 @@
 .geo-swatch.geo-measures-selected { background: #a9d989; }
 .geo-swatch.geo-measures-unselected { background: #e8edf4; }
 .geo-swatch.geo-unavailable { background: repeating-linear-gradient(135deg, #f1f4f8 0, #f1f4f8 4px, #bec9d8 4px, #bec9d8 5px); }
-.geo-provenance { font-size: 12px; line-height: 1.55; color: #5f6f83; padding: 5px 0; }
-.geo-provenance summary { cursor: pointer; padding: 8px 0; min-height: 34px; }
-.geo-provenance p { max-width: 95ch; }
-.geo-provenance a { color: #0758ca; }
 .geo-fallback { padding: 30px 16px; min-height: 240px; display: grid; align-content: center; text-align: center; background: #f5f8fc; border-radius: 8px; }
 .geo-fallback .button { justify-self: center; }
 .region-map-compact .geo-canvas { height: min(62vh, 630px); }

@@ -36,7 +36,6 @@ export function loadRegionMap() {
 }
 
 export interface RegionMapDetail {
-  source: RegionMapData['source'];
   shapes: ReadonlyMap<string, RegionMapData['shapes'][number]>;
 }
 
@@ -50,7 +49,6 @@ export function loadRegionMapDetail() {
         throw new Error('Подробные контуры не согласованы с обзорной картой.');
       }
       return {
-        source: detail.source,
         shapes: new Map(detail.shapes.map(shape => [shape.regionId, shape])),
       };
     }).catch((error: unknown) => { pendingDetail = null; throw error; });

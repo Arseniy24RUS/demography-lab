@@ -146,6 +146,5 @@ export function RegionMap({ regions, work = emptyWork, selectedRegionId, onSelec
         ? (status === 'available' ? 'Доступно для выбора' : 'Отсутствует в списке')
         : (!showWork && status === 'available' ? 'Текст доступен' : labels[status])}</span>)}
     </div>
-    <details className="geo-provenance"><summary>Источник и устройство карты</summary><p>Геометрия и состав территорий — авторский корпус family-support. Проекция Альберса, стандартные параллели 50° и 70°. Названия сопоставлены с 89 паспортами корпуса.</p><a href={data.source.sourceUrl} target="_blank" rel="noreferrer">Исходная геометрия и зафиксированная версия</a>{detail ? <p><a href={detail.source.sourceUrl} target="_blank" rel="noreferrer">Источник подробных контуров</a></p> : null}{showWork ? <p>Статус «Отбор завершён» отражает отметку исполнителя о своём задании. Полнота экспертизы всего документа требует отдельной содержательной проверки.</p> : null}</details>
   </div>;
 }
