@@ -2,7 +2,7 @@ import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { createClient } from '@supabase/supabase-js';
 import { randomUUID, randomBytes } from 'node:crypto';
-import { mkdtemp, mkdir, writeFile, readFile, rm, stat } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, rm, stat, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fork } from 'node:child_process';
@@ -63,6 +63,40 @@ before(async()=>{
 after(async()=>{if(app)await app.stop();for(const c of[host,alice,bob])await c?.auth.stopAutoRefresh();await rm(work,{recursive:true,force:true});});
 
 describe('Production offline runtime: simple identities, domain RPC, isolation and durability',{concurrency:false},()=>{
+  it('serves exactly the reader runtime modules on the classroom origin, retaining anonymous-origin isolation',async()=>{
+    const modules=[
+      'site/apps/legal-lab/lib/reader-controller.mjs',
+      'site/apps/legal-lab/lib/reader-data.mjs',
+      'site/apps/legal-lab/lib/reader-codec.mjs',
+      'site/apps/legal-lab/lib/reader-registry.mjs',
+      'site/apps/legal-lab/lib/reader-search-worker.mjs',
+      'site/assets/js/release-resources.js',
+    ];
+    const prefix='/vendor/rudn-reader/',publicVendor=join(work,'site/public/vendor/rudn-reader'),distVendor=join(work,'site/dist/vendor/rudn-reader');
+    await mkdir(join(publicVendor,'site/apps/legal-lab/lib'),{recursive:true});
+    await mkdir(join(publicVendor,'site/assets/js'),{recursive:true});
+    await mkdir(join(distVendor,'site/apps/legal-lab/lib'),{recursive:true});
+    for(const name of modules)await writeFile(join(publicVendor,name),'export const fixture="public reader";');
+    await writeFile(join(distVendor,modules[0]),'export const fixture="dist reader";');
+    await writeFile(join(publicVendor,'site/apps/legal-lab/lib/private.mjs'),'PRIVATE unapproved module');
+    for(const name of modules){
+      const response=await fetch(base+prefix+name+'?build=fixture');
+      assert.equal(response.status,200,name);
+      assert.match(response.headers.get('content-type'),/^text\/javascript; charset=utf-8$/);
+      assert.match(await response.text(),name===modules[0]?/dist reader/:/public reader/);
+      assert.equal(response.headers.get('x-content-type-options'),'nosniff');
+      assert.equal((await fetch(surveyBase+prefix+name)).status,404,name+' on survey origin');
+    }
+    const head=await fetch(base+prefix+modules[1],{method:'HEAD'});assert.equal(head.status,200);assert.equal(await head.text(),'');
+    for(const path of[prefix+'site/apps/legal-lab/lib/private.mjs',prefix+'upstream.json','/vendor/other/app.mjs']){
+      const denied=await fetch(base+path);assert.equal(denied.status,404,path);assert.doesNotMatch(await denied.text(),/PRIVATE/);
+    }
+    await rm(join(publicVendor,modules[2]));
+    await writeFile(join(work,'site/public/private.mjs'),'PRIVATE outside vendor tree');
+    await symlink(join(work,'site/public/private.mjs'),join(publicVendor,modules[2]),'file');
+    const escaped=await fetch(base+prefix+modules[2]);assert.equal(escaped.status,404);assert.doesNotMatch(await escaped.text(),/PRIVATE/);
+  });
+
   it('exposes distinct local config and refuses cross-origin, DNS rebinding, raw SQL and secret files',async()=>{
     const config=await request('/workshop-config.json',{method:'GET'});
     assert.equal(config.body.offline,true);assert.equal(config.body.supabaseUrl,base);assert.equal(config.body.surveyUrl,surveyBase+'/survey.html');

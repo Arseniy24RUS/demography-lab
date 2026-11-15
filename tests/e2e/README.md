@@ -1,5 +1,21 @@
 # Stage 1: real Chromium browser verification
 
+## Continuous reader from RUDN
+
+After the production build, run the current server-backed reader regression:
+
+```bash
+PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/Applications/Yandex.app/Contents/MacOS/Yandex \
+PLAYWRIGHT_ARTIFACTS_DIR=/tmp/demography-reader-evidence \
+node tests/offline/continuous-reader.e2e.mjs
+```
+
+The script starts the real production offline server/PGlite in a separate temporary data directory. It maps a classroom LAN hostname to loopback only inside its isolated test browser and blocks external HTTP requests. It neither changes Wi-Fi/VPN settings nor opens the personal browser profile.
+
+It exercises Chuvashia (2,579 canonical blocks) and Leningrad Oblast (1,113 blocks): automatic loading while scrolling, bounded rendered DOM, exact source text, worker search, original-PDF page linkage, lazy canonical loading for quotations, server save/reload/return to the quoted source, viewports 1440/390/320, document changes and Moscow Oblast's empty extracted-text page 57. Screenshots and the JSON report are written to `PLAYWRIGHT_ARTIFACTS_DIR`. The environment in that report records the actual operating system and browser executable; emulated mobile viewports do not certify physical phones.
+
+The historical stage-one scenarios below predate the shared-workshop entry route. Their pagination-specific assertions are not the acceptance definition for the continuous reader.
+
 The flow under test is: initial Mordovia document → full-document search or prepared practice → exact source quotation → explicit field review → save → reload → persisted result. A separate real ZIP download is opened and its data checked. The mobile case uses Chromium at 390 × 844 with touch emulation; it is not a Safari, iOS-device or Android-device certification.
 
 The Browser plugin is not available in this session. These tests use the explicitly requested regular Playwright runner and a supplied Chromium executable. No route interception, response mocks, fake backend, injected application state, direct IndexedDB writes or fabricated DOM selection is used. Every saved annotation is created by visible application controls.

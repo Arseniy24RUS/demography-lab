@@ -22,6 +22,14 @@ const MIME=new Map(Object.entries({'.html':'text/html; charset=utf-8','.js':'tex
   '.woff':'font/woff','.woff2':'font/woff2','.ttf':'font/ttf','.otf':'font/otf',
   '.txt':'text/plain; charset=utf-8','.pdf':'application/pdf','.webmanifest':'application/manifest+json'}));
 const LOOPBACK=new Set(['127.0.0.1','::1','::ffff:127.0.0.1']);
+const READER_MODULE_PATHS=new Set([
+  '/vendor/rudn-reader/site/apps/legal-lab/lib/reader-controller.mjs',
+  '/vendor/rudn-reader/site/apps/legal-lab/lib/reader-data.mjs',
+  '/vendor/rudn-reader/site/apps/legal-lab/lib/reader-codec.mjs',
+  '/vendor/rudn-reader/site/apps/legal-lab/lib/reader-registry.mjs',
+  '/vendor/rudn-reader/site/apps/legal-lab/lib/reader-search-worker.mjs',
+  '/vendor/rudn-reader/site/assets/js/release-resources.js',
+]);
 const safeCode=e=>typeof e.code==='string'&&/^[A-Z0-9_]{1,80}$/.test(e.code)?e.code:'OFFLINE_SERVER_ERROR';
 const isLoopback=request=>LOOPBACK.has(request.socket.remoteAddress);
 const localName=name=>name==='localhost'||name==='127.0.0.1'||name==='[::1]';
@@ -95,13 +103,17 @@ async function staticFile(request,response,path,survey,root) {
   const routed=path==='/'?(survey?'/survey.html':'/index.html'):path;
   if((survey&&routed==='/index.html')||(!survey&&routed==='/survey.html'))throw new HttpError(404,'NOT_FOUND');
   const ext=extname(routed);
+  const readerModule=!survey&&READER_MODULE_PATHS.has(routed);
   const permitted=routed==='/index.html'||routed==='/survey.html'||/^\/(?:favicon\.(?:svg|ico|png)|apple-touch-icon\.png|site\.webmanifest)$/.test(routed)
     || /^\/assets\/[a-zA-Z0-9_./-]+$/.test(routed)
     || /^\/fonts\/(?:DejaVuSans(?:-Bold)?\.ttf|LICENSE-DejaVu\.txt)$/.test(routed)
-    ||(!survey&&/^\/data\/[a-zA-Z0-9_./-]+$/.test(routed));
+    ||readerModule||(!survey&&/^\/data\/[a-zA-Z0-9_./-]+$/.test(routed));
   if(!permitted||!MIME.has(ext))throw new HttpError(404,'NOT_FOUND');
-  const file=await within(resolve(root,'dist'),routed.slice(1))
-    ??await within(resolve(root,'public'),routed.slice(1));
+  const file=readerModule
+    ?await within(resolve(root,'dist/vendor/rudn-reader'),routed.slice('/vendor/rudn-reader/'.length))
+      ??await within(resolve(root,'public/vendor/rudn-reader'),routed.slice('/vendor/rudn-reader/'.length))
+    :await within(resolve(root,'dist'),routed.slice(1))
+      ??await within(resolve(root,'public'),routed.slice(1));
   if(!file)throw new HttpError(404,'NOT_FOUND');
   const etag=`W/"${file.info.size.toString(16)}-${Math.floor(file.info.mtimeMs).toString(16)}"`;
   response.setHeader('Content-Type',MIME.get(ext));

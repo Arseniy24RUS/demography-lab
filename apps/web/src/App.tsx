@@ -177,33 +177,16 @@ export function App() {
   const entry = manifest?.documents.find((d) => d.id === documentId) ?? manifest?.documents[0];
   useEffect(() => {
     if (!entry) return;
-    let cancelled = false;
-    setDoc(undefined);
+    setDoc(current => current?.entry.id === entry.id ? current : undefined);
     setDocError(undefined);
     if (!readable(entry)) {
       setDocError('В исходном корпусе нет подготовленного полного текста для этой записи.');
       setDocLoading(false);
       return;
     }
-    setDocLoading(true);
-    loadDocument(entry)
-      .then((next) => {
-        if (!cancelled) {
-          setDoc(next);
-          setVersions((prev) =>
-            [...prev.filter((v) => v.id !== next.version.id), next.version].slice(-5),
-          );
-        }
-      })
-      .catch((e) => {
-        if (!cancelled) setDocError(e instanceof Error ? e.message : String(e));
-      })
-      .finally(() => {
-        if (!cancelled) setDocLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
+    // Reading uses the RUDN chunk loader. The full canonical edition is loaded
+    // only when a quotation is selected or an existing anchor is verified.
+    setDocLoading(false);
   }, [entry]);
   useEffect(() => {
     if (!toast) return;
@@ -282,6 +265,8 @@ export function App() {
         throw new Error(
           'Цитата относится к другой редакции или не совпадает с текстом. Исходная запись сохранена; автоматическая подмена запрещена.',
         );
+      setDoc(material);
+      setVersions(prev => [...prev.filter(v => v.id !== material.version.id), material.version].slice(-5));
       setDocumentId(target.id);
       setFocusAnchor(anchor);
       setFocusNonce((n) => n + 1);
@@ -615,8 +600,14 @@ export function App() {
               onDetails={() => setDialog('source')}
             />
             <DocumentReader
+              key={`${entry.id}:${entry.versionId ?? ''}`}
               entry={entry}
               document={doc}
+              onDocumentLoaded={(next) => {
+                if (next.entry.id !== entry.id) return;
+                setDoc(next);
+                setVersions(prev => [...prev.filter(v => v.id !== next.version.id), next.version].slice(-5));
+              }}
               loading={docLoading}
               error={docError}
               selection={selection}
@@ -763,7 +754,7 @@ export function App() {
                   ? 'Работа сохраняется в вашем профиле'
                   : 'Заметки в этом браузере · войдите для сохранения в профиле'}
         </span>
-        <span className="footer-version">Версия 0.10.1</span>
+        <span className="footer-version">Версия 0.10.2</span>
       </footer>
       {dialog === 'source' ? (
         <SourceDetails entry={entry} doc={doc} onClose={() => setDialog(null)} />

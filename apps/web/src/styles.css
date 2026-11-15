@@ -2238,3 +2238,28 @@ svg {
 .save-dot.error {
   background: var(--red);
 }
+
+/* RUDN ReaderController owns this bounded continuous document surface. */
+.continuous-reader { min-height: 0; display: flex; flex-direction: column; }
+.continuous-reader .ll-reader-dock { position: relative; top: 0; flex: none; }
+.continuous-reader .ll-paper {
+  height: 62dvh; min-height: 180px; flex: 1 1 62dvh;
+  overflow: auto; overflow-anchor: none; overscroll-behavior: auto;
+  touch-action: auto; scrollbar-width: thin; padding-bottom: 24px;
+}
+.continuous-reader .ll-reader-block { display: flow-root; }
+.continuous-reader .ll-reader-spacer {
+  pointer-events: none; overflow-anchor: none; width: 1px; contain: strict;
+}
+.continuous-reader .ll-search-target { outline: 2px solid #8bb5e4; outline-offset: 2px; }
+.continuous-reader [data-unit]:focus-visible { outline: 2px solid var(--blue); }
+.reader-loading { padding: 12px 24px; }
+@media (min-width: 861px) and (min-height: 650px) {
+  .continuous-reader .ll-paper { height: auto; flex: 1 1 0; min-height: 0; }
+}
+@media (max-width: 860px) {
+  .continuous-reader .ll-paper { height: 62dvh; flex: 0 0 62dvh; }
+  .continuous-reader .block-tools { opacity: 1; }
+  .continuous-reader .block-action { min-height: 44px; }
+  .continuous-reader .page-picker { gap: 4px; }
+}

@@ -7,7 +7,12 @@ import {
   type DocumentVersion,
   type TextAnchor,
 } from '@domain/index';
-import { anchorForBlocks, anchorFromDomSelection } from '@/lib/selection';
+import {
+  anchorForBlocks,
+  anchorFromDomSelection,
+  anchorFromSelectionSnapshot,
+  captureDomSelection,
+} from '@/lib/selection';
 
 function version(blocks: readonly [string, string][], id = 'edition-1'): DocumentVersion {
   return {
@@ -169,5 +174,135 @@ describe('DOM selection to exact source anchors', () => {
       { blockId: 'b2', start: 0, end: 7, exact: 'Второй.' },
     ]);
     expect(anchorForBlocks(source, new Set())).toBeNull();
+  });
+
+  it('restores unmounted intermediate blocks only between verified source endpoints', () => {
+    const source = version([
+      ['b1', 'А😀Б'],
+      ['b2', 'Не потерять семью 👪.'],
+      ['b3', 'Я👶З'],
+    ]);
+    const root = mount(
+      '<p data-source-text data-block-id="b1">А<mark>😀Б</mark></p><div class="virtual-spacer"></div><p data-source-text data-block-id="b3">Я<mark>👶</mark>З</p>',
+    );
+    const marks = root.querySelectorAll('mark');
+    const anchor = anchorFromDomSelection(
+      root,
+      source,
+      select(marks[0].firstChild!, 0, marks[1].firstChild!, 2),
+    )!;
+    expect(anchor.spans).toMatchObject([
+      { blockId: 'b1', start: 1, end: 3, exact: '😀Б' },
+      { blockId: 'b2', start: 0, end: 20, exact: 'Не потерять семью 👪.' },
+      { blockId: 'b3', start: 0, end: 2, exact: 'Я👶' },
+    ]);
+    expect(validateAnchor(source, anchor).valid).toBe(true);
+  });
+
+  it('captures a plain snapshot before asynchronous loading removes the selected DOM nodes', () => {
+    const source = version([
+      ['b1', 'Первый 👶 абзац.'],
+      ['b2', 'Средний абзац.'],
+      ['b3', 'Последний абзац.'],
+    ]);
+    const root = mount(
+      '<p data-source-text data-block-id="b1">Первый 👶 абзац.</p><p data-source-text data-block-id="b3">Последний абзац.</p>',
+    );
+    const paragraphs = root.querySelectorAll('p');
+    const snapshot = captureDomSelection(
+      root,
+      select(paragraphs[0].firstChild!, 7, paragraphs[1].firstChild!, 9),
+    )!;
+    root.replaceChildren(document.createTextNode('Уже открыт другой документ.'));
+    const anchor = anchorFromSelectionSnapshot(source, snapshot)!;
+    expect(anchor.spans.map((span) => span.exact)).toEqual([
+      '👶 абзац.',
+      'Средний абзац.',
+      'Последний',
+    ]);
+    expect(anchor.spans[0].start).toBe(7);
+    expect(validateAnchor(source, anchor).valid).toBe(true);
+    expect(
+      anchorFromSelectionSnapshot(
+        version([
+          ['b1', 'Первый 👶 абзац.'],
+          ['b2', 'Средний абзац.'],
+          ['b3', 'Изменённый абзац.'],
+        ]),
+        snapshot,
+      ),
+    ).toBeNull();
+  });
+
+  it('preserves a virtual endpoint at zero without adding that final block to the quote', () => {
+    const source = version([
+      ['b1', 'Первый.'],
+      ['b2', 'Средний.'],
+      ['b3', 'Третий.'],
+    ]);
+    const root = mount(
+      '<p data-source-text data-block-id="b1">Первый.</p><p data-source-text data-block-id="b3">Третий.</p>',
+    );
+    const paragraphs = root.querySelectorAll('p');
+    const anchor = anchorFromDomSelection(
+      root,
+      source,
+      select(paragraphs[0].firstChild!, 0, paragraphs[1].firstChild!, 0),
+    )!;
+    expect(anchor.spans.map((span) => span.blockId)).toEqual(['b1', 'b2']);
+    expect(validateAnchor(source, anchor).valid).toBe(true);
+  });
+
+  it('rejects a virtual gap when an endpoint belongs to a page label or block tools', () => {
+    const source = version([
+      ['b1', 'Первый.'],
+      ['b2', 'Скрытый.'],
+      ['b3', 'Третий.'],
+    ]);
+    const root = mount(
+      '<p data-source-text data-block-id="b1">Первый.</p><p data-source-text data-block-id="b3">Третий.</p><button>Выбрать фрагмент</button><div>Страница 2</div>',
+    );
+    const first = root.querySelector('p')!.firstChild!;
+    for (const endpoint of [root.querySelector('button')!, root.querySelector('div')!]) {
+      const snapshot = captureDomSelection(root, select(first, 0, endpoint.firstChild!, 3))!;
+      expect(snapshot.from).toEqual({ blockId: 'b1', offset: 0 });
+      expect(snapshot.to).toBeNull();
+      expect(anchorFromSelectionSnapshot(source, snapshot)).toBeNull();
+    }
+  });
+
+  it('still captures contiguous source spans when selection ends in a label', () => {
+    const source = version([
+      ['b1', 'Первый.'],
+      ['b2', 'Второй.'],
+    ]);
+    const root = mount(
+      '<p data-source-text data-block-id="b1">Первый.</p><p data-source-text data-block-id="b2">Второй.</p><div>Страница 2</div>',
+    );
+    const anchor = anchorFromDomSelection(
+      root,
+      source,
+      select(root.querySelector('p')!.firstChild!, 0, root.querySelector('div')!.firstChild!, 3),
+    )!;
+    expect(anchor.spans.map((span) => span.exact)).toEqual(['Первый.', 'Второй.']);
+    expect(validateAnchor(source, anchor).valid).toBe(true);
+  });
+
+  it('rejects mounted source nodes in an order different from the immutable edition', () => {
+    const source = version([
+      ['b1', 'Первый.'],
+      ['b2', 'Второй.'],
+    ]);
+    const root = mount(
+      '<p data-source-text data-block-id="b2">Второй.</p><p data-source-text data-block-id="b1">Первый.</p>',
+    );
+    const paragraphs = root.querySelectorAll('p');
+    expect(
+      anchorFromDomSelection(
+        root,
+        source,
+        select(paragraphs[0].firstChild!, 0, paragraphs[1].firstChild!, 7),
+      ),
+    ).toBeNull();
   });
 });

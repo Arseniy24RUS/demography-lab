@@ -69,6 +69,15 @@ const ICONS = new Set([
 ]);
 // Export fonts are public assets. Keep the list exact: no arbitrary text/source files.
 const EXPORT_FONT_FILES = new Set(['DejaVuSans.ttf', 'DejaVuSans-Bold.ttf', 'LICENSE-DejaVu.txt']);
+// Exact public runtime copies of the author's RUDN reader, never arbitrary source.
+const READER_MODULE_FILES = new Set([
+  'site/apps/legal-lab/lib/reader-controller.mjs',
+  'site/apps/legal-lab/lib/reader-data.mjs',
+  'site/apps/legal-lab/lib/reader-codec.mjs',
+  'site/apps/legal-lab/lib/reader-registry.mjs',
+  'site/apps/legal-lab/lib/reader-search-worker.mjs',
+  'site/assets/js/release-resources.js',
+]);
 const ASSET_EXTENSIONS = new Set([
   '.js',
   '.mjs',
@@ -283,6 +292,14 @@ async function findFile(path) {
   if (ICONS.has(name)) return (await fileWithin(DIST, name)) ?? fileWithin(PUBLIC, name);
   if (path.startsWith('/assets/') && ASSET_EXTENSIONS.has(extname(path).toLowerCase()))
     return fileWithin(DIST, name);
+  if (path.startsWith('/vendor/rudn-reader/')) {
+    const module = path.slice('/vendor/rudn-reader/'.length);
+    if (!READER_MODULE_FILES.has(module)) return null;
+    return (
+      (await fileWithin(resolve(DIST, 'vendor/rudn-reader'), module)) ??
+      fileWithin(resolve(PUBLIC, 'vendor/rudn-reader'), module)
+    );
+  }
   if (path.startsWith('/fonts/') && EXPORT_FONT_FILES.has(path.slice('/fonts/'.length))) {
     return (
       (await fileWithin(resolve(DIST, 'fonts'), path.slice('/fonts/'.length))) ??

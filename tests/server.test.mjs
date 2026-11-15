@@ -249,6 +249,46 @@ test(
     );
 
     await t.test(
+      'serves only pinned reader module paths with module MIME, fallback, priority and symlink containment',
+      async () => {
+        const modules = [
+          'site/apps/legal-lab/lib/reader-controller.mjs',
+          'site/apps/legal-lab/lib/reader-data.mjs',
+          'site/apps/legal-lab/lib/reader-codec.mjs',
+          'site/apps/legal-lab/lib/reader-registry.mjs',
+          'site/apps/legal-lab/lib/reader-search-worker.mjs',
+          'site/assets/js/release-resources.js',
+        ];
+        const prefix = '/vendor/rudn-reader/';
+        const publicVendor = join(root, 'public/vendor/rudn-reader');
+        const distVendor = join(root, 'dist/vendor/rudn-reader');
+        await mkdir(join(publicVendor, 'site/apps/legal-lab/lib'), { recursive: true });
+        await mkdir(join(publicVendor, 'site/assets/js'), { recursive: true });
+        await mkdir(join(distVendor, 'site/apps/legal-lab/lib'), { recursive: true });
+        for (const name of modules) await writeFile(join(publicVendor, name), 'export const fixture = "public reader";');
+        await writeFile(join(distVendor, modules[0]), 'export const fixture = "dist reader";');
+        await writeFile(join(publicVendor, 'site/apps/legal-lab/lib/private.mjs'), 'PRIVATE unapproved module');
+        for (const name of modules) {
+          const response = await http(port, prefix + name + '?build=fixture');
+          assert.equal(response.status, 200, name);
+          assert.match(response.headers['content-type'], /^text\/javascript; charset=utf-8$/u);
+          assert.match(response.body.toString(), name === modules[0] ? /dist reader/u : /public reader/u);
+          assert.equal(response.headers['x-content-type-options'], 'nosniff');
+        }
+        const head = await http(port, prefix + modules[1], { method: 'HEAD' });
+        assert.equal(head.status, 200); assert.equal(head.body.length, 0);
+        for (const path of [prefix + 'site/apps/legal-lab/lib/private.mjs', prefix + 'upstream.json', '/vendor/other/app.mjs']) {
+          const response = await http(port, path);
+          assert.equal(response.status, 404, path);
+          assert.doesNotMatch(response.body.toString(), /PRIVATE/u);
+        }
+        await rm(join(publicVendor, modules[2]));
+        await symlink(join(root, 'package.json'), join(publicVendor, modules[2]), 'file');
+        assert.equal((await http(port, prefix + modules[2])).status, 404);
+      },
+    );
+
+    await t.test(
       'serves only bundled export fonts and their license, preserving fallback and rejecting symlink escape',
       async (inner) => {
         const distFonts = join(root, 'dist/fonts');

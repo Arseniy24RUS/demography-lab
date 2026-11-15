@@ -38,6 +38,9 @@ jobs:
       - name: Run domain and client tests
         run: npm test -- --maxWorkers=2
 
+      - name: Verify transplanted RUDN reader and exact demographic data
+        run: npm run test:reader
+
       - name: Verify the canonical document corpus
         run: node scripts/seed-supabase.mjs --check
 

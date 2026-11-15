@@ -1,0 +1,36 @@
+{
+  "repository": "Arseniy24RUS/RUDN",
+  "commit": "43193d2d741497a66d5cca5f0388e43084b1e88a",
+  "files": [
+    {
+      "path": "site/apps/legal-lab/lib/reader-controller.mjs",
+      "sha256": "d0e49905d6c77cbb67217d60a4633f34fd41b4f281b9dc4e8d15396bb8bcb91d",
+      "bytes": 14280
+    },
+    {
+      "path": "site/apps/legal-lab/lib/reader-data.mjs",
+      "sha256": "bb7278b14b01f5932a220fb263a5ec5630964632082f70c3323834e06474b1d4",
+      "bytes": 18302
+    },
+    {
+      "path": "site/apps/legal-lab/lib/reader-codec.mjs",
+      "sha256": "4ed996211ac4cc56d3e0f1d45b4bd540416fa82fe682bc35c928343dd918668d",
+      "bytes": 2235
+    },
+    {
+      "path": "site/apps/legal-lab/lib/reader-search-worker.mjs",
+      "sha256": "5cfcd3933b08704479a4b9533b4d56e5ced0f41bb591dfbdd042dcf5db6ddbd2",
+      "bytes": 3571
+    },
+    {
+      "path": "site/apps/legal-lab/lib/reader-registry.mjs",
+      "sha256": "7d7c8f9ab310e384d9ee6a9e05cea990e54e860b97d7954ac5168d7cf645268e",
+      "bytes": 214
+    },
+    {
+      "path": "site/assets/js/release-resources.js",
+      "sha256": "3b157e199fa90e3bb7dcac68011d2bcd65549ec39c7f80f3c792f0976f2506cb",
+      "bytes": 2712
+    }
+  ]
+}

@@ -1,151 +1,388 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  ExternalLink,
-  Link2,
-  Check,
-  Plus,
-  X,
-  Bookmark,
-  FileSearch,
-  ArrowDown,
-} from 'lucide-react';
-import { codePointLength, createAnchor } from '@domain/index';
-import type { TextAnchor, SearchHit } from '@domain/index';
+import { useEffect, useRef, useState } from 'react';
+import { Search, ExternalLink, Link2, X, Bookmark, FileSearch } from 'lucide-react';
+import { codePointLength } from '@domain/index';
+import type { TextAnchor } from '@domain/index';
+import { loadDocument } from '@/lib/corpus';
 import type { CorpusDocument, CorpusEntry } from '@/lib/corpus';
 import { useOriginalDocumentUrl } from '@/hooks/useOriginalDocumentUrl';
-import { anchorForBlocks, anchorFromDomSelection } from '@/lib/selection';
-import { useDocumentSearch } from '@/hooks/useDocumentSearch';
-import { HighlightedText } from './HighlightedText';
+import { anchorForBlocks, captureDomSelection, anchorFromSelectionSnapshot } from '@/lib/selection';
+import { openReader } from '@/lib/readerCorpus';
+import type { ReaderUnit } from '@/lib/readerCorpus';
 
-export function DocumentReader({
-  entry,
-  document: doc,
-  loading,
-  error,
-  selection,
-  onSelection,
-  onLink,
-  onSaveNote,
-  focusAnchor,
-  focusNonce,
-  onDetails,
-}: {
+type Handle = Awaited<ReturnType<typeof openReader>>;
+type Controller = InstanceType<Handle['controllerClass']>;
+type SearchResult = {
+  hits: { id: string; text: string; label?: string; locator?: string }[];
+  total: number;
+  page: number;
+  pages: number;
+};
+const escape = (value: unknown) =>
+  String(value ?? '').replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
+  );
+
+// Presentation adapter only: the scrolling, loading and search algorithms are the
+// unchanged RUDN modules. Canonical source text remains exactly inside its wrapper.
+function markedText(text: string, spans: readonly { start: number; end: number }[], query: string) {
+  const chars = Array.from(text),
+    bounds = [...new Set([0, chars.length, ...spans.flatMap((s) => [s.start, s.end])])].sort(
+      (a, b) => a - b,
+    );
+  const words = [...new Set(query.trim().split(/\s+/).filter(Boolean))].sort(
+    (a, b) => b.length - a.length,
+  );
+  const pattern = words.length
+    ? new RegExp(
+        '(' +
+          words
+            .map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/[её]/gi, '[её]'))
+            .join('|') +
+          ')',
+        'giu',
+      )
+    : null;
+  return bounds
+    .slice(0, -1)
+    .map((start, i) => {
+      const end = bounds[i + 1],
+        value = chars.slice(start, end).join('');
+      const html = pattern
+        ? value
+            .split(pattern)
+            .map((part, j) =>
+              j % 2 ? `<mark class="text-highlight search">${escape(part)}</mark>` : escape(part),
+            )
+            .join('')
+        : escape(value);
+      return spans.some((s) => s.start < end && s.end > start)
+        ? `<mark class="text-highlight focus">${html}</mark>`
+        : html;
+    })
+    .join('');
+}
+
+export function DocumentReader(props: {
   entry: CorpusEntry;
   document?: CorpusDocument;
   loading: boolean;
   error?: string;
   selection: TextAnchor | null;
   onSelection: (anchor: TextAnchor | null) => void;
+  onDocumentLoaded: (document: CorpusDocument) => void;
   onLink: () => void;
   onSaveNote: () => void;
   focusAnchor: TextAnchor | null;
   focusNonce: number;
   onDetails: () => void;
 }) {
-  const [query, setQuery] = useState('');
-  const [page, setPage] = useState(1);
-  const [pageDraft, setPageDraft] = useState('1');
-  const [expanded, setExpanded] = useState(false);
-  const [picked, setPicked] = useState<Set<string>>(new Set());
-  const [showResults, setShowResults] = useState(true);
-  const bodyRef = useRef<HTMLDivElement>(null);
-  const currentDocId = doc?.version.id;
-  const { result, pending } = useDocumentSearch(doc?.version, query);
-  const maxPage = Math.max(1, entry.pageCount);
-  useEffect(() => {
-    if (bodyRef.current) bodyRef.current.scrollTop = 0;
-  }, [page, currentDocId]);
-  const goPage = (n: number) => {
-    const next = Math.max(1, Math.min(maxPage, Math.floor(n) || 1));
-    setPage(next);
-    setPageDraft(String(next));
-    setExpanded(false);
-  };
-  useEffect(() => {
-    setQuery('');
-    setPage(1);
-    setPageDraft('1');
-    setExpanded(false);
-    setPicked(new Set());
-  }, [entry.id]);
-  useEffect(() => {
-    if (!doc || !focusAnchor || focusAnchor.versionId !== doc.version.id) return;
-    const block = doc.version.blocks.find((b) => b.id === focusAnchor.spans[0]?.blockId);
-    if (!block) return;
-    const target = block.pageStart ?? 1;
-    setPage(target);
-    setPageDraft(String(target));
-    setExpanded(
-      focusAnchor.spans.some(
-        (s) => (doc.version.blocks.find((b) => b.id === s.blockId)?.pageStart ?? target) > target,
-      ),
-    );
-    setShowResults(false);
-    const t = setTimeout(() => {
-      const el = bodyRef.current?.querySelector<HTMLElement>(
-        `[data-block-container="${CSS.escape(block.id)}"]`,
-      );
-      el?.scrollIntoView({
-        block: 'center',
-        behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
-      });
-    }, 50);
-    return () => clearTimeout(t);
-  }, [currentDocId, focusAnchor, focusNonce, doc]);
-  const pages = expanded && page < maxPage ? [page, page + 1] : [page];
-  const visible = useMemo(
-    () => doc?.version.blocks.filter((b) => pages.includes(b.pageStart ?? 1)) ?? [],
-    [doc, page, expanded],
-  );
-  const focus =
-    selection?.versionId === currentDocId
-      ? selection
-      : focusAnchor?.versionId === currentDocId
-        ? focusAnchor
-        : null;
-  function captureSelection() {
-    if (!doc || !bodyRef.current) return;
-    try {
-      const a = anchorFromDomSelection(bodyRef.current, doc.version, window.getSelection());
-      if (a) {
-        setPicked(new Set());
-        onSelection(a);
-      }
-    } catch {
-      /* A browser range interrupted by navigation is ignored; stored selections remain. */
+  const { entry, selection, focusAnchor, focusNonce, onDetails, onLink, onSaveNote } = props;
+  const latest = useRef(props);
+  latest.current = props;
+  const [query, setQuery] = useState(''),
+    [page, setPage] = useState(1),
+    [pageDraft, setPageDraft] = useState('1');
+  const [picked, setPicked] = useState<Set<string>>(new Set()),
+    [showResults, setShowResults] = useState(true);
+  const [result, setResult] = useState<SearchResult | null>(null),
+    [pending, setPending] = useState(false);
+  const [ready, setReady] = useState(0),
+    [loading, setLoading] = useState(true),
+    [error, setError] = useState<string>();
+  const [emptyPage, setEmptyPage] = useState<number | null>(null);
+  const readerRef = useRef<HTMLElement>(null),
+    bodyRef = useRef<HTMLDivElement>(null),
+    quoteOperation = useRef(0);
+  const active = useRef<{ handle: Handle; controller: Controller } | null>(null),
+    generation = useRef(0);
+  const ui = useRef({ query, picked, selection, focusAnchor });
+  ui.current = { query, picked, selection, focusAnchor };
+  const original = useOriginalDocumentUrl(entry);
+
+  function currentPage() {
+    const value = active.current;
+    if (!value) return;
+    const id = value.controller.capture()?.anchor?.id;
+    const unit = id ? value.handle.corpus.loadedUnits().get(id) : undefined;
+    if (unit?.pageStart) {
+      setPage(unit.pageStart);
+      setPageDraft(String(unit.pageStart));
     }
   }
-  function toggleBlock(id: string) {
-    if (!doc) return;
-    const next = new Set(picked);
+  function refresh() {
+    const value = active.current;
+    if (!value) return;
+    const { selection, focusAnchor, picked, query } = ui.current;
+    const focus =
+      selection?.versionId === entry.versionId
+        ? selection
+        : focusAnchor?.versionId === entry.versionId
+          ? focusAnchor
+          : null;
+    for (const element of bodyRef.current?.querySelectorAll<HTMLElement>('[data-unit]') ?? []) {
+      const unit = value.handle.corpus.loadedUnits().get(element.dataset.unit!);
+      if (!unit) continue;
+      const chosen = picked.has(unit.id);
+      element.classList.toggle('selected', chosen);
+      element.setAttribute('aria-pressed', String(chosen));
+      const button = element.querySelector<HTMLButtonElement>('.block-action');
+      if (button) {
+        button.setAttribute('aria-pressed', String(chosen));
+        button.setAttribute(
+          'aria-label',
+          `${chosen ? 'Убрать' : 'Выбрать'} фрагмент ${unit.order + 1}`,
+        );
+        button.textContent = chosen ? '✓ Выбран' : '+ Выбрать фрагмент';
+      }
+      const target = element.querySelector<HTMLElement>('[data-source-text]');
+      if (target)
+        target.innerHTML = markedText(
+          unit.text,
+          focus?.spans.filter((s) => s.blockId === unit.id) ?? [],
+          query,
+        );
+    }
+  }
+  useEffect(() => {
+    const token = ++generation.current,
+      abort = new AbortController();
+    let handle: Handle | undefined, controller: Controller | undefined;
+    setLoading(true);
+    setError(undefined);
+    setQuery('');
+    setResult(null);
+    setPending(false);
+    setPicked(new Set());
+    setPage(1);
+    setPageDraft('1');
+    setEmptyPage(null);
+    void openReader(entry, { signal: abort.signal })
+      .then((next) => {
+        handle = next;
+        if (abort.signal.aborted) {
+          next.corpus.release();
+          return;
+        }
+        const sourcePositions = new Map(
+          next.descriptor.units.map((unit, index) => [unit.id, index]),
+        );
+        const renderBlock = (block: { units: ReaderUnit[] }) => {
+          let html = '',
+            previousPage: number | undefined;
+          for (const unit of block.units) {
+            const p = unit.pageStart ?? 1;
+            if (next.descriptor.pageUnits[p] === unit.id) {
+              const position = sourcePositions.get(unit.id) ?? 0,
+                previous = next.descriptor.units[position - 1]?.pageStart ?? 0;
+              for (const gap of next.descriptor.emptyPages.filter((n) => n > previous && n < p))
+                html += `<p class="notice">На странице ${gap} нет извлечённого текста. Проверьте оригинальный PDF.</p>`;
+            }
+            if (p !== previousPage) {
+              if (previousPage !== undefined) html += '</article>';
+              html += `<article class="document-page" aria-label="Страница ${p}"><div class="page-label">Страница ${p}</div>`;
+              previousPage = p;
+            }
+            const chosen = ui.current.picked.has(unit.id),
+              focus =
+                ui.current.selection?.versionId === entry.versionId
+                  ? ui.current.selection
+                  : ui.current.focusAnchor?.versionId === entry.versionId
+                    ? ui.current.focusAnchor
+                    : null;
+            html += `<div class="document-block ${escape(unit.kind)} ${chosen ? 'selected' : ''}" data-unit="${escape(unit.id)}" data-block-container="${escape(unit.id)}" tabindex="-1" aria-pressed="${chosen}"><div class="block-text" data-source-text="true" data-block-id="${escape(unit.id)}">${markedText(unit.text, focus?.spans.filter((s) => s.blockId === unit.id) ?? [], ui.current.query)}</div><div class="block-tools"><button type="button" class="block-action" data-pick-block="${escape(unit.id)}" aria-pressed="${chosen}" aria-label="${chosen ? 'Убрать' : 'Выбрать'} фрагмент ${unit.order + 1}">${chosen ? '✓ Выбран' : '+ Выбрать фрагмент'}</button><span class="block-id">${codePointLength(unit.text).toLocaleString('ru')} знаков</span></div><span class="ll-check" aria-hidden="true" hidden>${chosen ? '✓' : ''}</span></div>`;
+          }
+          return html + (previousPage !== undefined ? '</article>' : '');
+        };
+        const app = {
+          state: { reader: {} },
+          corpus: next.corpus,
+          isLocked: () => false,
+          fail: (reason: unknown) => {
+            if (!abort.signal.aborted)
+              setError(reason instanceof Error ? reason.message : String(reason));
+          },
+        };
+        controller = new next.controllerClass(app, readerRef.current!, {
+          descriptor: next.descriptor,
+          selected: [],
+          correctIds: [],
+          review: false,
+          readonly: false,
+          renderBlock,
+          afterRender: () => currentPage(),
+        });
+        active.current = { handle: next, controller };
+        return controller.initialize(null).then(() => {
+          if (!abort.signal.aborted) {
+            setLoading(false);
+            setReady((n) => n + 1);
+          }
+        });
+      })
+      .catch((reason) => {
+        if (!abort.signal.aborted) {
+          setError(reason instanceof Error ? reason.message : String(reason));
+          setLoading(false);
+        }
+      });
+    const paper = bodyRef.current!;
+    let frame = 0;
+    paper.addEventListener(
+      'scroll',
+      () => {
+        if (!frame)
+          frame = requestAnimationFrame(() => {
+            frame = 0;
+            if (token === generation.current) currentPage();
+          });
+      },
+      { passive: true, signal: abort.signal },
+    );
+    return () => {
+      generation.current++;
+      quoteOperation.current++;
+      abort.abort();
+      cancelAnimationFrame(frame);
+      controller?.destroy();
+      handle?.corpus.release();
+      if (active.current?.handle === handle) active.current = null;
+    };
+  }, [entry.id, entry.versionId]);
+  useEffect(() => {
+    refresh();
+  }, [picked, selection, focusAnchor, query, ready]);
+  useEffect(() => {
+    const value = active.current;
+    if (!value || !focusAnchor || focusAnchor.versionId !== entry.versionId) return;
+    setShowResults(false);
+    setEmptyPage(null);
+    void value.controller
+      .navigate(focusAnchor.spans[0].blockId, { focus: false })
+      .then(() => currentPage())
+      .catch((reason) => setError(String(reason)));
+  }, [focusAnchor, focusNonce, ready, entry.versionId]);
+  useEffect(() => {
+    const value = active.current;
+    if (!value || query.trim().length < 2) {
+      value?.controller.cancelSearch();
+      setResult(null);
+      setPending(false);
+      return;
+    }
+    let cancelled = false;
+    setPending(true);
+    const timer = setTimeout(() => {
+      void value.controller
+        .search(query, 0)
+        .then((found) => {
+          if (!cancelled) {
+            setResult(found);
+            setPending(false);
+          }
+        })
+        .catch((reason) => {
+          if (!cancelled) {
+            setError(String(reason));
+            setPending(false);
+          }
+        });
+    }, 160);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      value.controller.cancelSearch();
+    };
+  }, [query, ready]);
+  async function material() {
+    const token = generation.current,
+      current = latest.current;
+    const next =
+      current.document?.entry.id === current.entry.id
+        ? current.document
+        : await loadDocument(current.entry);
+    if (token !== generation.current) return null;
+    latest.current.onDocumentLoaded(next);
+    return next;
+  }
+  async function captureSelection() {
+    if (!bodyRef.current) return;
+    const token = generation.current,
+      operation = ++quoteOperation.current;
+    try {
+      const snapshot = captureDomSelection(bodyRef.current, window.getSelection());
+      if (!snapshot) return;
+      const doc = await material();
+      if (!doc || operation !== quoteOperation.current) return;
+      const anchor = anchorFromSelectionSnapshot(doc.version, snapshot);
+      if (anchor) {
+        ui.current.picked = new Set();
+        setPicked(new Set());
+        latest.current.onSelection(anchor);
+      }
+    } catch (reason) {
+      if (token === generation.current && operation === quoteOperation.current)
+        setError(reason instanceof Error ? reason.message : String(reason));
+    }
+  }
+  async function toggleBlock(id: string) {
+    const token = generation.current,
+      operation = ++quoteOperation.current,
+      next = new Set(ui.current.picked);
     if (next.has(id)) next.delete(id);
     else next.add(id);
+    ui.current.picked = next;
     setPicked(next);
-    onSelection(anchorForBlocks(doc.version, next));
-    window.getSelection()?.removeAllRanges();
+    try {
+      const doc = await material();
+      if (!doc || operation !== quoteOperation.current) return;
+      latest.current.onSelection(anchorForBlocks(doc.version, next));
+      window.getSelection()?.removeAllRanges();
+    } catch (reason) {
+      if (token === generation.current && operation === quoteOperation.current)
+        setError(reason instanceof Error ? reason.message : String(reason));
+    }
   }
-  function pickHit(hit: SearchHit) {
-    if (!doc) return;
-    const a = createAnchor(doc.version, [{ blockId: hit.blockId, start: hit.start, end: hit.end }]);
-    onSelection(a);
-    setPicked(new Set());
-    goPage(hit.pageStart ?? 1);
+  async function navigate(id: string) {
+    setEmptyPage(null);
     setShowResults(false);
-    setTimeout(
-      () =>
-        bodyRef.current
-          ?.querySelector<HTMLElement>(`[data-block-container="${CSS.escape(hit.blockId)}"]`)
-          ?.scrollIntoView({ block: 'center' }),
-      30,
-    );
+    try {
+      await active.current?.controller.navigate(id, { focus: false });
+      currentPage();
+    } catch (reason) {
+      setError(String(reason));
+    }
   }
-  const original = useOriginalDocumentUrl(entry);
+  function goPage(raw: number) {
+    const next = Math.max(1, Math.min(Math.max(1, entry.pageCount), Math.floor(raw) || 1));
+    setPage(next);
+    setPageDraft(String(next));
+    const value = active.current;
+    if (!value) return;
+    const id = value.handle.descriptor.pageUnits[next];
+    if (id) void navigate(id);
+    else setEmptyPage(next);
+  }
+  async function searchPage(next: number) {
+    const value = active.current;
+    if (!value) return;
+    setPending(true);
+    try {
+      const found = await value.controller.search(query, next);
+      if (active.current === value) setResult(found);
+    } catch (reason) {
+      setError(String(reason));
+    } finally {
+      if (active.current === value) setPending(false);
+    }
+  }
   return (
-    <section className="panel reader-panel" aria-label="Полный текст программы">
-      <header className="reader-top">
+    <section
+      ref={readerRef}
+      className="panel reader-panel continuous-reader"
+      aria-label="Полный текст программы"
+    >
+      <header className="reader-top ll-reader-dock">
         <p className="reader-region">
           {entry.territory}
           {entry.status === 'review-required' ? (
@@ -173,43 +410,26 @@ export function DocumentReader({
                 setQuery(e.target.value);
                 setShowResults(true);
               }}
-              disabled={!doc}
+              disabled={loading}
             />
           </div>
           <div className="page-picker">
-            <button
-              className="icon-button"
-              aria-label="Предыдущая страница"
-              disabled={page <= 1 || !doc}
-              onClick={() => goPage(page - 1)}
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <label htmlFor="reader-page" className="sr-only">
-              Номер страницы
-            </label>
+            <label htmlFor="reader-page">Стр.</label>
             <input
               id="reader-page"
               className="input"
               inputMode="numeric"
               aria-label="Номер страницы"
+              title="Перейти к странице оригинала"
               value={pageDraft}
               onChange={(e) => setPageDraft(e.target.value.replace(/\D/g, ''))}
               onBlur={() => goPage(Number(pageDraft))}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') goPage(Number(pageDraft));
+                if (e.key === 'Enter') e.currentTarget.blur();
               }}
-              disabled={!doc}
+              disabled={loading}
             />
-            <span>из {maxPage}</span>
-            <button
-              className="icon-button"
-              aria-label="Следующая страница"
-              disabled={page >= maxPage || !doc}
-              onClick={() => goPage(page + 1)}
-            >
-              <ChevronRight size={16} />
-            </button>
+            <span>из {entry.pageCount}</span>
           </div>
           {original ? (
             <a
@@ -230,10 +450,10 @@ export function DocumentReader({
                 {pending
                   ? 'Поиск по всему документу…'
                   : result
-                    ? `Найдено ${result.totalMatches}${result.truncated ? ' · первые 150' : ''}`
+                    ? `Найдено ${result.total}`
                     : 'Совпадений нет'}
               </span>
-              {result && result.totalMatches > 0 ? (
+              {result?.total ? (
                 <button
                   className="button button-quiet small"
                   onClick={() => setShowResults(!showResults)}
@@ -242,140 +462,112 @@ export function DocumentReader({
                 </button>
               ) : null}
             </div>
-            {showResults && result && result.hits.length > 0 ? (
+            {showResults && result?.hits.length ? (
               <div className="search-results" aria-label="Результаты поиска по всему документу">
                 {result.hits.map((hit) => (
-                  <button key={hit.id} className="search-result" onClick={() => pickHit(hit)}>
-                    <strong>Страница {hit.pageStart ?? '—'}</strong>
-                    <span>
-                      {hit.before}
-                      <mark className="text-highlight search">{hit.exact}</mark>
-                      {hit.after}
-                    </span>
+                  <button
+                    key={hit.id}
+                    className="search-result"
+                    onClick={() => void navigate(hit.id)}
+                  >
+                    <strong>{hit.label || hit.locator}</strong>
+                    <span>{hit.text}</span>
                   </button>
                 ))}
+                {result.pages > 1 ? (
+                  <div className="inline-actions">
+                    <button
+                      className="button small"
+                      disabled={!result.page || pending}
+                      onClick={() => void searchPage(result.page - 1)}
+                    >
+                      Назад
+                    </button>
+                    <span>
+                      {result.page + 1} / {result.pages}
+                    </span>
+                    <button
+                      className="button small"
+                      disabled={result.page + 1 >= result.pages || pending}
+                      onClick={() => void searchPage(result.page + 1)}
+                    >
+                      Далее
+                    </button>
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </div>
         ) : null}
+        {emptyPage ? (
+          <p className="notice">
+            На странице {emptyPage} нет извлечённого текста. Проверьте оригинальный PDF: здесь может
+            находиться изображение или скан.
+          </p>
+        ) : null}
       </header>
       {loading ? (
-        <div className="document-pages" aria-busy="true" aria-label="Загрузка текста">
+        <div className="reader-loading" aria-busy="true" aria-label="Загрузка текста">
           <div className="skeleton heading" />
-          {Array.from({ length: 10 }, (_, i) => (
-            <div key={i} className={`skeleton ${i % 3 ? 'wide' : 'short'}`} />
+          {Array.from({ length: 5 }, (_, i) => (
+            <div key={i} className="skeleton wide" />
           ))}
         </div>
-      ) : error ? (
-        <div className="empty-document">
-          <FileSearch size={32} color="#7f9cbd" />
-          <h2>Материал пока недоступен</h2>
-          <p>{error}</p>
-          {original ? (
-            <a className="button button-secondary" href={original} target="_blank" rel="noreferrer">
-              <ExternalLink size={15} />
-              Открыть исходный файл
-            </a>
-          ) : null}
+      ) : null}
+      {error || props.error ? (
+        <div className="empty-document" role="alert">
+          <FileSearch size={24} />
+          <p>{error || props.error}</p>
           <button className="button button-quiet" onClick={onDetails}>
             Посмотреть паспорт
           </button>
         </div>
-      ) : doc ? (
-        <>
-          <div
-            ref={bodyRef}
-            className="document-pages"
-            onMouseUp={captureSelection}
-            onKeyUp={captureSelection}
-            onTouchEnd={() => setTimeout(captureSelection, 80)}
-          >
-            {pages.map((p) => (
-              <article className="document-page" key={p} aria-label={`Страница ${p}`}>
-                <div className="page-label">Страница {p}</div>
-                {visible
-                  .filter((b) => (b.pageStart ?? 1) === p)
-                  .map((b) => (
-                    <div
-                      key={b.id}
-                      className={`document-block ${b.kind} ${picked.has(b.id) ? 'selected' : ''}`}
-                      data-block-container={b.id}
-                    >
-                      <div className="block-text" data-source-text="true" data-block-id={b.id}>
-                        <HighlightedText
-                          text={b.text}
-                          spans={focus?.spans.filter((s) => s.blockId === b.id) ?? []}
-                          hits={result?.hits.filter((h) => h.blockId === b.id) ?? []}
-                        />
-                      </div>
-                      <div className="block-tools">
-                        <button
-                          className="block-action"
-                          aria-pressed={picked.has(b.id)}
-                          aria-label={`${picked.has(b.id) ? 'Убрать' : 'Выбрать'} фрагмент ${b.order + 1}`}
-                          onClick={() => toggleBlock(b.id)}
-                        >
-                          {picked.has(b.id) ? <Check size={12} /> : <Plus size={12} />}{' '}
-                          {picked.has(b.id) ? 'Выбран' : 'Выбрать фрагмент'}
-                        </button>
-                        <span className="block-id">
-                          {codePointLength(b.text).toLocaleString('ru')} знаков
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                {!visible.some((b) => (b.pageStart ?? 1) === p) ? (
-                  <p className="notice">
-                    На странице нет извлечённого текста. Проверьте оригинальный PDF: здесь может
-                    находиться изображение или скан.
-                  </p>
-                ) : null}
-              </article>
-            ))}
-            {page < maxPage && !expanded ? (
-              <button
-                className="button button-secondary small next-page"
-                onClick={() => setExpanded(true)}
-              >
-                <ArrowDown size={14} />
-                Показать следующую страницу рядом
-              </button>
-            ) : null}
+      ) : null}
+      <div
+        ref={bodyRef}
+        className="document-pages ll-paper"
+        tabIndex={0}
+        aria-label="Текст документа"
+        onMouseUp={() => void captureSelection()}
+        onKeyUp={() => void captureSelection()}
+        onTouchEnd={() => setTimeout(() => void captureSelection(), 80)}
+        onClick={(e) => {
+          const button = (e.target as Element).closest<HTMLElement>('[data-pick-block]');
+          if (button) void toggleBlock(button.dataset.pickBlock!);
+        }}
+      />
+      {selection && selection.versionId === entry.versionId ? (
+        <div className="selection-toolbar">
+          <div>
+            <strong>Выбрано фрагментов: {selection.spans.length}</strong>
+            <span>Цитата привязана к редакции источника</span>
           </div>
-          {selection && selection.versionId === currentDocId ? (
-            <div className="selection-toolbar">
-              <div>
-                <strong>Выбрано фрагментов: {selection.spans.length}</strong>
-                <span>Цитата привязана к редакции источника</span>
-              </div>
-              <div className="inline-actions">
-                <button
-                  className="icon-button"
-                  aria-label="Сохранить цитату без карточки"
-                  title="Сохранить цитату без карточки"
-                  onClick={onSaveNote}
-                >
-                  <Bookmark size={16} />
-                </button>
-                <button className="button button-primary small" onClick={onLink}>
-                  <Link2 size={14} />
-                  Связать
-                </button>
-                <button
-                  className="icon-button"
-                  aria-label="Снять выделение"
-                  onClick={() => {
-                    onSelection(null);
-                    setPicked(new Set());
-                    window.getSelection()?.removeAllRanges();
-                  }}
-                >
-                  <X size={15} />
-                </button>
-              </div>
-            </div>
-          ) : null}
-        </>
+          <div className="inline-actions">
+            <button
+              className="icon-button"
+              aria-label="Сохранить цитату без карточки"
+              title="Сохранить цитату без карточки"
+              onClick={onSaveNote}
+            >
+              <Bookmark size={16} />
+            </button>
+            <button className="button button-primary small" onClick={onLink}>
+              <Link2 size={14} />
+              Связать
+            </button>
+            <button
+              className="icon-button"
+              aria-label="Снять выделение"
+              onClick={() => {
+                props.onSelection(null);
+                setPicked(new Set());
+                window.getSelection()?.removeAllRanges();
+              }}
+            >
+              <X size={15} />
+            </button>
+          </div>
+        </div>
       ) : null}
     </section>
   );
