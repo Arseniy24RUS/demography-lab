@@ -1,0 +1,190 @@
+.workshop-header {
+  --header-ink: #18395e;
+  --header-muted: #4b627e;
+  --header-line: #dce6f1;
+  position: sticky;
+  top: 0;
+  z-index: 18;
+  min-width: 0;
+  background: #fff;
+  border-bottom: 1px solid #cbd9e8;
+  box-shadow: 0 3px 16px #1d35520b;
+}
+.workshop-header-main,
+.workshop-header-navigation {
+  padding-inline: clamp(14px, 3.2vw, 42px);
+}
+.workshop-header-main {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  align-items: center;
+  gap: 8px 15px;
+  padding-block: 10px;
+}
+.workshop-header-brand {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: 10px;
+  max-width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--header-ink);
+  font: inherit;
+  font-size: clamp(.96rem, 1.8vw, 1.25rem);
+  font-weight: 750;
+  line-height: 1.16;
+  text-align: left;
+  letter-spacing: -.024em;
+  cursor: pointer;
+}
+.workshop-header-brand img { flex: none; }
+.workshop-header-brand > span { word-break: normal; overflow-wrap: anywhere; }
+.workshop-header-utilities,
+.workshop-header-tools {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.workshop-header-tools > .icon-button {
+  width: 37px;
+  height: 37px;
+  color: #38587a;
+}
+.workshop-header-toggle { display: none; }
+.workshop-header-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 47px;
+  gap: 7px;
+  background: #f7faff;
+  border-top: 1px solid #edf2f8;
+}
+.workshop-header-stages {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 3px clamp(3px, .65vw, 10px);
+  min-width: 0;
+}
+.workshop-header-stages button,
+.workshop-header-toggle,
+.workshop-materials-toggle,
+.workshop-materials-links button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 7px;
+  min-height: 36px;
+  padding: 6px clamp(7px, 1vw, 13px);
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--header-ink);
+  font: inherit;
+  font-size: .88rem;
+  font-weight: 650;
+  line-height: 1.22;
+  cursor: pointer;
+  text-align: left;
+}
+.workshop-header .workshop-header-toggle { display: none; }
+.workshop-header-stages button svg { flex: none; color: #3e648d; }
+.workshop-header-stages button:hover,
+.workshop-materials-toggle:hover,
+.workshop-materials-links button:hover { background: #eaf2fc; }
+.workshop-header-stages button[aria-current='page'] {
+  background: #1c4776;
+  color: #fff;
+}
+.workshop-header-stages button[aria-current='page'] svg { color: #dcecff; }
+.workshop-header :is(button, a):focus-visible {
+  outline: 2px solid #4386cd;
+  outline-offset: 2px;
+}
+.workshop-header-materials { position: relative; flex: none; }
+.workshop-materials-toggle {
+  color: var(--header-muted);
+  background: #fff;
+  border-color: var(--header-line);
+}
+.workshop-materials-toggle[aria-expanded='true'] > svg:last-child { transform: rotate(180deg); }
+.workshop-materials-links {
+  position: absolute;
+  min-width: 190px;
+  display: grid;
+  gap: 2px;
+  z-index: 1;
+  inset: calc(100% + 8px) 0 auto auto;
+  padding: 6px;
+  border: 1px solid #d0ddeb;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 6px 20px #27496a20;
+}
+.workshop-materials-links[hidden] { display: none; }
+.workshop-materials-links button[aria-current='page'] { background: #e7f1ff; }
+.workshop-factor-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 0 14px;
+  gap: 6px;
+}
+.workshop-factor-tabs button {
+  min-height: 40px;
+  padding: 7px 12px;
+  border: 1px solid #d3e0ed;
+  border-radius: 8px;
+  background: #fff;
+  color: #25496f;
+  font: inherit;
+  font-size: .9rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+.workshop-factor-tabs button[aria-current='page'] { background: #e8f2ff; border-color: #87afd7; color: #173f6a; }
+.workshop-factor-tabs button:focus-visible { outline: 2px solid #4386cd; outline-offset: 2px; }
+
+@media (max-width: 860px) {
+  .workshop-header .workshop-header-toggle {
+    display: inline-flex;
+    min-height: 40px;
+    justify-content: center;
+    background: #edf4fd;
+    border-color: #ccdef0;
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .workshop-header-brand img { width: 34px; height: 34px; }
+  .workshop-header-main { gap: 5px 9px; padding-block: 8px; }
+  .workshop-header-utilities { grid-column: 1 / -1; justify-content: space-between; }
+  .workshop-header-utilities .header-account { flex: 1; justify-content: flex-start; }
+  .workshop-header-utilities .account-profile { flex: 1; }
+  .workshop-header-utilities .account-name {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .workshop-header-utilities .account-sign-out,
+  .workshop-header-utilities .account-sign-in { margin: 0; }
+  .workshop-header-navigation {
+    display: none;
+    max-height: min(64dvh, 540px);
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    padding-block: 8px;
+  }
+  .workshop-header-navigation[data-open='true'] { display: grid; gap: 8px; }
+  .workshop-header-stages { display: grid; grid-template-columns: minmax(0,1fr); gap: 4px; }
+  .workshop-header-stages button { min-height: 44px; width: 100%; padding: 9px 12px; font-size: .97rem; }
+  .workshop-header-materials { border-top: 1px solid var(--header-line); padding-top: 7px; }
+  .workshop-materials-toggle { width: 100%; min-height: 42px; }
+  .workshop-materials-toggle > svg:last-child { margin-left: auto; }
+  .workshop-materials-links { position: static; min-width: 0; margin-top: 4px; box-shadow: none; }
+}

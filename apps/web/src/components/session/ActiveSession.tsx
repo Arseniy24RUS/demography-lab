@@ -1,6 +1,7 @@
-import { useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { WorkshopActions, WorkshopView } from '../workshop/workshop-ui';
+import { isFactorStage, type WorkshopStage } from '@/lib/workshop-navigation';
 import { ArrowLeft, FileText, RefreshCw } from 'lucide-react';
 import { Modal } from '@/components/Modal';
 import type {
@@ -27,7 +28,6 @@ export interface PracticeGrouping {
   saveFamily: WorkshopActions['saveFamily'];
 }
 
-type SessionView = 'flipchart' | 'objective' | 'regions' | 'board' | 'barriers' | 'solutions' | 'roadmaps';
 type PracticeView = 'voting' | 'publications' | 'families';
 
 export function ActiveSession({
@@ -35,6 +35,9 @@ export function ActiveSession({
   snapshot,
   actions,
   regions,
+  workspaceView,
+  workshopVisit,
+  onStage,
   renderWorkshop,
   renderBarriers,
   renderSolutions,
@@ -48,6 +51,9 @@ export function ActiveSession({
   snapshot: SessionSnapshot;
   actions: SessionAreaActions;
   regions: SessionRegionOption[];
+  workspaceView: WorkshopStage;
+  workshopVisit: number;
+  onStage(stage: WorkshopStage): void;
   renderWorkshop?: (view: WorkshopView) => ReactNode;
   renderBarriers?: () => ReactNode;
   renderSolutions?: () => ReactNode;
@@ -65,21 +71,15 @@ export function ActiveSession({
   const [error, setError] = useState('');
   const [working, setWorking] = useState(false);
   const [contextOpen, setContextOpen] = useResponsiveDisclosure();
-  const [workspaceView, setWorkspaceView] = useState<SessionView>(renderFlipchart ? 'flipchart' : 'board');
   const defaultPracticeView = renderLiveVotes ? 'voting' : 'publications';
   const [practiceView, setPracticeView] = useState<PracticeView>(defaultPracticeView);
   const showPublications = workspaceView === 'board' && practiceView === 'publications';
   const workshopView = workspaceView === 'regions'
     ? 'regions'
     : workspaceView === 'board' && practiceView !== 'publications' ? practiceView : null;
-  const sceneNavigation = useRef<HTMLElement>(null);
-  function selectWorkspace(next: SessionView) {
-    setWorkspaceView(next);
-    if (next === 'board') setPracticeView(defaultPracticeView);
-    if (state.notice && !state.error) actions.clearError();
-    if (next === 'objective' || next === 'barriers' || next === 'solutions' || next === 'roadmaps')
-      requestAnimationFrame(() => sceneNavigation.current?.scrollIntoView({ block: 'start' }));
-  }
+  useEffect(() => {
+    setPracticeView(defaultPracticeView);
+  }, [workshopVisit, defaultPracticeView]);
   const disabled = state.busy !== null || working;
   const isHost = session.role === 'host';
   const canContribute =
@@ -163,34 +163,13 @@ export function ActiveSession({
           {error}
         </p>
       ) : null}
-      {renderWorkshop ? (
-        <nav
-          className="workshop-scene-tabs"
-          ref={sceneNavigation}
-          aria-label="Этапы коллективной работы"
-        >
-          {(
-            [
-              ...(renderFlipchart ? ([['flipchart', 'Субъективные факторы']] as const) : []),
-              ...(renderObjectiveFactors ? ([['objective', 'Объективные факторы']] as const) : []),
-              ...(renderBarriers ? ([['barriers', 'Барьеры']] as const) : []),
-              ['regions', 'Программы'],
-              ['board', 'Практики'],
-              ...(renderSolutions ? ([['solutions', 'Решения']] as const) : []),
-              ...(renderRoadmaps ? ([['roadmaps', 'Дорожные карты']] as const) : []),
-            ] as const
-          ).map(([key, label]) => (
-            <button
-              key={key}
-              className={workspaceView === key ? 'active' : ''}
-              aria-current={workspaceView === key ? 'page' : undefined}
-              onClick={() => selectWorkspace(key)}
-            >
-              {label}
-            </button>
-          ))}
-        </nav>
-      ) : null}
+      {isFactorStage(workspaceView) ? <nav className="workshop-factor-tabs" aria-label="Виды факторов">
+        {([
+          ['flipchart', 'Субъективные факторы', renderFlipchart],
+          ['objective', 'Объективные факторы', renderObjectiveFactors],
+        ] as const).map(([key, label, available]) => available ? <button type="button" key={key}
+          aria-current={workspaceView === key ? 'page' : undefined} onClick={() => onStage(key)}>{label}</button> : null)}
+      </nav> : null}
       {workspaceView === 'board' && renderWorkshop ? (
         <div className="practice-board-controls" role="group" aria-label="Виды практик">
           {practiceViews.map(([key, label]) => (
@@ -393,7 +372,7 @@ export function ActiveSession({
               </p>
               {filter !== 'withdrawn' ? (
                 <button className="button button-secondary" onClick={
-                  renderWorkshop ? () => selectWorkspace('regions') : actions.openLocalWork
+                  renderWorkshop ? () => onStage('regions') : actions.openLocalWork
                 }>
                   {renderWorkshop ? 'Перейти к программам' : 'Открыть документы'}
                   <ArrowLeft size={16} className="session-arrow-forward" />

@@ -62,6 +62,7 @@ export interface RoadmapPassportData {
   startDate: string | null;
   endDate: string | null;
   expectedResult: string;
+  /** Retained in stored passports and immutable snapshots for backward compatibility. */
   defenseDate: string | null;
   humanResources: string;
   materialResources: string;

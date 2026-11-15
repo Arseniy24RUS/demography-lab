@@ -67,11 +67,13 @@ describe('immutable roadmap export', () => {
     expect(json.calculations.budget.totals.confirmedGapKopecks).toBe(22000000);
     expect(json.calculations.scenarios[0].result.baselineYear).toBe(2022);
     expect(json.snapshot.series[0].points.at(-1)).toEqual({ year: 2023, value: null });
+    expect(json.snapshot.items.find((row: { kind: string }) => row.kind === 'passport').data.defenseDate).toBe('2026-11-10');
     const paragraphs = prepared.blocks
       .map((block) => (block.kind === 'paragraph' ? `${block.label}: ${block.text}` : ''))
       .join('\n');
     expect(paragraphs).toContain('Блок block-1; символы [0,');
     expect(paragraphs).toContain('Архивный пример риска');
+    expect(paragraphs).not.toContain('Дата защиты');
     expect(paragraphs).not.toMatch(/страница 1/u);
   });
 
@@ -115,6 +117,7 @@ describe('immutable roadmap export', () => {
     expect(document).toContain('200 рублей за час');
     expect(document).toContain('350 рублей за час');
     expect(document).toContain('Порядок обращения определяется отдельно.');
+    expect(document).not.toContain('Дата защиты');
     expect(document).toContain('w:tblHeader');
     expect(document).toContain('w:color="D9D9D9"');
     expect(document).toContain('w:pStyle'); // paragraph styles remain native editable OOXML

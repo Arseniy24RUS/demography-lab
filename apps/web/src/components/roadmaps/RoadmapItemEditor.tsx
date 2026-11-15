@@ -46,7 +46,6 @@ const fields: Record<RoadmapItemKind, Field[]> = {
     date('startDate', 'Начало проекта'),
     date('endDate', 'Окончание проекта'),
     f('expectedResult', 'Ожидаемый результат'),
-    date('defenseDate', 'Дата защиты'),
     f('humanResources', 'Кадровые ресурсы'),
     f('materialResources', 'Материальные ресурсы'),
     f('informationResources', 'Информационные ресурсы'),

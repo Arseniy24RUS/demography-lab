@@ -160,10 +160,9 @@ function PassportForm({ item, snapshot, controller, editable }: Omit<RoadmapWork
 
       <div className="rm-passport-card">
         <h4>Сроки и ресурсы</h4>
-        <div className="rm-form-grid rm-passport-dates">
+        <div className="rm-form-grid">
           <DateField label="Начало проекта" value={data.startDate} onChange={(startDate) => update({ startDate })} />
           <DateField label="Окончание проекта" value={data.endDate} onChange={(endDate) => update({ endDate })} />
-          <DateField label="Дата защиты" value={data.defenseDate} onChange={(defenseDate) => update({ defenseDate })} />
         </div>
         <div className="rm-form-grid">
           <TextField label="Кадровые ресурсы" value={data.humanResources}

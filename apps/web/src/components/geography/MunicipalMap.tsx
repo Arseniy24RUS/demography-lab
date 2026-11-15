@@ -142,7 +142,9 @@ function MunicipalCanvas({ map, regionName, registry, selectedKey, onSelect, sel
       </g>
       <g aria-hidden="true">
         {labels.map((label) => {
-          const selectable = canPick(label.key);
+          // A label inside its shape leaves the polygon clickable. A moved label
+          // still selects its own territory from the end of the leader line.
+          const selectable = Boolean(label.leader) && canPick(label.key);
           return <text key={label.key} x={label.x} y={label.y}
             style={{ fontSize: label.fontSize, strokeWidth: 2.5 / pixelsPerUnit }}
             textAnchor="middle" dominantBaseline="central" className="rm-map-label"

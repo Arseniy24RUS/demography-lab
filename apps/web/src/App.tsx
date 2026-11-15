@@ -43,6 +43,8 @@ import { CardEditor } from './components/CardEditor';
 import type { CardForm } from './components/CardEditor';
 import { SourceDetails } from './components/SourceDetails';
 import { AccountControls } from './components/session/AccountControls';
+import { WorkshopHeader } from './components/WorkshopHeader';
+import { isFactorStage, readWorkshopStage, type FactorStage, type ReferenceView, type WorkshopStage } from './lib/workshop-navigation';
 import { useSession } from './hooks/useSession';
 import { useWorkshop } from './hooks/useWorkshop';
 import { useBarriers } from './hooks/useBarriers';
@@ -80,7 +82,7 @@ const sessionLoading = (
   </main>
 );
 
-type View = 'documents' | 'practices' | 'work' | 'sessions' | 'territories';
+type View = 'sessions' | ReferenceView;
 type MobilePane = 'library' | 'document' | 'evidence';
 type Toast = { message: string; error?: boolean };
 export function App() {
@@ -97,7 +99,11 @@ export function App() {
   const [versions, setVersions] = useState<DocumentVersion[]>([]);
   const [route] = useState(() => new URLSearchParams(location.hash.slice(1)));
   const [projectorMode, setProjectorMode] = useState(() => route.get('projector') === '1');
-  const [view, setView] = useState<View>(() => route.has('documents') ? 'documents' : 'sessions');
+  const [view, setView] = useState<View>(() => route.has('documents') || route.has('document') ? 'documents' : 'sessions');
+  const [workshopStage, setWorkshopStage] = useState(() => readWorkshopStage(route.get('stage')));
+  const [workshopVisit, setWorkshopVisit] = useState(0);
+  const [factorStage, setFactorStage] = useState<FactorStage>(() =>
+    workshopStage === 'objective' ? 'objective' : 'flipchart');
   const [programmeReader, setProgrammeReader] = useState(false);
   const programmeScroll = useRef(0);
   const [mobilePane, setMobilePane] = useState<MobilePane>('document');
@@ -122,6 +128,19 @@ export function App() {
     (e: unknown) => notify(e instanceof Error ? e.message : 'Не удалось выполнить действие.', true),
     [notify],
   );
+  function workshopAddress(stage: WorkshopStage) {
+    const address = stage === 'flipchart' ? 'sessions=1' : `sessions=1&stage=${stage}`;
+    history.replaceState(null, '', `#${address}`);
+  }
+  function openWorkshopStage(stage: WorkshopStage, scroll = true) {
+    setWorkshopStage(stage);
+    setWorkshopVisit(visit => visit + 1);
+    if (isFactorStage(stage)) setFactorStage(stage);
+    setProgrammeReader(false);
+    setView('sessions');
+    workshopAddress(stage);
+    if (scroll) requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+  }
   const session = useSession({
     onOpenSource: (anchor) => {
       void openAnchor(anchor);
@@ -433,8 +452,7 @@ export function App() {
       );
       setShareDraft(null);
       if (!programmeReader) {
-        history.replaceState(null, '', `${location.pathname}#sessions=1`);
-        setView('sessions');
+        openWorkshopStage('board');
       }
       notify('Практика с цитатами сохранена в общей работе.');
     } catch (e) {
@@ -498,11 +516,7 @@ export function App() {
           onExit={() => {
             setProjectorMode(false);
             setView('sessions');
-            history.replaceState(
-              null,
-              '',
-              `${location.pathname}#sessions=1`,
-            );
+            workshopAddress(workshopStage);
           }}
         />
       </Suspense>
@@ -515,36 +529,16 @@ export function App() {
       <a className="skip-link" href="#main-content">
         Перейти к рабочей области
       </a>
-      <header className="topbar">
-        <div className="brand">
-          <img className="institute-logo" src={`${import.meta.env.BASE_URL}favicon.svg`}
-            width={48} height={48} alt="Институт социальной демографии ФНИСЦ РАН" />
-          <span>Демографическая мастерская</span>
-        </div>
-        <nav className="topnav" aria-label="Основная навигация">
-          {(
-            [
-              ['sessions', 'Мастерская'],
-              ['documents', 'Документы'],
-              ['practices', 'Практики'],
-              ['territories', 'Территории'],
-              ['work', 'Моя работа'],
-            ] as const
-          ).map(([key, label]) => (
-            <button
-              key={key}
-              className={`nav-button ${view === key ? 'active' : ''}`}
-              aria-current={view === key ? 'page' : undefined}
-              onClick={() => {
-                setProgrammeReader(false);
-                setView(key);
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </nav>
-        <div className="top-actions">
+      <WorkshopHeader activeStage={view === 'sessions' ? workshopStage : undefined}
+        reference={view === 'sessions' ? undefined : view}
+        onStage={stage => openWorkshopStage(stage === 'flipchart' ? factorStage : stage)}
+        onHome={() => openWorkshopStage('flipchart')}
+        onReference={reference => {
+          setProgrammeReader(false);
+          setView(reference);
+          requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+        }}
+        tools={<>
           {currentWorkshop?.role === 'host' ? (
             <HostControls key={currentWorkshop.id} session={currentWorkshop} busy={session.state.busy !== null}
               actions={session.actions} regions={sessionRegions} />
@@ -557,19 +551,11 @@ export function App() {
             <HelpCircle size={19} />
           </button>
 
-        </div>
-        <AccountControls state={session.state} actions={session.actions}
-          onOpenEntry={() => {
-            setView('sessions');
-            history.replaceState(null, '', `${location.pathname}#sessions=1`);
-          }}
-          onSignedOut={() => {
-            setProgrammeReader(false);
-            setView('sessions');
-            history.replaceState(null, '', `${location.pathname}#sessions=1`);
-          }}
-          onError={fail} />
-      </header>
+        </>}
+        account={<AccountControls state={session.state} actions={session.actions}
+          onOpenEntry={() => openWorkshopStage(workshopStage)}
+          onSignedOut={() => openWorkshopStage('flipchart')}
+          onError={fail} />} />
       {view !== 'sessions' ? (
         <section className="page-intro">
           <div>
@@ -579,9 +565,7 @@ export function App() {
           {view === 'documents' && programmeReader ? (
             <div className="programme-reader-actions">
               <button type="button" className="button button-secondary" onClick={() => {
-                setProgrammeReader(false);
-                setView('sessions');
-                history.replaceState(null, '', `${location.pathname}#sessions=1`);
+                openWorkshopStage('regions', false);
                 requestAnimationFrame(() => window.scrollTo({ top: programmeScroll.current, behavior: 'instant' }));
               }}>
                 <ArrowLeft size={17} aria-hidden="true" />
@@ -719,7 +703,7 @@ export function App() {
           signedIn={session.state.auth.status === 'signed-in'}
           legacyCount={legacyCount}
           onAdoptLegacy={() => void adoptLegacy().catch(fail)}
-          onOpenSession={() => setView('sessions')}
+          onOpenSession={() => openWorkshopStage(workshopStage)}
         />
       ) : null}
       {view === 'sessions' || (view === 'documents' && programmeReader) ? (
@@ -729,6 +713,9 @@ export function App() {
             mainContentId={view === 'sessions' ? 'main-content' : 'programme-workspace'}
             state={session.state}
             actions={session.actions}
+            workshopStage={workshopStage}
+            workshopVisit={workshopVisit}
+            onStage={openWorkshopStage}
             practiceGrouping={workshop.snapshot
               ? { snapshot: workshop.snapshot, saveFamily: workshop.actions.saveFamily }
               : undefined}
@@ -811,7 +798,7 @@ export function App() {
             : saving
               ? 'Сохраняем работу…'
               : workspaceTarget === 'offline'
-                ? 'Работа сохраняется на Mac преподавателя'
+                ? 'Работа сохраняется на сервере мастерской'
                 : workspaceTarget === 'cloud'
                   ? 'Работа сохраняется в вашем профиле'
                   : 'Заметки в этом браузере · войдите для сохранения в профиле'}

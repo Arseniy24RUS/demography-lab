@@ -5,6 +5,8 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { openRuntime } from '../../scripts/offline/storage.mjs';
 import { startServer } from '../../scripts/offline/server.mjs';
+import { unzipSync } from 'fflate';
+import { factorLinks, headerMenu, openReference, openStage as scene, revealHeader, stageLinks as scenes } from './workshop-nav.mjs';
 
 const port = Number(process.env.DW_SHARED_BROWSER_PORT ?? 8895);
 const surveyPort = Number(process.env.DW_SHARED_SURVEY_PORT ?? 8896);
@@ -37,8 +39,6 @@ const ARDATOV = 'Ардатовский муниципальный район';
 const LINKED_BARRIER = 'Нестабильный график работы';
 const LINKED_MEASURE = 'Гибкий график для родителей';
 const RANKED_FAMILY = 'Региональный материнский (семейный) капитал';
-const navigation = page => page.getByRole('navigation', { name: 'Основная навигация' });
-const scenes = page => page.getByRole('navigation', { name: 'Этапы коллективной работы' });
 const roadmapNav = page => page.getByRole('navigation', { name: 'Разделы дорожной карты', exact: true });
 const inspector = page => page.getByRole('complementary', { name: 'Связь цитаты и практики' });
 const rpc = (page, name) => page.waitForResponse(response =>
@@ -117,23 +117,22 @@ async function enter(page, email, name, fresh = true, role = 'participant') {
   const snapshot = await response.json();
   expect(snapshot.session.role).toBe(role);
   await expect(page.locator('.header-account .account-name')).toHaveText(name);
-  await expect(scenes(page).getByRole('button', { name: 'Субъективные факторы', exact: true })).toHaveAttribute('aria-current', 'page');
+  await expect(factorLinks(page).getByRole('button', { name: 'Субъективные факторы', exact: true })).toHaveAttribute('aria-current', 'page');
   await expect(page.getByRole('region', { name: 'Общий флипчарт', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Ответить анонимно', exact: true })).toHaveCount(0);
   await cleanInterface(page);
   return snapshot.session.id;
 }
 async function workspace(page) {
-  await navigation(page).getByRole('button', { name: 'Мастерская', exact: true }).click();
-  await expect(scenes(page)).toBeVisible();
+  await page.getByRole('banner').getByRole('button', { name: 'Мастерская', exact: true }).click();
+  await expect(factorLinks(page)).toBeVisible();
 }
-async function scene(page, name) {
-  await scenes(page).getByRole('button', { name, exact: true }).click();
-}
-async function joinRoadmap(page) {
-  await scene(page, 'Дорожные карты');
+async function joinRoadmap(page, name = ARDATOV) {
+  await scene(page, 'Дорожная карта');
   const territories = page.getByRole('region', { name: 'Выбор территории', exact: true });
-  await territories.getByRole('table').getByRole('button', { name: ARDATOV, exact: true }).click();
+  const back = page.getByRole('button', { name: 'К территориям', exact: true });
+  if (await back.isVisible()) await back.click();
+  await territories.getByRole('table').getByRole('button', { name, exact: true }).click();
   await expect(roadmapNav(page).getByRole('button', { name: 'Паспорт', exact: true })).toHaveAttribute('aria-current', 'page');
   await expect(page.getByRole('form', { name: 'Паспорт проекта', exact: true })).toBeVisible();
 }
@@ -168,6 +167,20 @@ try {
     expect(await enter(b.page, 'shared-b@example.test', NAME_B)).toBe(sessionId);
     expect(await b.page.evaluate(() => isSecureContext)).toBe(false);
     await noOverflow(b.page, 390);
+    await expect(scenes(b.page)).toBeHidden();
+    await revealHeader(b.page);
+    const headings = scenes(b.page).getByRole('button');
+    await expect(headings).toHaveText(['Факторы', 'Барьеры', 'Программы', 'Практики', 'Решения', 'Дорожная карта']);
+    const menuBounds = await headings.evaluateAll(elements => elements.map(element => {
+      const box = element.getBoundingClientRect();
+      return [box.x, box.y, box.height];
+    }));
+    expect(menuBounds.every(([x, y, height], index) => x === menuBounds[0][0] && height >= 44 &&
+      (!index || y > menuBounds[index - 1][1]))).toBe(true);
+    await screenshot(b.page, 'workshop-menu-mobile.png');
+    await headerMenu(b.page).press('Escape');
+    await expect(headerMenu(b.page)).toBeFocused();
+    await expect(scenes(b.page)).toBeHidden();
     await screenshot(b.page, 'shared-flipchart-first-mobile.png');
   });
   await stage('FIO itself opens profile editing; explicit save survives reload without extra header text', a.page, async () => {
@@ -408,7 +421,7 @@ try {
     const measures = JSON.parse(await readFile(new URL('../../public/data/corpus/family-catalog.json', import.meta.url), 'utf8')).measures;
     const total = new RegExp(measures.length.toLocaleString('ru').replace(/\s+/gu, '\\s*'), 'u');
 
-    await navigation(a.page).getByRole('button', { name: 'Практики', exact: true }).click();
+    await openReference(a.page, 'Каталог практик');
     await expect(a.page.getByText(new RegExp(`${total.source} карточки каталога`, 'u'))).toBeVisible();
     for (const page of [a.page, b.page]) {
       await workspace(page);
@@ -526,7 +539,7 @@ try {
     await screenshot(b.page, 'barriers-stickers-mobile.png');
 
     const steps = await scenes(a.page).getByRole('button').allTextContents();
-    expect(steps.map(name => name.trim()).slice(-3)).toEqual(['Практики', 'Решения', 'Дорожные карты']);
+    expect(steps.map(name => name.trim()).slice(-3)).toEqual(['Практики', 'Решения', 'Дорожная карта']);
     await scene(a.page, 'Решения');
     await expect(solutions(a.page).getByRole('region', { name: 'Барьеры без решений' })).toContainText(red);
     await expect(solutions(a.page).getByRole('region', { name: 'Меры без связей' })).toContainText(green);
@@ -677,6 +690,50 @@ try {
     await b.page.getByRole('button', { name: 'Обновить дорожные карты', exact: true }).click();
     await expect(activity(b.page, renamed)).toBeVisible();
     await expect(b.page.getByRole('heading', { name: LINKED_MEASURE, exact: true })).toBeVisible();
+  });
+  await stage('A participant in Saransk reloads saved workshop choices and exports a real Word file', b.page, async () => {
+    const city = 'Городской округ Саранск';
+    const title = 'Учебный проект: время с семьёй в Саранске';
+    const passport = b.page.getByRole('form', { name: 'Паспорт проекта', exact: true });
+    await joinRoadmap(b.page, city);
+    await expect(passport.getByLabel('Дата защиты', { exact: true })).toHaveCount(0);
+    await passport.getByRole('textbox', { name: 'Название проекта', exact: true }).fill(title);
+    await passport.getByRole('textbox', { name: 'Цель проекта', exact: true })
+      .fill('К 2030 году в трёх организациях Саранска ввести гибкий график для работающих родителей.');
+    await passport.getByRole('button', { name: 'Сохранить паспорт', exact: true }).click();
+    await expect(passport.getByText('Паспорт сохранён.', { exact: true })).toBeVisible();
+    await roadmapTab(b.page, 'Мероприятия');
+    await b.page.getByRole('button', { name: 'Перенести барьеры и меры', exact: true }).click();
+    const transfer = b.page.getByRole('dialog', { name: 'Перенос барьеров и мер', exact: true });
+    await transfer.getByRole('checkbox', { name: LINKED_BARRIER }).check();
+    await expect(transfer.getByRole('checkbox', { name: RANKED_FAMILY })).toBeChecked();
+    await expect(transfer.getByRole('checkbox', { name: LINKED_MEASURE })).toBeChecked();
+    await transfer.getByRole('button', { name: 'Перенести в проект', exact: true }).click();
+    await expect(transfer).toBeHidden();
+    await b.page.reload();
+    await expect(b.page).toHaveURL(/stage=roadmaps/u);
+    await joinRoadmap(b.page, city);
+    await expect(passport.getByRole('textbox', { name: 'Название проекта', exact: true })).toHaveValue(title);
+    await roadmapTab(b.page, 'Мероприятия');
+    await expect(b.page.locator('.rm-activity-card').getByRole('heading', { name: LINKED_MEASURE, exact: true })).toBeVisible();
+    await roadmapTab(b.page, 'Проверка и экспорт');
+    const wordButton = b.page.getByRole('button', { name: 'Скачать Word', exact: true });
+    const downloaded = b.page.waitForEvent('download', { timeout: 30000 });
+    await wordButton.click();
+    const file = await downloaded;
+    expect(file.suggestedFilename()).toMatch(/\.docx$/iu);
+    expect(await file.failure()).toBeNull();
+    const parts = unzipSync(await readFile(await file.path()));
+    const word = new TextDecoder().decode(parts['word/document.xml']);
+    for (const line of [city, title, LINKED_BARRIER, LINKED_MEASURE, RANKED_FAMILY]) expect(word).toContain(line);
+    expect(word).not.toContain('Дата защиты');
+    await file.saveAs(join(evidence, 'saransk-participant.docx'));
+    await expect(b.page.locator('.rm-version')).toHaveCount(1);
+    const downloadedAgain = b.page.waitForEvent('download', { timeout: 30000 });
+    await wordButton.click();
+    expect(await (await downloadedAgain).failure()).toBeNull();
+    await expect(b.page.locator('.rm-version')).toHaveCount(1);
+    await screenshot(b.page, 'saransk-word-export-mobile.png');
   });
   expect(externalRequests).toEqual([]);
   expect(failedResponses).toEqual([]);

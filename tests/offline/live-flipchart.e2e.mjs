@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { openRuntime } from '../../scripts/offline/storage.mjs';
 import { startServer } from '../../scripts/offline/server.mjs';
+import { openStage } from './workshop-nav.mjs';
 
 const port = Number(process.env.DW_FLIPCHART_BROWSER_PORT ?? 8891);
 const surveyPort = Number(process.env.DW_FLIPCHART_SURVEY_PORT ?? 8892);
@@ -42,7 +43,7 @@ const report = {
 };
 const contexts = [];
 let lastPage;
-const scenes = page => page.getByRole('navigation', { name: 'Этапы коллективной работы', exact: true });
+const scenes = page => page.getByRole('navigation', { name: 'Виды факторов', exact: true });
 const board = page => page.getByRole('region', { name: 'Общий флипчарт', exact: true });
 const projection = page => page.getByRole('region', { name: 'Флипчарт на проекторе', exact: true });
 const objective = page => page.getByRole('region', { name: 'Объективные факторы рождаемости', exact: true });
@@ -160,7 +161,7 @@ async function openTerritories(page) {
   if (!(await territories(page).isVisible())) {
     const back = page.getByRole('button', { name: 'К территориям', exact: true });
     if (await back.isVisible()) await back.click();
-    else await scenes(page).getByRole('button', { name: 'Дорожные карты', exact: true }).click();
+    else await openStage(page, 'Дорожная карта');
   }
   await expect(territories(page).getByRole('columnheader', { name: 'Сейчас в команде', exact: true })).toBeVisible();
   await expect(territories(page).getByRole('combobox', { name: 'Регион территорий', exact: true }))
@@ -178,10 +179,10 @@ async function openTeam(page, name) {
   return room.roadmapId;
 }
 async function openObjectives(page, view = 'cards') {
+  await openStage(page, 'Объективные факторы');
   const tabs = scenes(page).getByRole('button');
   await expect(tabs.nth(0)).toHaveText('Субъективные факторы');
   await expect(tabs.nth(1)).toHaveText('Объективные факторы');
-  await tabs.nth(1).click();
   await expect(tabs.nth(1)).toHaveAttribute('aria-current', 'page');
   if (view === 'board') await objective(page).getByRole('button', { name: /^Флипчарт факторов/u }).click();
 }
@@ -273,9 +274,9 @@ try {
         await anotherView.context.close();
       }
 
-      await scenes(b.page).getByRole('button', { name: 'Субъективные факторы', exact: true }).click();
+      await openStage(b.page, 'Субъективные факторы');
       await expect(activeCount(observer.page, firstTeam)).toHaveText('1', { timeout: 40_000 });
-      await scenes(a.page).getByRole('button', { name: 'Субъективные факторы', exact: true }).click();
+      await openStage(a.page, 'Субъективные факторы');
       await expect(activeCount(observer.page, firstTeam)).toHaveText('0', { timeout: 40_000 });
       await expect(board(a.page)).toBeVisible();
       await expect(board(b.page)).toBeVisible();

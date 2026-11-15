@@ -1161,6 +1161,14 @@
 .rm-monitoring-summary .rm-resource-description {
   grid-template-columns: 1fr 1fr;
 }
+.rm-export-quick {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin: 0 0 16px;
+}
+.rm-export-quick > span { color: #4d6680; font-size: .88rem; }
 .rm-readiness-overview {
   display: flex;
   align-items: center;

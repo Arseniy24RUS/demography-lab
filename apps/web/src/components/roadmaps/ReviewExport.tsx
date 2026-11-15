@@ -32,6 +32,9 @@ export function ReviewExport({
     [decision, setDecision] = useState<'revise' | 'discussed'>('revise'),
     [comment, setComment] = useState('');
   const task = useRoadmapTask();
+  const word = useRoadmapTask();
+  const latestVersion = snapshot.versions.reduce<RoadmapVersionSummary | undefined>((latest, candidate) =>
+    !latest || candidate.number > latest.number ? candidate : latest, undefined);
   const mounted = useRef(false);
   useEffect(() => {
     mounted.current = true;
@@ -57,6 +60,27 @@ export function ReviewExport({
       await downloadRoadmapVersion(version, format, () => mounted.current);
     }, 'Файл подготовлен из выбранной зафиксированной версии.');
   }
+  async function downloadCurrentWord() {
+    await word.run(async () => {
+      let version = latestVersion;
+      // Freezing a version increments the live revision once, without changing project data.
+      if (editable && (!version || version.roadmapRevision + 1 !== snapshot.revision)) {
+        const updated = await controller.actions.freeze({
+          roadmapId: snapshot.roadmapId,
+          expectedRevision: snapshot.revision,
+          title: `Рабочая версия ${(version?.number ?? 0) + 1}`,
+          kind: 'draft',
+        });
+        version = updated.versions.find(item => item.roadmapRevision === snapshot.revision);
+      }
+      if (!version) throw new Error('Не удалось подготовить сохранённую версию для Word.');
+      if (!mounted.current) return;
+      const stored = await controller.actions.readVersion(snapshot.roadmapId, version.id);
+      if (!mounted.current) return;
+      const { downloadRoadmapVersion } = await import('../../lib/roadmap-export');
+      await downloadRoadmapVersion(stored, 'docx', () => mounted.current);
+    }, 'Дорожная карта подготовлена в формате Word.');
+  }
   return (
     <div className="rm-review">
       <section className="rm-section">
@@ -64,6 +88,18 @@ export function ReviewExport({
           Восемь разделов шаблона организаторов. Заполненность помогает найти пробелы, но не
           оценивает научную обоснованность проекта.
         </SectionHeading>
+        {editable || latestVersion ? (
+          <div className="rm-export-quick">
+            <button type="button" className="button button-primary"
+              disabled={controller.busy || task.working || word.working}
+              onClick={() => void downloadCurrentWord()}>
+              <Download size={17} aria-hidden="true" />
+              {editable ? 'Скачать Word' : 'Скачать последнюю версию Word'}
+            </button>
+            <span>В файл попадут сохранённые данные команды.</span>
+          </div>
+        ) : null}
+        {word.feedback}
         <div className="rm-readiness-overview">
           <div>
             <strong>{readiness.completedSections} / 8</strong>
@@ -112,6 +148,7 @@ export function ReviewExport({
               </details>
               <button
                 className="button button-quiet"
+                aria-label={`Открыть раздел: ${section.title}`}
                 onClick={() => onTab(sectionTab[section.id]!)}
               >
                 Открыть раздел
@@ -120,7 +157,7 @@ export function ReviewExport({
           ))}
         </div>
         {readiness.issues.length ? (
-          <details className="rm-review-issues" open>
+          <details className="rm-review-issues">
             <summary>Требуют внимания: {readiness.issues.length}</summary>
             {readiness.issues.map((issue, index) => (
               <p key={`${issue.code}-${index}`} data-severity={issue.severity}>

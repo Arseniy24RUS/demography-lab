@@ -78,6 +78,7 @@ export function LifecycleBarrierStage({ api, session, userId, snapshot, actions,
       throw new Error('Барьер недоступен. Обновите данные занятия.');
     }
     setSelected(stage => stage && !draft.stageIds.includes(stage) ? primary : stage);
+    if (editor === 'new') setQuery('');
   }
 
   return <section className="lifecycle-stage" aria-label="Барьеры по этапам жизни">

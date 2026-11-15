@@ -259,6 +259,12 @@ export function LifecycleSolutions({
     setDialog(value);
   }
 
+  function revealBarrier(barrier: BarrierCard) {
+    if (placedBarriers.some(item => item.id === barrier.id)) return;
+    const primary = barrier.primaryStage;
+    setStage(isLifecycleStage(primary) ? primary : barrier.stageIds.find(isLifecycleStage) ?? legacyStage);
+  }
+
   function saveRelation(barrier: BarrierCard, measure: Measure) {
     const already = board.associations.get(barrier.id)?.get(keyFor(measure));
     if (already && !already.stale) return;
@@ -272,7 +278,10 @@ export function LifecycleSolutions({
           kind: measure.kind, measureId: measure.id, barrierId: barrier.id, linked: true,
         });
       }
-    }, () => setDialog(null));
+    }, () => {
+      revealBarrier(barrier);
+      setDialog(null);
+    }, 'Связь сохранена.');
   }
 
   function removeRelation(barrier: BarrierCard, association: Association) {
@@ -285,7 +294,7 @@ export function LifecycleSolutions({
           kind: association.measure.kind, measureId: association.measure.id, barrierId: barrier.id, linked: false,
         });
       }
-    });
+    }, undefined, 'Связь убрана.');
   }
 
   const dialogBarrier = dialog && dialog.kind !== 'barriers' && dialog.barrierId
@@ -311,7 +320,7 @@ export function LifecycleSolutions({
     : [];
 
   return <section className="lifecycle-solutions" aria-label="Решения">
-    <TaskMessage error={dialog ? null : task.error ?? barriers.error ?? loadError} />
+    <TaskMessage error={dialog ? null : task.error ?? barriers.error ?? loadError} notice={dialog ? null : task.notice} />
     {!barriers.snapshot && barriers.loading ? <Busy>Загружаем решения…</Busy> : null}
     {barriers.snapshot ? <>
       <LifecycleStageTrack counts={counts} selected={activeStage === legacyStage ? null : activeStage} onSelect={setStage} />
@@ -407,7 +416,10 @@ export function LifecycleSolutions({
           barrierIds: dialogBarrier ? [dialogBarrier.id] : [],
           targetGroup: '', firstStep: '', responsible: '', resources: '', successIndicator: '', risks: '',
           status: 'active',
-        }), () => setDialog(null));
+        }), () => {
+          if (dialogBarrier) revealBarrier(dialogBarrier);
+          setDialog(null);
+        }, dialogBarrier ? 'Мера связана с барьером.' : 'Мера добавлена.');
       }}>
         {dialogBarrier ? <p>{dialogBarrier.title}</p> : null}
         <label>Название меры<input className="input" value={title} required maxLength={240}

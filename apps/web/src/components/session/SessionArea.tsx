@@ -1,6 +1,7 @@
 import { Info, RefreshCw, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { WorkshopView } from '../workshop/workshop-ui';
+import type { WorkshopStage } from '@/lib/workshop-navigation';
 import type {
   SessionAreaActions,
   SessionAreaState,
@@ -15,6 +16,9 @@ export function SessionArea({
   actions,
   mainContentId = 'main-content',
   regions,
+  workshopStage,
+  workshopVisit,
+  onStage,
   renderWorkshop,
   renderBarriers,
   renderSolutions,
@@ -28,6 +32,9 @@ export function SessionArea({
   actions: SessionAreaActions;
   mainContentId?: string;
   regions: SessionRegionOption[];
+  workshopStage: WorkshopStage;
+  workshopVisit: number;
+  onStage(stage: WorkshopStage): void;
   renderWorkshop?: (view: WorkshopView) => ReactNode;
   renderBarriers?: () => ReactNode;
   renderSolutions?: () => ReactNode;
@@ -118,6 +125,9 @@ export function SessionArea({
           snapshot={state.snapshot}
           actions={actions}
           regions={regions}
+          workspaceView={workshopStage}
+          workshopVisit={workshopVisit}
+          onStage={onStage}
           renderWorkshop={renderWorkshop}
           renderBarriers={renderBarriers}
           renderSolutions={renderSolutions}

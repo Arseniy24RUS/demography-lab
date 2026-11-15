@@ -5,6 +5,7 @@ import { tmpdir, platform, arch } from 'node:os';
 import { join, resolve } from 'node:path';
 import { openRuntime } from '../../scripts/offline/storage.mjs';
 import { startServer } from '../../scripts/offline/server.mjs';
+import { openReference } from './workshop-nav.mjs';
 
 const port = Number(process.env.DW_READER_BROWSER_PORT ?? 8897);
 const surveyPort = Number(process.env.DW_READER_SURVEY_PORT ?? 8898);
@@ -68,7 +69,6 @@ const report = {
 };
 const reader = (page) => page.getByRole('region', { name: 'Полный текст программы', exact: true });
 const paper = (page) => reader(page).locator('.ll-paper');
-const nav = (page) => page.getByRole('navigation', { name: 'Основная навигация', exact: true });
 const panels = (page) =>
   page.getByRole('navigation', { name: 'Панели рабочей области', exact: true });
 const canonicalRequests = (page) =>
@@ -130,7 +130,7 @@ async function participant(mobile = false) {
     .fill(mobile ? 'Проверка чтения на телефоне' : 'Проверка непрерывного чтения');
   await form.getByRole('button', { name: 'Продолжить', exact: true }).click();
   await expect(page.getByRole('region', { name: 'Общий флипчарт', exact: true })).toBeVisible();
-  await nav(page).getByRole('button', { name: 'Документы', exact: true }).click();
+  await openReference(page, 'Документы');
   return page;
 }
 async function stage(name, page, work) {
@@ -328,7 +328,7 @@ try {
       ]);
       await expect(dialog).toBeHidden();
       await desktop.reload();
-      await nav(desktop).getByRole('button', { name: 'Моя работа', exact: true }).click();
+      await openReference(desktop, 'Моя работа');
       const quotation = desktop.getByRole('article').filter({ hasText: note });
       await expect(quotation).toHaveCount(1);
       expect(await quotation.locator('blockquote').textContent()).toBe(target.block.text);

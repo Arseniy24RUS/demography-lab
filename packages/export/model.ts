@@ -429,7 +429,6 @@ function buildReportBlocks(prepared: PreparedRoadmapExport): ReportBlock[] {
     [1, 9],
   );
   field('Планируемый результат', passport.expectedResult);
-  field('Дата защиты', formatDate(passport.defenseDate));
 
   h('2 Исходная ситуация и основания диагноза');
   field('Проблема', diagnosis.problem);
