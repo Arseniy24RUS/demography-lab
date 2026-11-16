@@ -102,7 +102,7 @@ export function ConnectedRoadmaps({
   useEffect(() => {
     if (isOrganization && (tab === 'diagnosis' || tab === 'forecast')) setTab('passport');
   }, [isOrganization, tab]);
-  const rooms = useMemo(() => new Map(index?.rooms.map(room => [room.territory.key, room.id])), [index?.rooms]);
+  const rooms = useMemo(() => new Map(index?.rooms.filter(room => !room.exampleLabel).map(room => [room.territory.key, room.id])), [index?.rooms]);
   const teamCounts = useMemo(() => controller.presenceCounts
     ? new Map([...rooms].map(([key, id]) => [key, controller.presenceCounts?.get(id) ?? 0]))
     : null, [rooms, controller.presenceCounts]);
@@ -198,7 +198,7 @@ export function ConnectedRoadmaps({
       <header className="rm-heading">
         <div>
           <h2>Дорожные карты</h2>
-          {tab !== 'territory' && snapshot ? <p>{snapshot.territory.name}</p> : null}
+          {tab !== 'territory' && snapshot ? <p>{snapshot.exampleLabel ? `${snapshot.exampleLabel} · ` : ''}{snapshot.territory.name}</p> : null}
         </div>
         <div className="rm-actions">
           {tab !== 'territory' ? <button type="button" className="button button-secondary" onClick={() => void goToTab('territory')}>{isOrganization ? 'К командам' : 'К территориям'}</button> : null}
@@ -235,6 +235,21 @@ export function ConnectedRoadmaps({
         </p>
       ) : null}
       {task.feedback}
+      {tab === 'territory' && index?.rooms.some(room => room.exampleLabel) ? <section className="rm-section" aria-label="Пример дорожной карты">
+        <h3>Пример дорожной карты</h3>
+        {index.rooms.filter(room => room.exampleLabel).map(room => <div className="rm-actions" key={room.id}>
+          <button type="button" className="button button-secondary" disabled={controller.busy} onClick={() => {
+            controller.actions.select(room.id);
+            setSelectedKey(room.territory.key);
+            setTab('passport');
+          }}>{room.exampleLabel} · {room.territory.name}</button>
+          <span className="rm-muted">Заполненный учебный проект: паспорт, статистика, прогноз, мероприятия, бюджет и готовый документ.</span>
+        </div>)}
+      </section> : null}
+      {tab !== 'territory' && snapshot?.exampleLabel ? <Note>
+        Это учебный пример на данных Саранска. Цели, мероприятия и бюджет демонстрируют способ заполнения.
+        {!isHost ? ' Пример доступен для просмотра и скачивания; свой проект создайте через выбор территории или команды.' : ''}
+      </Note> : null}
       {!editionMatches && (!isOrganization || tab === 'territory') ? (
         <Note warning>
           Занятие закреплено за другим выпуском территориальных данных. Сохранённые материалы

@@ -171,9 +171,10 @@ export async function counts(db) {
 
 /** One exclusive owner and one queued connection, including auth, RPC, backup and shutdown. */
 export async function openRuntime({ dataDir=process.env.DW_OFFLINE_DATA_DIR ?? defaultDataDirectory(), progress,
-  testSeed } = {}) {
+  testSeed, seedExample=false } = {}) {
   process.umask(0o077);
   if (testSeed && process.env.NODE_ENV !== 'test') throw new Error('OFFLINE_TEST_SEED_FORBIDDEN');
+  if (testSeed && seedExample) throw new Error('OFFLINE_EXAMPLE_TEST_SEED_FORBIDDEN');
   dataDir = await prepareDirectory(dataDir);
   const releaseLock = await acquireLock(dataDir);
   let db;
@@ -241,6 +242,10 @@ export async function openRuntime({ dataDir=process.env.DW_OFFLINE_DATA_DIR ?? d
         return closingPromise;
       },
     };
+    if (seedExample) {
+      const { seedOfflineExample } = await import('./example.mjs');
+      await seedOfflineExample(runtime);
+    }
     return runtime;
   } catch(error) {
     if (db) await db.close().catch(()=>{});

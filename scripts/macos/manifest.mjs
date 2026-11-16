@@ -13,6 +13,7 @@ export const REQUIRED_DIRECTORIES = [
 ];
 export const REQUIRED_FILES = [
   'package.json', 'scripts/seed-roadmaps.mjs', 'scripts/seed-supabase.mjs', 'scripts/seed-family-catalog.mjs',
+  'scripts/maintenance/saransk-example.mjs', 'scripts/maintenance/seed-example.mjs',
   'scripts/purge-expired-surveys.mjs',
   'scripts/offline/identify.sql',
   'scripts/cache-originals.mjs', 'packages/territories/series.mjs',

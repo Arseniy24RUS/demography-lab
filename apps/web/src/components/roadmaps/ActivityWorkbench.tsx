@@ -3,6 +3,7 @@ import { Archive, FileText, Link2, Plus } from 'lucide-react';
 import type { TextAnchor } from '@domain/index';
 import type { BarriersSnapshot, BarrierEvidence } from '../../../../../packages/barriers/types';
 import type { RoadmapBasis } from '../../../../../packages/roadmaps/types';
+import { compareRoadmapActivities } from '../../../../../packages/roadmaps/order';
 import type { FrozenVariant } from '../../../../../packages/workshop/types';
 import { Modal } from '../Modal';
 import { PracticeDetails } from '../workshop/PracticeDetails';
@@ -37,7 +38,7 @@ export function ActivityWorkbench(
     [evidenceId, setEvidenceId] = useState<string | null>(null),
     [archiving, setArchiving] = useState<string | null>(null);
   const task = useRoadmapTask();
-  const activities = activeItems(snapshot, 'activity'),
+  const activities = activeItems(snapshot, 'activity').sort(compareRoadmapActivities),
     indicators = activeItems(snapshot, 'indicator'),
     diagnosis = activeItems(snapshot, 'diagnosis')[0];
   const available = [

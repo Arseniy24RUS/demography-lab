@@ -38,6 +38,7 @@ async function copyPayload(source, destination) {
   const relativePaths = [
     'dist', 'public/data', 'public/fonts', 'scripts/offline', 'scripts/macos', 'macos',
     'scripts/seed-roadmaps.mjs', 'scripts/seed-supabase.mjs', 'scripts/seed-family-catalog.mjs',
+    'scripts/maintenance/saransk-example.mjs', 'scripts/maintenance/seed-example.mjs',
     'scripts/cache-originals.mjs', 'scripts/purge-expired-surveys.mjs',
     'packages/territories/series.mjs', 'packages/security', 'supabase/migrations',
     'node_modules/@electric-sql/pglite', 'node_modules/@noble/hashes',

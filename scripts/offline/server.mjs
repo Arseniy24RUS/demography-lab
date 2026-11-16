@@ -150,7 +150,7 @@ async function staticFile(request,response,path,survey,root) {
 
 export async function startServer({runtime,host=process.env.DW_OFFLINE_HOST??'0.0.0.0',
   port=Number(process.env.DW_OFFLINE_PORT??8787),surveyPort=Number(process.env.DW_OFFLINE_SURVEY_PORT??8788),
-  publicHost=process.env.DW_OFFLINE_PUBLIC_HOST??'',root=ROOT,backupIntervalMs=5*60*1000,logger=console}={}) {
+  publicHost=process.env.DW_OFFLINE_PUBLIC_HOST??'',root=ROOT,backupIntervalMs=5*60*1000,logger=console,seedExample=false}={}) {
   let allowed;
   try {
     if(![port,surveyPort].every(p=>Number.isInteger(p)&&p>=0&&p<=65535)||port===surveyPort&&port!==0)
@@ -159,7 +159,7 @@ export async function startServer({runtime,host=process.env.DW_OFFLINE_HOST??'0.
       throw new Error('OFFLINE_BUILD_MISSING');
     allowed=networkHosts(publicHost);
   }catch(error){await runtime?.close();throw error;}
-  if(!runtime)runtime=await openRuntime({progress:step=>logger.log(`Подготовка: ${step.phase} ${step.completed}${step.total?'/'+step.total:''}`)});
+  if(!runtime)runtime=await openRuntime({seedExample,progress:step=>logger.log(`Подготовка: ${step.phase} ${step.completed}${step.total?'/'+step.total:''}`)});
   const rate=new Map();
   let stopped=false,interval,backupQueued=false;
   let main,survey;
@@ -335,14 +335,14 @@ async function cli() {
   }
   if(args.length>1||args.length===1&&!['--prepare','--backup'].includes(args[0]))throw new Error('OFFLINE_ARGUMENT_INVALID');
   if(args[0]) {
-    const runtime=await openRuntime({progress:x=>console.log(`Подготовка: ${x.phase} ${x.completed}${x.total?'/'+x.total:''}`)});
+    const runtime=await openRuntime({seedExample:args[0]==='--prepare',progress:x=>console.log(`Подготовка: ${x.phase} ${x.completed}${x.total?'/'+x.total:''}`)});
     try {
       if(args[0]==='--backup')console.log(JSON.stringify({backup:await runtime.enqueue(()=>backupRuntime(runtime))}));
       else console.log(JSON.stringify({ready:true,instanceId:runtime.operator.instanceId,canonical:runtime.ready.seed}));
     }finally{await runtime.close();}
     return;
   }
-  const app=await startServer();
+  const app=await startServer({seedExample:true});
   for(const signal of ['SIGTERM','SIGINT'])process.once(signal,()=>app.stop().catch(()=>{process.exitCode=1;}));
 }
 if(process.argv[1]&&pathToFileURL(resolve(process.argv[1])).href===import.meta.url)

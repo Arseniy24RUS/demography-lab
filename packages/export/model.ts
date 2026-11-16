@@ -1,6 +1,7 @@
 import { sha256Hex } from '../security/crypto.mjs';
 import { parseRoadmapVersion } from '../roadmaps/schema';
 import { passportResources } from '../roadmaps/passport-resources';
+import { compareRoadmapActivities } from '../roadmaps/order';
 import type { FrozenRoadmapData, RoadmapBarrierGround, RoadmapVersion } from '../roadmaps/types';
 import {
   activeRoadmapItems,
@@ -427,7 +428,7 @@ function buildReportBlocks(
   const passport = activeRoadmapItems(snapshot, 'passport')[0]!.data;
   const diagnosis = activeRoadmapItems(snapshot, 'diagnosis')[0]!.data;
   const monitoring = activeRoadmapItems(snapshot, 'monitoring')[0]!.data;
-  const activities = activeRoadmapItems(snapshot, 'activity');
+  const activities = activeRoadmapItems(snapshot, 'activity').sort(compareRoadmapActivities);
   const indicators = activeRoadmapItems(snapshot, 'indicator');
   const activityNames = new Map(activities.map(({ id, data }) => [id, data.title]));
   const indicatorNames = new Map(indicators.map(({ id, data }) => [id, data.title]));

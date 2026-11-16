@@ -184,7 +184,7 @@ export async function exportRoadmapVersion(
     });
   } else throw new Error('Неподдерживаемый формат экспорта.');
   const mimeType = mimeTypes[format];
-  const territory = printable ? Array.from(version.snapshot.territory.name.replace(/[<>:"/\\|?*]/gu, ' ')
+  const territory = printable ? Array.from(`${version.snapshot.exampleLabel ? `${version.snapshot.exampleLabel} — ` : ''}${version.snapshot.territory.name}`.replace(/[<>:"/\\|?*]/gu, ' ')
     .replace(/\s+/gu, ' ').trim()).slice(0, 100).join('') : '';
   return {
     blob: new Blob([new Uint8Array(bytes).buffer], { type: mimeType }),

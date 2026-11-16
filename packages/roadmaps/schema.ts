@@ -479,6 +479,7 @@ const configuration = z.strictObject({
 });
 const roomSummary = z.strictObject({
   id: uuid,
+  exampleLabel: text(80, 1).optional(),
   territory: roadmapTerritorySchema,
   revision,
   memberCount: integer.max(1000),
@@ -517,7 +518,8 @@ export const roadmapsIndexSchema = z
   .refine(
     (v) =>
       new Set(v.rooms.map((x) => x.id)).size === v.rooms.length &&
-      new Set(v.rooms.map((x) => x.territory.key)).size === v.rooms.length &&
+      new Set(v.rooms.filter(x => !x.exampleLabel).map(x => x.territory.key)).size === v.rooms.filter(x => !x.exampleLabel).length &&
+      new Set(v.rooms.filter(x => x.exampleLabel).map(x => x.exampleLabel)).size === v.rooms.filter(x => x.exampleLabel).length &&
       (v.myRoadmapId === null || v.rooms.some((x) => x.id === v.myRoadmapId)) &&
       v.configuration.locked === v.rooms.length > 0,
   );
@@ -536,6 +538,7 @@ export const saveRoadmapCohortInputSchema = z.strictObject({
   parameters: cohortParameters,
 });
 const sharedData = {
+  exampleLabel: text(80, 1).optional(),
   territory: roadmapTerritorySchema,
   roomLevel,
   basis: z.array(roadmapBasisSchema).max(40),

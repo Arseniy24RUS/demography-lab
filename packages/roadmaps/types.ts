@@ -342,6 +342,8 @@ export interface RoadmapConfiguration {
 }
 export interface RoadmapRoomSummary {
   id: string;
+  /** Administrative demonstration label; source geography remains unchanged. */
+  exampleLabel?: string;
   territory: RoadmapTerritory;
   revision: number;
   memberCount: number;
@@ -399,6 +401,7 @@ export interface SaveRoadmapCohortInput {
 export interface RoadmapSnapshot {
   sessionId: string;
   roadmapId: string;
+  exampleLabel?: string;
   cursor: number;
   sourceCursor: number;
   revision: number;
@@ -427,6 +430,7 @@ export interface FrozenRoadmapData {
   schemaVersion: 1 | 2;
   templateVersion: 'organizers-roadmap-1';
   calculationVersion: 'roadmap-analytics-1';
+  exampleLabel?: string;
   territory: RoadmapTerritory;
   roomLevel: RoadmapRoomLevel;
   roadmapRevision: number;
@@ -458,6 +462,7 @@ export interface RoadmapsProjection {
   rooms: RoadmapRoomSummary[];
   selected: {
     roadmapId: string;
+    exampleLabel?: string;
     territory: RoadmapTerritory;
     roomLevel: RoadmapRoomLevel;
     revision: number;
