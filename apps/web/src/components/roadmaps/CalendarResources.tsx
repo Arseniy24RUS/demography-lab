@@ -1,4 +1,5 @@
 import { useId, useRef, useState } from 'react';
+import type { ReactNode, RefObject } from 'react';
 import { CalendarDays, MoveHorizontal } from 'lucide-react';
 import { passportResources } from '../../../../../packages/roadmaps/passport-resources';
 import type { RoadmapItem } from '../../../../../packages/roadmaps/types';
@@ -9,6 +10,7 @@ import {
   shiftActivityDates,
 } from '../../../../../packages/analytics';
 import type { CalendarActivity } from '../../../../../packages/analytics';
+import type { DataRows } from '../../../../../packages/export/data-sheet';
 import { Modal } from '../Modal';
 import {
   activeItems,
@@ -22,6 +24,44 @@ import {
   useRoadmapTask,
 } from './common';
 import type { RoadmapWorkspaceProps } from './common';
+import { DataExport } from './DataExport';
+import './roadmap-data.css';
+
+const fundingStatus = {
+  confirmed: 'Подтверждено',
+  budget_draft: 'Проект бюджета',
+  application: 'Заявка',
+  assumption: 'Предположение',
+};
+
+function CalendarData({
+  title,
+  rows,
+  children,
+  scrollClassName = 'rm-table-scroll',
+  imageTarget,
+}: {
+  title: string;
+  rows: DataRows;
+  children: ReactNode;
+  scrollClassName?: string | null;
+  imageTarget?: RefObject<HTMLDivElement | null>;
+}) {
+  const content = scrollClassName ? (
+    <div className={scrollClassName} ref={imageTarget}>
+      {children}
+    </div>
+  ) : (
+    children
+  );
+  if (rows.length < 2) return content;
+  return (
+    <div className="rm-exportable rm-exportable-table">
+      <DataExport title={title} rows={rows} imageTarget={imageTarget} />
+      {content}
+    </div>
+  );
+}
 
 export function CalendarResources(props: RoadmapWorkspaceProps) {
   const { snapshot, controller, editable, onEdit } = props,
@@ -62,6 +102,51 @@ export function CalendarResources(props: RoadmapWorkspaceProps) {
   };
   const calendar = inspectCalendar(calendarInputs, period),
     budget = computeRoadmapBudget(snapshot);
+  const ganttRef = useRef<HTMLDivElement>(null);
+  const exportTitle = (title: string) => `${title} — ${snapshot.territory.name}`;
+  const scheduleRows: DataRows = [
+    [
+      'Мероприятие',
+      'Ответственный',
+      'Начало',
+      'Окончание',
+      'Календарных дней',
+      'Предшествующие мероприятия',
+    ],
+    ...activities.map(({ data }) => [
+      data.title || 'Без названия',
+      data.responsible,
+      data.startDate,
+      data.endDate,
+      data.startDate && data.endDate
+        ? calendarDay(data.endDate) - calendarDay(data.startDate) + 1
+        : null,
+      data.dependencies
+        .map(
+          ({ predecessorId }) =>
+            activities.find((item) => item.id === predecessorId)?.data.title || 'Без названия',
+        )
+        .join(', '),
+    ]),
+  ];
+  const budgetRows: DataRows = [
+    [
+      'Год',
+      'Потребность, руб.',
+      'Подтверждено, руб.',
+      'Заявки и ожидания, руб.',
+      'Неподтверждено, руб.',
+      'Натуральный вклад, руб.',
+    ],
+    ...budget.years.map((year) => [
+      year.year,
+      year.needCashKopecks / 100,
+      year.confirmedKopecks / 100,
+      year.expectedKopecks / 100,
+      year.confirmedGapKopecks / 100,
+      year.inKindKopecks / 100,
+    ]),
+  ];
   const start = Math.min(calendarDay(period.startDate), ...dates.map(calendarDay)),
     end = Math.max(calendarDay(period.endDate), ...dates.map(calendarDay)),
     span = Math.max(1, end - start + 1),
@@ -110,11 +195,17 @@ export function CalendarResources(props: RoadmapWorkspaceProps) {
         </SectionHeading>
         {dated.length ? (
           <>
-            <div className="rm-gantt-scroll">
+            <CalendarData
+              title={exportTitle('Диаграмма Ганта')}
+              rows={scheduleRows}
+              scrollClassName="rm-gantt-scroll"
+              imageTarget={ganttRef}
+            >
               <svg
                 className="rm-gantt"
                 viewBox={`0 0 ${width} ${head + activities.length * rowHeight + 12}`}
                 role="group"
+                data-data-export=""
                 aria-label="Календарь мероприятий"
               >
                 <defs>
@@ -129,6 +220,14 @@ export function CalendarResources(props: RoadmapWorkspaceProps) {
                   >
                     <path d="M0 0 L8 4 L0 8Z" fill="#778aa4" />
                   </marker>
+                  <clipPath id={`${marker}-labels`}>
+                    <rect
+                      x={14}
+                      y={head}
+                      width={left - 30}
+                      height={activities.length * rowHeight}
+                    />
+                  </clipPath>
                 </defs>
                 <rect width={width} height={head} fill="#f3f6fb" />
                 <text x={16} y={27} className="rm-gantt-heading">
@@ -193,15 +292,15 @@ export function CalendarResources(props: RoadmapWorkspaceProps) {
                         y2={y + rowHeight}
                         stroke="#e3e9f0"
                       />
-                      <foreignObject x={14} y={y + 7} width={left - 30} height={rowHeight - 10}>
-                        <div className="rm-gantt-label">
-                          <strong>
-                            {String(index + 1).padStart(2, '0')} ·{' '}
-                            {item.data.title || 'Без названия'}
-                          </strong>
-                          <span>{item.data.responsible || 'Исполнитель не назначен'}</span>
-                        </div>
-                      </foreignObject>
+                      <g clipPath={`url(#${marker}-labels)`}>
+                        <title>{item.data.title || 'Без названия'}</title>
+                        <text x={14} y={y + 22} fontSize={12} fontWeight={700} fill="#23456d">
+                          {String(index + 1).padStart(2, '0')} · {item.data.title || 'Без названия'}
+                        </text>
+                        <text x={14} y={y + 38} fontSize={10} fill="#667d99">
+                          {item.data.responsible || 'Исполнитель не назначен'}
+                        </text>
+                      </g>
                       {item.data.startDate && item.data.endDate ? (
                         <rect
                           x={x(calendarDay(item.data.startDate) + offset)}
@@ -294,7 +393,7 @@ export function CalendarResources(props: RoadmapWorkspaceProps) {
                   );
                 })}
               </svg>
-            </div>
+            </CalendarData>
             <p className="rm-source-caption">
               Календарные дни. Стрелки показывают зависимости «завершение → начало». Перенос дат не
               изменяет автоматически год расходов.
@@ -311,7 +410,7 @@ export function CalendarResources(props: RoadmapWorkspaceProps) {
             {issue.message}
           </p>
         ))}
-        <div className="rm-table-scroll">
+        <CalendarData title={exportTitle('Календарный план')} rows={scheduleRows}>
           <table>
             <thead>
               <tr>
@@ -351,7 +450,7 @@ export function CalendarResources(props: RoadmapWorkspaceProps) {
               ))}
             </tbody>
           </table>
-        </div>
+        </CalendarData>
       </section>
       {task.feedback}
       <section className="rm-section">
@@ -359,31 +458,44 @@ export function CalendarResources(props: RoadmapWorkspaceProps) {
           Каждая статья относится к мероприятию и конкретному году. Расчёт денежных сумм выполняется
           в копейках.
         </SectionHeading>
-        <div className="rm-budget-totals">
-          <div>
-            <span>Денежная потребность</span>
-            <strong>{money(budget.totals.needCashKopecks)}</strong>
+        <CalendarData
+          title={exportTitle('Итоги бюджета')}
+          scrollClassName={null}
+          rows={[
+            ['Показатель', 'Сумма, руб.'],
+            ['Денежная потребность', budget.totals.needCashKopecks / 100],
+            ['Подтверждено', budget.totals.confirmedKopecks / 100],
+            ['Неподтверждённая потребность', budget.totals.confirmedGapKopecks / 100],
+            ['Заявки и предположения', budget.totals.expectedKopecks / 100],
+            ['Натуральный вклад', budget.totals.inKindKopecks / 100],
+          ]}
+        >
+          <div className="rm-budget-totals">
+            <div>
+              <span>Денежная потребность</span>
+              <strong>{money(budget.totals.needCashKopecks)}</strong>
+            </div>
+            <div>
+              <span>Подтверждено</span>
+              <strong>{money(budget.totals.confirmedKopecks)}</strong>
+            </div>
+            <div data-gap={budget.totals.confirmedGapKopecks > 0}>
+              <span>Неподтверждённая потребность</span>
+              <strong>{money(budget.totals.confirmedGapKopecks)}</strong>
+            </div>
+            <div>
+              <span>Заявки и предположения</span>
+              <strong>{money(budget.totals.expectedKopecks)}</strong>
+            </div>
           </div>
-          <div>
-            <span>Подтверждено</span>
-            <strong>{money(budget.totals.confirmedKopecks)}</strong>
-          </div>
-          <div data-gap={budget.totals.confirmedGapKopecks > 0}>
-            <span>Неподтверждённая потребность</span>
-            <strong>{money(budget.totals.confirmedGapKopecks)}</strong>
-          </div>
-          <div>
-            <span>Заявки и предположения</span>
-            <strong>{money(budget.totals.expectedKopecks)}</strong>
-          </div>
-        </div>
+        </CalendarData>
         <Note>
           Натуральный вклад: {money(budget.totals.inKindKopecks)}. Заявки и проекты бюджетов
           учитываются отдельно от подтверждённых средств. Проверка полномочий, бюджетных оснований и
           источников остаётся содержательной работой команды.
         </Note>
         {budget.years.length ? (
-          <div className="rm-table-scroll">
+          <CalendarData title={exportTitle('Бюджет по годам')} rows={budgetRows}>
             <table>
               <thead>
                 <tr>
@@ -408,7 +520,7 @@ export function CalendarResources(props: RoadmapWorkspaceProps) {
                 ))}
               </tbody>
             </table>
-          </div>
+          </CalendarData>
         ) : null}
       </section>
       <section className="rm-section">
@@ -422,7 +534,37 @@ export function CalendarResources(props: RoadmapWorkspaceProps) {
           addLabel="Добавить затраты"
         />
         {costs.length ? (
-          <div className="rm-table-scroll">
+          <CalendarData
+            title={exportTitle('Статьи затрат')}
+            rows={[
+              [
+                'Статья',
+                'Мероприятие',
+                'Вид расходов',
+                'Год',
+                'Количество',
+                'Единица',
+                'Цена за единицу, руб.',
+                'Число повторений',
+                'Сумма, руб.',
+                'Статус цены',
+                'Основание цены',
+              ],
+              ...costs.map(({ id, data }) => [
+                data.title || 'Без названия',
+                activities.find((item) => item.id === data.activityId)?.data.title ?? null,
+                data.cashKind === 'in_kind' ? 'Натуральный вклад' : 'Денежные расходы',
+                data.year,
+                Number(data.quantity),
+                data.unit,
+                data.unitPriceKopecks / 100,
+                data.periods,
+                (budget.lines.find((line) => line.id === id)?.totalKopecks ?? 0) / 100,
+                data.priceStatus === 'confirmed' ? 'Подтверждённая цена' : 'Оценка',
+                data.priceSource,
+              ]),
+            ]}
+          >
             <table>
               <thead>
                 <tr>
@@ -472,7 +614,7 @@ export function CalendarResources(props: RoadmapWorkspaceProps) {
                 ))}
               </tbody>
             </table>
-          </div>
+          </CalendarData>
         ) : (
           <EmptySection>
             {activities.length
@@ -498,7 +640,27 @@ export function CalendarResources(props: RoadmapWorkspaceProps) {
           addLabel="Добавить финансирование"
         />
         {funding.length ? (
-          <div className="rm-table-scroll">
+          <CalendarData
+            title={exportTitle('Источники финансирования')}
+            rows={[
+              [
+                'Источник',
+                'Статья затрат',
+                'Сумма, руб.',
+                'Статус',
+                'Подтверждение',
+                'Дата источника',
+              ],
+              ...funding.map(({ data }) => [
+                data.sourceName || 'Без названия',
+                costs.find((item) => item.id === data.costLineId)?.data.title ?? null,
+                data.amountKopecks / 100,
+                fundingStatus[data.status],
+                data.sourceReference,
+                data.sourceDate,
+              ]),
+            ]}
+          >
             <table>
               <thead>
                 <tr>
@@ -516,16 +678,7 @@ export function CalendarResources(props: RoadmapWorkspaceProps) {
                     <th>{item.data.sourceName || 'Без названия'}</th>
                     <td>{costs.find((cost) => cost.id === item.data.costLineId)?.data.title}</td>
                     <td>{money(item.data.amountKopecks)}</td>
-                    <td>
-                      {
-                        {
-                          confirmed: 'Подтверждено',
-                          budget_draft: 'Проект бюджета',
-                          application: 'Заявка',
-                          assumption: 'Предположение',
-                        }[item.data.status]
-                      }
-                    </td>
+                    <td>{fundingStatus[item.data.status]}</td>
                     <td className="rm-long-text">
                       {item.data.sourceReference || 'Не указано'}
                       <small>{dateLabel(item.data.sourceDate)}</small>
@@ -539,7 +692,7 @@ export function CalendarResources(props: RoadmapWorkspaceProps) {
                 ))}
               </tbody>
             </table>
-          </div>
+          </CalendarData>
         ) : (
           <EmptySection>
             Свяжите источник средств с конкретной денежной статьёй. Одно поступление нельзя
@@ -557,15 +710,29 @@ export function CalendarResources(props: RoadmapWorkspaceProps) {
         {passport ? (
           <>
             {describedResources.length ? (
-              <dl className="rm-resource-description">
-                {describedResources.map(({ key, label }) => (
-                  <div key={key}>
-                    <dt>{label}</dt>
-                    <dd>{passport.data[key]}</dd>
-                  </div>
-                ))}
-              </dl>
-            ) : <EmptySection>Ресурсы не описаны.</EmptySection>}
+              <CalendarData
+                title={exportTitle('Ресурсы проекта')}
+                scrollClassName={null}
+                rows={[
+                  ['Ресурс', 'Описание'],
+                  ...describedResources.map(({ key, label }) => [
+                    label,
+                    passport.data[key] ?? null,
+                  ]),
+                ]}
+              >
+                <dl className="rm-resource-description">
+                  {describedResources.map(({ key, label }) => (
+                    <div key={key}>
+                      <dt>{label}</dt>
+                      <dd>{passport.data[key]}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </CalendarData>
+            ) : (
+              <EmptySection>Ресурсы не описаны.</EmptySection>
+            )}
             {editable ? (
               <EditButton
                 label="Описать ресурсы"

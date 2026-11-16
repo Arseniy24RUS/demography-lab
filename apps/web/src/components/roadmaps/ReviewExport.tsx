@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { Check, Download, FileCheck2, MessageSquare, Save } from 'lucide-react';
 import type { RoadmapVersionSummary } from '../../../../../packages/roadmaps/types';
 import { assessRoadmapReadiness } from '../../../../../packages/analytics';
+import { roadmapReportSections, type RoadmapReportSection } from '../../../../../packages/export/sections';
+import type { PdfExportFonts } from '../../../../../packages/export/types';
+import { loadDeviceTimesNewRoman, loadTimesNewRomanFiles } from '../../lib/roadmap-export-fonts';
+import type { RoadmapDownloadOptions } from '../../lib/roadmap-export';
 import { Modal } from '../Modal';
 import {
   activeItems,
@@ -21,7 +25,8 @@ export function ReviewExport({
   onEdit,
   isHost,
   onTab,
-}: RoadmapWorkspaceProps & { isHost: boolean; onTab(tab: RoadmapTab): void }) {
+  flushPassport,
+}: RoadmapWorkspaceProps & { isHost: boolean; onTab(tab: RoadmapTab): void; flushPassport(): Promise<boolean> }) {
   const readiness = assessRoadmapReadiness(snapshot),
     monitoring = activeItems(snapshot, 'monitoring')[0],
     risks = activeItems(snapshot, 'risk');
@@ -32,10 +37,16 @@ export function ReviewExport({
     [decision, setDecision] = useState<'revise' | 'discussed'>('revise'),
     [comment, setComment] = useState('');
   const task = useRoadmapTask();
-  const word = useRoadmapTask();
+  const report = useRoadmapTask();
+  const fontTask = useRoadmapTask();
+  const allSections = roadmapReportSections.map(section => section.id);
+  const [sections, setSections] = useState<RoadmapReportSection[]>(allSections);
+  const [pdfTypeface, setPdfTypeface] = useState<'times' | 'liberation'>('times');
+  const [localFonts, setLocalFonts] = useState<PdfExportFonts>();
   const latestVersion = snapshot.versions.reduce<RoadmapVersionSummary | undefined>((latest, candidate) =>
     !latest || candidate.number > latest.number ? candidate : latest, undefined);
   const mounted = useRef(false);
+  const fontSettings = useRef<HTMLDetailsElement | null>(null);
   useEffect(() => {
     mounted.current = true;
     return () => {
@@ -52,54 +63,108 @@ export function ReviewExport({
     risks: 'review',
     monitoring: 'review',
   };
+  async function exportOptions(format: 'docx' | 'pdf', current = false): Promise<RoadmapDownloadOptions> {
+    if (!sections.length) throw new Error('Выберите хотя бы один раздел документа.');
+    if (format === 'docx' || pdfTypeface === 'liberation')
+      return { sections, includeCurrentData: current };
+    try {
+      const pdfFonts = localFonts ?? await loadDeviceTimesNewRoman();
+      if (mounted.current) setLocalFonts(pdfFonts);
+      return { sections, includeCurrentData: current, pdfFonts };
+    } catch (cause) {
+      if (fontSettings.current) fontSettings.current.open = true;
+      throw cause;
+    }
+  }
   async function download(versionId: string, format: 'docx' | 'pdf') {
     await task.run(async () => {
+      const options = await exportOptions(format);
+      if (!mounted.current) return;
       const version = await controller.actions.readVersion(snapshot.roadmapId, versionId);
       if (!mounted.current) return;
       const { downloadRoadmapVersion } = await import('../../lib/roadmap-export');
-      await downloadRoadmapVersion(version, format, () => mounted.current);
+      await downloadRoadmapVersion(version, format, () => mounted.current, options);
     }, 'Файл подготовлен из выбранной зафиксированной версии.');
   }
-  async function downloadCurrentWord() {
-    await word.run(async () => {
-      let version = latestVersion;
-      // Freezing a version increments the live revision once, without changing project data.
-      if (editable && (!version || version.roadmapRevision + 1 !== snapshot.revision)) {
-        const updated = await controller.actions.freeze({
-          roadmapId: snapshot.roadmapId,
-          expectedRevision: snapshot.revision,
-          title: `Рабочая версия ${(version?.number ?? 0) + 1}`,
-          kind: 'draft',
-        });
-        version = updated.versions.find(item => item.roadmapRevision === snapshot.revision);
-      }
-      if (!version) throw new Error('Не удалось подготовить сохранённую версию для Word.');
+  async function downloadCurrent(format: 'docx' | 'pdf') {
+    await report.run(async () => {
+      const options = await exportOptions(format, editable);
+      if (!await flushPassport()) throw new Error('Сохраните изменения паспорта перед экспортом.');
       if (!mounted.current) return;
-      const stored = await controller.actions.readVersion(snapshot.roadmapId, version.id);
+      const stored = editable ? await controller.actions.readCurrentVersion(snapshot.roadmapId)
+        : latestVersion ? await controller.actions.readVersion(snapshot.roadmapId, latestVersion.id) : null;
+      if (!stored) throw new Error('Не удалось получить данные дорожной карты.');
       if (!mounted.current) return;
       const { downloadRoadmapVersion } = await import('../../lib/roadmap-export');
-      await downloadRoadmapVersion(stored, 'docx', () => mounted.current);
-    }, 'Дорожная карта подготовлена в формате Word.');
+      await downloadRoadmapVersion(stored, format, () => mounted.current, options);
+    }, `Дорожная карта подготовлена в формате ${format === 'docx' ? 'Word' : 'PDF'}.`);
   }
+  const exportBusy = controller.busy || task.working || report.working || fontTask.working;
   return (
     <div className="rm-review">
       <section className="rm-section">
         <SectionHeading title="Проверка дорожной карты">
-          Восемь разделов шаблона организаторов. Заполненность помогает найти пробелы, но не
-          оценивает научную обоснованность проекта.
+          Выберите разделы и скачайте дорожную карту.
         </SectionHeading>
-        {editable || latestVersion ? (
+        {editable || latestVersion ? <div className="rm-export-options">
+          <details className="rm-export-settings">
+            <summary>Разделы документа <span>{sections.length} из {allSections.length}</span></summary>
+            <fieldset disabled={exportBusy}>
+              <legend className="session-sr-only">Разделы для экспорта</legend>
+              <label className="rm-check rm-export-select-all">
+                <input type="checkbox" checked={sections.length === allSections.length}
+                  onChange={event => setSections(event.target.checked ? allSections : [])} /> Все разделы
+              </label>
+              <div className="rm-export-section-list">
+                {roadmapReportSections.map(({ id, label }) => <label className="rm-check" key={id}>
+                  <input type="checkbox" checked={sections.includes(id)} onChange={event => {
+                    const selected = event.target.checked;
+                    setSections(current => selected ? [...current, id] : current.filter(section => section !== id));
+                  }} />{label}
+                </label>)}
+              </div>
+            </fieldset>
+          </details>
           <div className="rm-export-quick">
             <button type="button" className="button button-primary"
-              disabled={controller.busy || task.working || word.working}
-              onClick={() => void downloadCurrentWord()}>
+              disabled={exportBusy || !sections.length} onClick={() => void downloadCurrent('docx')}>
               <Download size={17} aria-hidden="true" />
               {editable ? 'Скачать Word' : 'Скачать последнюю версию Word'}
             </button>
-            <span>В файл попадут сохранённые данные команды.</span>
+            <button type="button" className="button button-secondary"
+              disabled={exportBusy || !sections.length} onClick={() => void downloadCurrent('pdf')}>
+              <Download size={17} aria-hidden="true" />Скачать PDF
+            </button>
+            {!sections.length ? <span>Выберите хотя бы один раздел.</span> : null}
           </div>
-        ) : null}
-        {word.feedback}
+          <details className="rm-export-settings" ref={fontSettings}>
+            <summary>Шрифт PDF <span>{pdfTypeface === 'times' ? 'Times New Roman' : 'Liberation Serif'}</span></summary>
+            <label className="rm-field"><span>Шрифт PDF</span>
+              <select value={pdfTypeface} disabled={exportBusy}
+                onChange={event => setPdfTypeface(event.target.value as typeof pdfTypeface)}>
+                <option value="times">Times New Roman с устройства</option>
+                <option value="liberation">Встроенный Liberation Serif</option>
+              </select>
+            </label>
+            {pdfTypeface === 'times' ? <div className="rm-export-font-files">
+              {localFonts ? <p>Times New Roman готов к встраиванию.</p> :
+                <p>Разрешите браузеру доступ к Times New Roman при скачивании PDF или выберите локальные файлы шрифта. Файлы не отправляются на сервер.</p>}
+              <label className="rm-field"><span>Файлы Times New Roman (обычный и полужирный)</span>
+                <input type="file" multiple accept=".ttf,.otf,font/ttf,font/otf" disabled={exportBusy}
+                  onChange={event => {
+                    const files = Array.from(event.target.files ?? []);
+                    event.target.value = '';
+                    if (files.length) void fontTask.run(async () => {
+                      const fonts = await loadTimesNewRomanFiles(files);
+                      if (mounted.current) setLocalFonts(fonts);
+                    });
+                  }} />
+              </label>
+              {fontTask.feedback}
+            </div> : null}
+          </details>
+        </div> : null}
+        {report.feedback}
         <div className="rm-readiness-overview">
           <div>
             <strong>{readiness.completedSections} / 8</strong>
@@ -251,8 +316,7 @@ export function ReviewExport({
       </section>
       <section className="rm-section">
         <SectionHeading title="Версии и экспорт">
-          Каждый документ строится из неизменяемой версии: текст, расчёты, источники и
-          предупреждения сохраняются вместе.
+          Сохраните отдельную версию, если нужно вернуться к ней позже.
         </SectionHeading>
         <div className="rm-export-toolbar">
           {editable ? (
@@ -297,8 +361,7 @@ export function ReviewExport({
                       </span>
                       <h3>{version.title}</h3>
                       <p>
-                        {new Date(version.createdAt).toLocaleString('ru-RU')} · редакция карты{' '}
-                        {version.roadmapRevision}
+                        {new Date(version.createdAt).toLocaleString('ru-RU')}
                       </p>
                     </div>
                     <Download size={22} />
@@ -308,7 +371,7 @@ export function ReviewExport({
                       <button
                         key={format}
                         className="button button-secondary"
-                        disabled={task.working}
+                        disabled={exportBusy || !sections.length}
                         onClick={() => void download(version.id, format)}
                       >
                         <Download size={15} />
@@ -316,16 +379,6 @@ export function ReviewExport({
                       </button>
                     ))}
                   </div>
-                  <details className="rm-source-details">
-                    <summary>Контрольная сумма и воспроизводимость</summary>
-                    <p>
-                      SHA-256 канонического снимка: <code>{version.sha256}</code>
-                    </p>
-                    <p>
-                      Экспорт проверяет соответствие снимка контрольной сумме до формирования
-                      файлов. Более поздние правки команды не изменяют эту версию.
-                    </p>
-                  </details>
                   {version.review ? (
                     <div className="rm-version-review">
                       <strong>
@@ -354,8 +407,7 @@ export function ReviewExport({
           </div>
         ) : (
           <EmptySection>
-            Зафиксируйте первую версию, чтобы скачать дорожную карту в DOCX или PDF. После
-            этого команда сможет продолжить редактирование.
+            Пока нет зафиксированных версий.
           </EmptySection>
         )}
       </section>

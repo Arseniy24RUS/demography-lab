@@ -108,7 +108,7 @@ async function staticFile(request,response,path,survey,root) {
   const demographyPack=!survey&&/^\/data\/demography\/[a-z0-9-]+\.json\.gz$/.test(routed);
   const permitted=routed==='/index.html'||routed==='/survey.html'||/^\/(?:favicon\.(?:svg|ico|png)|apple-touch-icon\.png|site\.webmanifest)$/.test(routed)
     || /^\/assets\/[a-zA-Z0-9_./-]+$/.test(routed)
-    || /^\/fonts\/(?:DejaVuSans(?:-Bold)?\.ttf|LICENSE-DejaVu\.txt)$/.test(routed)
+    || /^\/fonts\/(?:DejaVuSans(?:-Bold)?\.ttf|LiberationSerif-(?:Regular|Bold)\.ttf|LICENSE-(?:DejaVu|Liberation)\.txt)$/.test(routed)
     ||readerModule||(!survey&&/^\/data\/[a-zA-Z0-9_./-]+$/.test(routed));
   if(!permitted||!MIME.has(ext)||(ext==='.gz'&&!factorPack&&!demographyPack))throw new HttpError(404,'NOT_FOUND');
   const file=readerModule

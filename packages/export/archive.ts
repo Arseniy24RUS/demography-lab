@@ -25,7 +25,7 @@ export async function buildRoadmapArchive(
   files['README.txt'] = encode(
     `Демографическая мастерская\nВерсия дорожной карты ${prepared.version.number}\nТерритория: ${prepared.version.snapshot.territory.name}\n\n` +
       `SHA-256 точных UTF-8 байтов canonical.json:\n${prepared.version.sha256}\n\n` +
-      'roadmap.docx и roadmap.pdf содержат одну сохранённую версию. В PDF встроены selectable-текст, шрифты DejaVu Sans и вложение canonical.json.\n' +
+      'roadmap.docx и roadmap.pdf содержат одну сохранённую версию. PDF содержит выделяемый текст и встроенные шрифты.\n' +
       'roadmap.json сохраняет полный снимок, точный canonicalJson, расчёты, исходные ряды, документальные основания и предупреждения.\n' +
       'canonical.json нельзя форматировать перед проверкой контрольной суммы: даже изменение пробелов изменит SHA-256.\n' +
       'manifest.json связывает файлы с версией. SHA256SUMS.txt содержит суммы файлов архива, включая manifest.json, но не самого списка.\n' +

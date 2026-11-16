@@ -1,3 +1,4 @@
+import { startWorkshopPolling } from '../lib/workshop-polling';
 import { randomUuid } from '../../../../packages/security/crypto.mjs';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { BarriersProjection, BarriersSnapshot } from '../../../../packages/barriers/types';
@@ -177,10 +178,9 @@ export function useBarriers(options: {
           })
       : null;
     void sync();
-    const timer = setInterval(() => {
-      if (document.visibilityState === 'visible' && (!live || Date.now() - lastSync > 30000))
-        void sync();
-    }, api.config.pollInterval);
+    const timer = startWorkshopPolling(api.config.pollInterval, () => {
+      if (!live || Date.now() - lastSync > 30000) return sync();
+    });
     const focus = () => {
       if (document.visibilityState === 'visible') void sync();
     };
@@ -189,7 +189,7 @@ export function useBarriers(options: {
     document.addEventListener('visibilitychange', focus);
     return () => {
       active = false;
-      clearInterval(timer);
+      timer();
       if (schedule) clearTimeout(schedule);
       window.removeEventListener('online', focus);
       window.removeEventListener('focus', focus);

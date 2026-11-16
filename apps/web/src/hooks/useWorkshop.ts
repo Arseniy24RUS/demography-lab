@@ -1,3 +1,4 @@
+import { startWorkshopPolling } from '../lib/workshop-polling';
 import { randomUuid } from '../../../../packages/security/crypto.mjs';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { WorkshopProjection, WorkshopSnapshot } from '../../../../packages/workshop/types';
@@ -91,13 +92,13 @@ export function useWorkshop(options: { api: SessionApi | null; sessionId: string
         if (!schedule) schedule = setTimeout(() => { schedule = undefined; void sync(); }, 150);
       }).subscribe((status) => { live = status === 'SUBSCRIBED'; if (live) void sync(); }) : null;
     void sync();
-    const timer = setInterval(() => {
-      if (document.visibilityState === 'visible' && (!live || Date.now() - lastSync > 30000)) void sync();
-    }, api.config.pollInterval);
+    const timer = startWorkshopPolling(api.config.pollInterval, () => {
+      if (!live || Date.now() - lastSync > 30000) return sync();
+    });
     const focus = () => { if (document.visibilityState === 'visible') void sync(); };
     window.addEventListener('online', focus); window.addEventListener('focus', focus); document.addEventListener('visibilitychange', focus);
     return () => {
-      active = false; clearInterval(timer); if (schedule) clearTimeout(schedule);
+      active = false; timer(); if (schedule) clearTimeout(schedule);
       window.removeEventListener('online', focus); window.removeEventListener('focus', focus); document.removeEventListener('visibilitychange', focus);
       if (channel) void api.client.removeChannel(channel);
       refreshRef.current = async () => {};

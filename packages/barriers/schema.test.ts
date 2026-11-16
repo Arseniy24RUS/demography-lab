@@ -57,6 +57,40 @@ describe('Stage 4 transport and privacy boundaries', () => {
     s.families = []; s.links[0].staleReasons = ['family_missing']; expect(() => parseBarriersSnapshot(s)).not.toThrow();
     s.links.push({ ...s.links[0] }); expect(() => parseBarriersSnapshot(s)).toThrow();
   });
+  it('accepts the classroom active capacities plus retained archive in both board DTOs', () => {
+    const s = snapshot();
+    const recordId = (index: number) => `00000000-0000-4000-8000-${index.toString(16).padStart(12, '0')}`;
+    const recordStatus = (index: number, active: number) => index < active ? 'active' as const : 'archived' as const;
+    s.barriers = Array.from({ length: 523 }, (_, index) => ({
+      ...barrier(), id: recordId(100 + index), status: recordStatus(index, 500),
+    }));
+    s.solutions = Array.from({ length: 519 }, (_, index) => ({
+      id: recordId(1000 + index), authorId: sid, authorName: 'Участник занятия', title: 'Гибкий график',
+      status: recordStatus(index, 500), format: 'brief', barrierIds: [s.barriers[index].id], mechanism: '',
+      targetGroup: '', firstStep: '', responsible: '', resources: '', successIndicator: '', risks: '',
+      revision: 1, createdAt: now, updatedAt: now,
+    }));
+    const template = s.links[0];
+    s.links = Array.from({ length: 1569 }, (_, index) => ({
+      ...template, id: recordId(2000 + index), status: recordStatus(index, 1500),
+      barrierId: s.barriers[index % 500].id,
+    }));
+    const projected = {
+      ...s, title: 'Демографическая мастерская', scope: 'municipality', regionId: 'respublika-mordoviia',
+      phase: 'discussion', status: 'open',
+      barriers: s.barriers.map(({ authorId: _id, myVote: _vote, myVoteRevision: _revision, ...row }) => row),
+      solutions: s.solutions.map(({ authorId: _id, ...row }) => row),
+      links: s.links.map(({ authorId: _id, ...row }) => row),
+    };
+    expect(parseBarriersSnapshot(s).barriers).toHaveLength(523);
+    expect(parseBarriersProjection(projected).links).toHaveLength(1569);
+    expect(() => parseBarriersSnapshot({ ...s, solutions: [...s.solutions, {
+      ...s.solutions[0], id: recordId(4000),
+    }] })).toThrow();
+    expect(() => parseBarriersProjection({ ...projected, links: [...projected.links, {
+      ...projected.links[0], id: recordId(4001),
+    }] })).toThrow();
+  });
   it('rejects private survey and named identity fields in a projector DTO', () => {
     const { authorId: _author, myVote: _vote, myVoteRevision: _voteRevision, ...b } = barrier();
     const p = { sessionId: sid, title: 'Совместная работа', scope: 'municipality', regionId: 'respublika-mordoviia', phase: 'reading', status: 'open', cursor: 1,

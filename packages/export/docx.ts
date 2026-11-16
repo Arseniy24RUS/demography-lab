@@ -2,7 +2,7 @@ import {
   AlignmentType,
   BorderStyle,
   Document,
-  Footer,
+  Header,
   HeadingLevel,
   ImageRun,
   PageNumber,
@@ -18,12 +18,24 @@ import {
 } from 'docx';
 import type { FileChild } from 'docx';
 import { figureSvg } from './figures';
+import { roadmapLayout, twips } from './layout';
 import type { DocxExportOptions, PreparedRoadmapExport, ReportBlock } from './types';
 
-// Preserve the A4 sheet in Roadmap_Template_Original.docx (11906 × 16838 twips).
-const pageWidth = 11906;
-const contentWidth = 9746;
-const border = { style: BorderStyle.SINGLE, size: 4, color: 'D9D9D9' };
+const pageWidth = twips(roadmapLayout.page.width);
+const pageHeight = twips(roadmapLayout.page.height);
+const margins = {
+  top: twips(roadmapLayout.margin.top),
+  right: twips(roadmapLayout.margin.right),
+  bottom: twips(roadmapLayout.margin.bottom),
+  left: twips(roadmapLayout.margin.left),
+  header: twips(roadmapLayout.margin.header),
+};
+const contentWidth = pageWidth - margins.left - margins.right;
+const contentHeight = pageHeight - margins.top - margins.bottom;
+const indent = { firstLine: twips(roadmapLayout.firstLineIndent) };
+const bodySize = roadmapLayout.bodySize * 2;
+const bodySpacing = { line: roadmapLayout.lineSpacing * 240, after: 0 };
+const border = { style: BorderStyle.SINGLE, size: 4, color: 'A0A0A0' };
 const borders = {
   top: border,
   bottom: border,
@@ -33,54 +45,30 @@ const borders = {
   insideVertical: border,
 };
 
-function textParagraph(
-  text: string,
-  options: {
-    bold?: boolean;
-    color?: string;
-    size?: number;
-    label?: string;
-    quote?: boolean;
-    after?: number;
-  } = {},
-): Paragraph {
-  const children: TextRun[] = [];
-  if (options.label)
-    children.push(
-      new TextRun({
-        text: `${options.label}. `,
-        bold: true,
-        size: options.size ?? 22,
-        color: options.color ?? '000000',
-      }),
-    );
-  const lines = text.split('\n');
-  lines.forEach((line, index) =>
-    children.push(
-      new TextRun({
-        text: line,
-        break: index > 0 ? 1 : undefined,
-        bold: options.bold,
-        italics: options.quote,
-        color: options.color ?? '000000',
-        size: options.size ?? 22,
-      }),
-    ),
-  );
-  return new Paragraph({
-    children,
-    spacing: { after: options.after ?? 120, line: 282 },
-    indent: options.quote ? { left: 280, right: 160 } : undefined,
-    widowControl: true,
+function textParagraphs(block: Extract<ReportBlock, { kind: 'paragraph' }>): Paragraph[] {
+  return block.text.split(/\r\n?|\n/u).map((line, index) => {
+    const label = index === 0 && block.label;
+    const isMeta = block.role === 'meta';
+    return new Paragraph({
+      children: [
+        ...(label ? [new TextRun({ text: `${label}. `, bold: true })] : []),
+        new TextRun({ text: line, italics: block.role === 'quote' }),
+      ],
+      alignment: isMeta ? AlignmentType.CENTER : AlignmentType.JUSTIFIED,
+      indent: isMeta ? undefined : indent,
+      spacing: bodySpacing,
+      widowControl: true,
+    });
   });
 }
-function reportTable(block: Extract<ReportBlock, { kind: 'table' }>): FileChild[] {
+
+function reportTable(block: Extract<ReportBlock, { kind: 'table' }>, number: number): FileChild[] {
   const totalWeight = block.columns.reduce((sum, column) => sum + column.weight, 0);
   const widths = block.columns.map((column) =>
     Math.round((contentWidth * column.weight) / totalWeight),
   );
   widths[widths.length - 1]! += contentWidth - widths.reduce((a, b) => a + b, 0);
-  const row = (values: string[], isHeader: boolean, index: number) =>
+  const row = (values: string[], isHeader: boolean) =>
     new TableRow({
       tableHeader: isHeader,
       // Keep ordinary records together; very long source or stage rows may flow.
@@ -91,7 +79,7 @@ function reportTable(block: Extract<ReportBlock, { kind: 'table' }>): FileChild[
             width: { size: widths[columnIndex]!, type: WidthType.DXA },
             verticalAlign: VerticalAlign.CENTER,
             margins: { top: 100, bottom: 100, left: 110, right: 110 },
-            shading: { fill: isHeader ? '2D435D' : index % 2 === 0 ? 'F4F6F8' : 'FFFFFF' },
+            shading: isHeader ? { fill: 'F3F3F3' } : undefined,
             borders: { top: border, bottom: border, left: border, right: border },
             children: text.split('\n').map(
               (line) =>
@@ -100,8 +88,7 @@ function reportTable(block: Extract<ReportBlock, { kind: 'table' }>): FileChild[
                     new TextRun({
                       text: line,
                       bold: isHeader,
-                      color: isHeader ? 'FFFFFF' : '000000',
-                      size: 20,
+                      size: roadmapLayout.tableSize * 2,
                     }),
                   ],
                   alignment: isHeader
@@ -111,7 +98,7 @@ function reportTable(block: Extract<ReportBlock, { kind: 'table' }>): FileChild[
                       : block.columns[columnIndex]?.align === 'center'
                         ? AlignmentType.CENTER
                         : AlignmentType.LEFT,
-                  spacing: { before: 0, after: 40, line: 250 },
+                  spacing: { before: 0, after: 0, line: 240 },
                   widowControl: true,
                 }),
             ),
@@ -120,8 +107,9 @@ function reportTable(block: Extract<ReportBlock, { kind: 'table' }>): FileChild[
     });
   return [
     new Paragraph({
-      children: [new TextRun({ text: block.caption, bold: true, color: '000000', size: 22 })],
+      children: [new TextRun({ text: `Таблица ${number} — ${block.caption}` })],
       keepNext: true,
+      keepLines: true,
       spacing: { before: 160, after: 100 },
     }),
     new Table({
@@ -133,9 +121,8 @@ function reportTable(block: Extract<ReportBlock, { kind: 'table' }>): FileChild[
         row(
           block.columns.map((column) => column.title),
           true,
-          0,
         ),
-        ...block.rows.map((values, index) => row(values, false, index)),
+        ...block.rows.map((values) => row(values, false)),
       ],
     }),
     new Paragraph({
@@ -152,16 +139,24 @@ export async function buildRoadmapDocx(
   const children: FileChild[] = [
     new Paragraph({
       heading: HeadingLevel.TITLE,
-      children: [new TextRun({ text: prepared.title, bold: true, color: '000000', size: 42 })],
-      spacing: { after: 180 },
+      children: [new TextRun({ text: prepared.title, bold: true })],
+      alignment: AlignmentType.CENTER,
+      spacing: { ...bodySpacing, after: 120 },
       keepNext: true,
-    }),
-    new Paragraph({
-      children: [new TextRun({ text: prepared.subtitle, color: '000000', size: 28 })],
-      spacing: { after: 280 },
-      keepNext: true,
+      keepLines: true,
     }),
   ];
+  if (prepared.subtitle)
+    children.push(
+      new Paragraph({
+        children: [new TextRun(prepared.subtitle)],
+        alignment: AlignmentType.CENTER,
+        spacing: { ...bodySpacing, after: 120 },
+        keepNext: true,
+      }),
+    );
+  let tableNumber = 0;
+  let figureNumber = 0;
   for (const block of prepared.blocks) {
     if (block.kind === 'heading') {
       children.push(
@@ -172,121 +167,98 @@ export async function buildRoadmapDocx(
               : block.level === 2
                 ? HeadingLevel.HEADING_2
                 : HeadingLevel.HEADING_3,
-          children: [
-            new TextRun({
-              text: block.text,
-              color: '000000',
-              bold: true,
-              size: block.level === 1 ? 29 : block.level === 2 ? 25 : 23,
-            }),
-          ],
+          children: [new TextRun({ text: block.text, bold: true })],
+          alignment: block.level === 1 ? AlignmentType.CENTER : AlignmentType.LEFT,
+          indent: block.level === 1 ? undefined : indent,
           keepNext: true,
           keepLines: true,
-          spacing: { before: block.level === 1 ? 320 : 220, after: 120 },
+          spacing: { ...bodySpacing, before: block.level === 1 ? 240 : 160, after: 80 },
         }),
       );
     } else if (block.kind === 'paragraph') {
-      children.push(
-        textParagraph(block.text, {
-          label: block.label,
-          quote: block.role === 'quote',
-          size: block.role === 'meta' ? 20 : 22,
-          color: block.role === 'meta' ? '465366' : '000000',
-        }),
-      );
+      children.push(...textParagraphs(block));
     } else if (block.kind === 'table') {
-      children.push(...reportTable(block));
+      children.push(...reportTable(block, ++tableNumber));
     } else {
       const figure = block.figure;
       const svg = figureSvg(figure);
       const png = await options.rasterizeSvg(svg, figure.width * 2, figure.height * 2);
       if (png.length < 8 || png[0] !== 137 || png[1] !== 80 || png[2] !== 78 || png[3] !== 71)
         throw new Error('Не удалось подготовить изображение графика для DOCX.');
-      const imageWidth = contentWidth / 15;
+      const imageScale = Math.min(
+        contentWidth / 15 / figure.width,
+        (contentHeight - twips(20)) / 15 / figure.height,
+      );
       const image = new ImageRun({
         type: 'svg',
         data: new TextEncoder().encode(svg),
         fallback: { type: 'png', data: png },
-        transformation: { width: imageWidth, height: (imageWidth * figure.height) / figure.width },
-        altText: { name: figure.id, title: figure.title, description: figure.altText },
+        transformation: { width: figure.width * imageScale, height: figure.height * imageScale },
+        altText: { name: figure.title, title: figure.title, description: figure.altText },
       });
       children.push(
         new Paragraph({
-          children: [new TextRun({ text: figure.title, bold: true, color: '000000', size: 22 })],
+          children: [image],
+          alignment: AlignmentType.CENTER,
           keepNext: true,
-          spacing: { before: 180, after: 100 },
+          keepLines: true,
+          spacing: { before: 140, after: 0, line: 240 },
+        }),
+        new Paragraph({
+          children: [new TextRun(`Рисунок ${++figureNumber} — ${figure.title}`)],
+          alignment: AlignmentType.CENTER,
+          keepLines: true,
+          spacing: { ...bodySpacing, after: 140 },
         }),
       );
-      children.push(new Paragraph({ children: [image], keepLines: true, spacing: { after: 80 } }));
-      children.push(textParagraph(figure.altText, { size: 20, color: '465366', after: 160 }));
     }
   }
-  const footer = new Footer({
+  const header = new Header({
     children: [
       new Paragraph({
-        alignment: AlignmentType.RIGHT,
+        alignment: AlignmentType.CENTER,
+        indent: { right: margins.left - margins.right },
+        spacing: { line: 240, after: 0, before: 0 },
         children: [
-          new TextRun({
-            text: `Версия ${prepared.version.number} · ${prepared.version.sha256.slice(0, 12)} · `,
-            size: 17,
-            color: '465366',
-          }),
-          new TextRun({
-            children: [PageNumber.CURRENT, ' / ', PageNumber.TOTAL_PAGES],
-            size: 17,
-            color: '465366',
-          }),
+          new TextRun({ children: [PageNumber.CURRENT] }),
         ],
       }),
     ],
   });
+  const headingStyle = { run: { font: roadmapLayout.font, size: bodySize, bold: true } };
   const document = new Document({
-    title: `${prepared.title} ${prepared.subtitle}`,
-    subject: 'Зафиксированная дорожная карта демографического проекта',
+    title: [prepared.title, prepared.subtitle].filter(Boolean).join(' — '),
+    subject: 'Дорожная карта демографического проекта',
     creator: 'Демографическая мастерская',
     lastModifiedBy: 'Демографическая мастерская',
-    description: `Версия ${prepared.version.number}; SHA-256 канонического снимка ${prepared.version.sha256}`,
-    revision: prepared.version.number,
-    customProperties: [
-      { name: 'RoadmapVersionId', value: prepared.version.id },
-      { name: 'CanonicalSnapshotSHA256', value: prepared.version.sha256 },
-      { name: 'CalculationVersion', value: prepared.version.snapshot.calculationVersion },
-      { name: 'ExportVersion', value: prepared.exportVersion },
-    ],
     features: { updateFields: true },
     styles: {
       default: {
         document: {
-          run: { font: 'Arial', size: 22, color: '000000' },
-          paragraph: { spacing: { after: 120, line: 282 } },
+          run: {
+            font: roadmapLayout.font,
+            size: bodySize,
+            color: '000000',
+            language: { value: 'ru-RU' },
+          },
+          paragraph: { spacing: bodySpacing },
         },
-        title: {
-          run: { color: '000000', size: 42, bold: true },
-          paragraph: { spacing: { after: 180 }, keepNext: true },
-        },
-        heading1: {
-          run: { color: '000000', size: 29, bold: true },
-          paragraph: { spacing: { before: 320, after: 120 }, keepNext: true },
-        },
-        heading2: {
-          run: { color: '000000', size: 25, bold: true },
-          paragraph: { spacing: { before: 220, after: 120 }, keepNext: true },
-        },
-        heading3: {
-          run: { color: '000000', size: 23, bold: true },
-          paragraph: { spacing: { before: 220, after: 120 }, keepNext: true },
-        },
+        title: headingStyle,
+        heading1: headingStyle,
+        heading2: headingStyle,
+        heading3: headingStyle,
       },
     },
     sections: [
       {
         properties: {
+          titlePage: true,
           page: {
-            size: { width: pageWidth, height: 16838 },
-            margin: { top: 1080, bottom: 1080, left: 1080, right: 1080, footer: 480, header: 480 },
+            size: { width: pageWidth, height: pageHeight },
+            margin: margins,
           },
         },
-        footers: { default: footer },
+        headers: { default: header, first: new Header({ children: [new Paragraph('')] }) },
         children,
       },
     ],

@@ -1169,6 +1169,35 @@
   margin: 0 0 16px;
 }
 .rm-export-quick > span { color: #4d6680; font-size: .88rem; }
+.rm-export-options {
+  display: grid;
+  gap: 9px;
+  padding: 12px;
+  margin: 0 0 16px;
+  border: 1px solid #d9e4f0;
+  border-radius: 10px;
+  background: #f8fbff;
+}
+.rm-export-options .rm-export-quick { margin: 0; }
+.rm-export-settings { min-width: 0; }
+.rm-export-settings > summary {
+  color: #21496d;
+  cursor: pointer;
+  font-weight: 670;
+  padding: 5px 1px;
+}
+.rm-export-settings > summary > span {
+  margin-inline-start: 8px;
+  color: #536d89;
+  font-size: .82rem;
+  font-weight: 500;
+}
+.rm-export-settings > fieldset { min-width: 0; margin: 0; padding: 5px 0 0; border: 0; }
+.rm-export-select-all { margin-bottom: 5px; font-weight: 650; }
+.rm-export-section-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 175px), 1fr)); gap: 4px 10px; }
+.rm-export-settings .rm-field { width: min(100%, 340px); margin: 7px 0; }
+.rm-export-font-files p { color: #526982; font-size: .85rem; }
+.rm-export-font-files input[type="file"] { width: 100%; padding: 5px; font-size: .83rem; }
 .rm-readiness-overview {
   display: flex;
   align-items: center;
@@ -2090,3 +2119,42 @@
 @media (max-width: 620px) {
   .rm-workshop-import { grid-template-columns: minmax(0, 1fr); }
 }
+.rm-exportable { position: relative; }
+.rm-data-download { position: absolute; z-index: 4; top: 2px; right: 3px; }
+.rm-data-download[open] { z-index: 6; }
+.rm-data-download > summary {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  margin-left: auto;
+  place-items: center;
+  list-style: none;
+  color: #254767;
+  background: rgb(255 255 255 / 86%);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  opacity: .64;
+}
+.rm-data-download > summary::-webkit-details-marker { display: none; }
+.rm-data-download > summary:hover, .rm-data-download > summary:focus-visible, .rm-data-download[open] > summary {
+  opacity: 1;
+  border-color: #a9bfd4;
+}
+.rm-data-download-menu {
+  position: absolute;
+  top: 38px;
+  right: 0;
+  display: grid;
+  width: max-content;
+  max-width: min(230px, calc(100vw - 36px));
+  gap: 2px;
+  padding: 5px;
+  background: #fff;
+  border: 1px solid #cad7e4;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px #19365120;
+}
+.rm-data-download-menu button { border: 0; background: #fff; padding: 8px 9px; text-align: left; border-radius: 4px; color: #193651; }
+.rm-data-download-menu button:hover, .rm-data-download-menu button:focus-visible { background: #e9f0f8; }
+.rm-data-download-menu small { padding: 6px; color: #8b322a; }

@@ -9,6 +9,7 @@ const NAMES = [
   'dw_enter_workspace', 'dw_configure_workspace', 'dw_workshop_survey',
   'dw_workspace_votes', 'dw_workspace_votes_projection', 'dw_workspace_vote',
   'dw_flipchart_updates', 'dw_flipchart_add', 'dw_flipchart_vote', 'dw_flipchart_status',
+  'dw_objective_factor_comments', 'dw_save_objective_factor_comment',
   'dw_available_sessions', 'dw_join_open_session',
   'dw_session_snapshot', 'dw_session_cursor', 'dw_projector_snapshot', 'dw_update_session',
   'dw_publish_submission', 'dw_select_catalog_practice', 'dw_moderate_submission', 'dw_invitation', 'dw_rotate_invitation',
@@ -25,7 +26,7 @@ const NAMES = [
   'dw_roadmaps_index', 'dw_roadmaps_cursor', 'dw_roadmap_snapshot', 'dw_roadmap_version',
   'dw_roadmaps_projector_snapshot', 'dw_configure_roadmaps', 'dw_join_roadmap', 'dw_roadmap_presence',
   'dw_save_roadmap_item', 'dw_capture_roadmap_fact', 'dw_capture_roadmap_basis', 'dw_import_roadmap_workshop',
-  'dw_freeze_roadmap', 'dw_review_roadmap', 'dw_roadmap_statistics_save',
+  'dw_freeze_roadmap', 'dw_review_roadmap', 'dw_roadmap_cohort_save', 'dw_roadmap_statistics_save',
   'dw_roadmap_statistics_restore', 'dw_roadmap_statistics_history', 'dw_roadmap_statistics_series',
 ];
 export const RPC_NAMES = Object.freeze(NAMES);

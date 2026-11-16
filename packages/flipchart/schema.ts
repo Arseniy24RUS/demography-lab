@@ -61,6 +61,31 @@ export const selectFlipchartFactorInputSchema = z.strictObject({
 export const voteFlipchartInputSchema = z.strictObject({ value: vote });
 export const statusFlipchartInputSchema = z.strictObject({ status });
 
+export const MAX_OBJECTIVE_COMMENT_LENGTH = 1000;
+const objectiveCommentSelection = { factorKey, territoryKey: factorKey };
+const objectiveCommentText = z.string().refine((value) => {
+  const length = [...value].length;
+  return length > 0 && length <= MAX_OBJECTIVE_COMMENT_LENGTH
+    && !/[\u0000-\u0008\u000e-\u001f\u007f]/u.test(value);
+});
+export const objectiveCommentSelectionSchema = z.strictObject(objectiveCommentSelection);
+export const saveObjectiveCommentSchema = z.strictObject({
+  ...objectiveCommentSelection,
+  expectedRevision: count,
+  text: objectiveCommentText.nullable(),
+});
+const objectiveCommentsSchema = z.strictObject({
+  sessionId: uuid,
+  ...objectiveCommentSelection,
+  myRevision: count,
+  comments: z.array(z.strictObject({ id: uuid, text: objectiveCommentText, mine: z.boolean() })),
+}).refine(({ comments, myRevision }) =>
+  new Set(comments.map(({ id }) => id)).size === comments.length
+  && comments.filter(({ mine }) => mine).length <= (myRevision > 0 ? 1 : 0));
+
+export type ObjectiveComments = z.infer<typeof objectiveCommentsSchema>;
+export const parseObjectiveComments = (value: unknown): ObjectiveComments => parse(objectiveCommentsSchema, value);
+
 function parse<T>(schema: z.ZodType<T>, value: unknown): T {
   const result = schema.safeParse(value);
   if (!result.success) throw new Error(`Несовместимые данные флипчарта: ${result.error.issues[0]?.path.join('.') || 'ответ'}.`);

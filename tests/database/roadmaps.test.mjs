@@ -250,6 +250,69 @@ describe('Stage 5 private territorial roadmap transactions', () => {
     );
   });
 
+  it('shares cohort parameters, rejects stale writes and freezes the exact selected values', async () => {
+    const e = await setup();
+    const parameters = { endYear: 2080, fertilityMultiplier: 1.15, mortalityMultiplier: 1,
+      arrivalsMultiplier: 0.8, departuresMultiplier: 1.1 };
+    const input = { roadmapId: e.roomId, expectedRevision: 0, parameters };
+    assert.equal((await snapshot(e)).cohortSettings, undefined);
+    await code(named(e, 'dw_roadmap_cohort_save', input, e.bob), 'ROADMAP_ROOM_REQUIRED');
+    await named(e, 'dw_join_roadmap', joinInput(), e.bob);
+    const before = await snapshot(e);
+    const operation = id();
+    const saved = await named(e, 'dw_roadmap_cohort_save', input, e.alice, operation);
+    assert.equal(saved.revision, before.revision + 1);
+    assert.equal(saved.cursor, before.cursor + 1);
+    assert.deepEqual(saved.cohortSettings, { revision: 1, parameters });
+    assert.deepEqual((await snapshot(e, e.roomId, e.bob)).cohortSettings, saved.cohortSettings);
+    assert.equal((await named(e, 'dw_roadmap_cohort_save', input, e.alice, operation)).revision, saved.revision);
+    await code(named(e, 'dw_roadmap_cohort_save', input, e.bob), 'REVISION_CONFLICT');
+    await code(named(e, 'dw_roadmap_cohort_save', { ...input, expectedRevision: 1,
+      parameters: { ...parameters, departuresMultiplier: 3.1 } }, e.bob), 'INVALID_INPUT');
+    const unchanged = await named(e, 'dw_roadmap_cohort_save', { ...input, expectedRevision: 1 }, e.bob);
+    assert.equal(unchanged.revision, saved.revision);
+    const frozen = await named(e, 'dw_freeze_roadmap', { roadmapId: e.roomId,
+      expectedRevision: saved.revision, title: 'Общий прогноз', kind: 'draft' });
+    const versionArgs = { p_session_id: e.sessionId, p_roadmap_id: e.roomId, p_version_id: frozen.versions[0].id };
+    const archived = await rpc(e.bob, 'dw_roadmap_version', versionArgs);
+    assert.deepEqual(archived.snapshot.cohortSettings, saved.cohortSettings);
+    await named(e, 'dw_roadmap_cohort_save', { ...input, expectedRevision: 1,
+      parameters: { ...parameters, endYear: 2060, fertilityMultiplier: 1.05 } }, e.bob);
+    assert.equal((await snapshot(e)).cohortSettings.parameters.endYear, 2060);
+    assert.equal((await rpc(e.alice, 'dw_roadmap_version', versionArgs)).canonicalJson, archived.canonicalJson);
+  });
+
+  it('reads the current report canonically without consuming a checkpoint or changing the room', async () => {
+    const e = await setup();
+    const parameters = { endYear: 2090, fertilityMultiplier: 1.2, mortalityMultiplier: 1,
+      arrivalsMultiplier: 1, departuresMultiplier: 1 };
+    const before = await named(e, 'dw_roadmap_cohort_save',
+      { roadmapId: e.roomId, expectedRevision: 0, parameters });
+    const args = { p_session_id: e.sessionId, p_roadmap_id: e.roomId, p_version_id: null };
+    const read = (who = e.alice) => rpc(who, 'dw_roadmap_version', args);
+    const first = await read();
+    assert.deepEqual(first.snapshot.cohortSettings, before.cohortSettings);
+    assert.equal(first.sha256, createHash('sha256').update(first.canonicalJson).digest('hex'));
+    assert.deepEqual(await read(), first);
+    assert.deepEqual(await snapshot(e), before);
+    await code(read(await user('Участник другого занятия')), 'FORBIDDEN');
+
+    const checkpoint = await named(e, 'dw_freeze_roadmap', { roadmapId: e.roomId,
+      expectedRevision: before.revision, title: 'Ручная редакция', kind: 'draft' });
+    const archived = await rpc(e.alice, 'dw_roadmap_version', { ...args, p_version_id: checkpoint.versions[0].id });
+    assert.equal(archived.canonicalJson, first.canonicalJson);
+    assert.equal(archived.sha256, first.sha256);
+    await named(e, 'dw_roadmap_cohort_save', { roadmapId: e.roomId, expectedRevision: 1,
+      parameters: { ...parameters, endYear: 2065 } });
+    const changed = await snapshot(e);
+    const latest = await read();
+    assert.equal(latest.roadmapRevision, changed.revision);
+    assert.equal(latest.snapshot.cohortSettings.parameters.endYear, 2065);
+    assert.notEqual(latest.sha256, first.sha256);
+    assert.deepEqual(await snapshot(e), changed);
+    assert.equal(changed.versions.length, 1);
+  });
+
   it('shares SMART self-checks on a passport and rejects invalid criteria', async () => {
     const e = await setup();
     await named(e, 'dw_join_roadmap', joinInput(), e.bob);

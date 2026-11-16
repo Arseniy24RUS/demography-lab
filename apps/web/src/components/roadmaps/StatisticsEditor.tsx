@@ -23,6 +23,7 @@ import {
 import { Modal } from '../Modal';
 import { Note, numeric } from './common';
 import type { RoadmapWorkspaceProps } from './common';
+import { DataExport } from './DataExport';
 
 type DraftRow = { raw: string; action: 'keep' | 'set' | 'reset' };
 type Draft = Record<number, DraftRow>;
@@ -44,6 +45,45 @@ const originalOf = (series: RoadmapSeries | null) =>
   series && isTeamStatisticalSeries(series) ? series.baseSeries : series;
 const timestampLabel = (value: string) =>
   new Date(value).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
+
+function HistoricalObservations({ series, territoryName }: { series: TeamStatisticalSeries; territoryName: string }) {
+  const rows = compareSeriesPoints(series.baseSeries, series).map(({ year, before, after }) => ({
+    year, before, after,
+    source: after.origin.kind === 'participant_supplied' ? after.origin.sourceReference : 'Исходный пакет',
+  }));
+  return (
+    <div className="rm-exportable rm-exportable-table">
+      <DataExport title={`${STATISTICS_METRIC_LABELS[series.metricId]} — ${territoryName}, редакция ${series.revision}`} rows={[
+        ['Год', 'Исходное, чел.', 'В редакции, чел.', 'Источник наблюдения'],
+        ...rows.map(({ year, before, after, source }) => [
+          year, before.present ? before.value : null, after.present ? after.value : null, source,
+        ]),
+      ]} />
+      <div className="rm-table-scroll">
+        <table className="rm-data-table">
+          <thead>
+            <tr>
+              <th>Год</th>
+              <th>Исходное</th>
+              <th>В редакции</th>
+              <th>Источник наблюдения</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(({ year, before, after, source }) => (
+              <tr key={year}>
+                <th>{year}</th>
+                <td>{before.present ? numeric(before.value, 6) : 'Год отсутствует'}</td>
+                <td>{after.present ? numeric(after.value, 6) : 'Год отсутствует'}</td>
+                <td>{source}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
 
 /** Drafts are intentionally local until an explicit compare-and-save command succeeds. */
 export function StatisticsEditor({
@@ -868,40 +908,7 @@ export function StatisticsEditor({
                 <p className="rm-source-caption">
                   Эта таблица открыта только для просмотра. Текущая рабочая редакция не меняется.
                 </p>
-                <div className="rm-table-scroll">
-                  <table className="rm-data-table">
-                    <thead>
-                      <tr>
-                        <th>Год</th>
-                        <th>Исходное</th>
-                        <th>В редакции</th>
-                        <th>Источник наблюдения</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {compareSeriesPoints(historicalSeries.baseSeries, historicalSeries).map(
-                        (row) => (
-                          <tr key={row.year}>
-                            <th>{row.year}</th>
-                            <td>
-                              {row.before.present
-                                ? numeric(row.before.value, 6)
-                                : 'Год отсутствует'}
-                            </td>
-                            <td>
-                              {row.after.present ? numeric(row.after.value, 6) : 'Год отсутствует'}
-                            </td>
-                            <td>
-                              {row.after.origin.kind === 'participant_supplied'
-                                ? row.after.origin.sourceReference
-                                : 'Исходный пакет'}
-                            </td>
-                          </tr>
-                        ),
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                <HistoricalObservations series={historicalSeries} territoryName={snapshot.territory.name} />
                 <p className="rm-source-caption">
                   SHA-256: <code>{historicalSeries.fingerprint}</code>
                 </p>

@@ -1,3 +1,4 @@
+import { startWorkshopPolling } from '../lib/workshop-polling';
 import { useEffect, useRef, useState } from 'react';
 import { randomUuid } from '../../../../packages/security/crypto.mjs';
 import type { RoadmapsApi } from '../lib/roadmaps-api';
@@ -30,7 +31,7 @@ export function useRoadmapPresence(
       const view = id || registered ? viewId : null;
       registered = id !== null;
       const request = ++sequence;
-      void api.presence(session, view, id, view ? ++revision : 1).then((value) => {
+      return api.presence(session, view, id, view ? ++revision : 1).then((value) => {
         if (!active || request !== sequence) return;
         setSnapshot({ client: api, sessionId: session, counts: new Map(value.counts.map(({ roadmapId, count }) => [roadmapId, count])) });
       }).catch(() => {
@@ -39,11 +40,11 @@ export function useRoadmapPresence(
     }
 
     report.current = (id) => { if (!hidden) send(id); };
-    const refresh = () => { if (!hidden) send(room.current); };
+    const refresh = () => { if (!hidden) return send(room.current); };
     const depart = () => { if (registered) send(null); };
     const pagehide = () => { hidden = true; depart(); };
     const pageshow = () => { hidden = false; refresh(); };
-    const timer = window.setInterval(refresh, 7000);
+    const stopPolling = startWorkshopPolling(7000, refresh);
     window.addEventListener('focus', refresh);
     window.addEventListener('online', refresh);
     window.addEventListener('pageshow', pageshow);
@@ -51,7 +52,7 @@ export function useRoadmapPresence(
     return () => {
       active = false;
       report.current = null;
-      window.clearInterval(timer);
+      stopPolling();
       window.removeEventListener('focus', refresh);
       window.removeEventListener('online', refresh);
       window.removeEventListener('pageshow', pageshow);

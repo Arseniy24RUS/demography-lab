@@ -1,9 +1,12 @@
 import {
   addFlipchartInputSchema,
+  objectiveCommentSelectionSchema,
   parseFlipchartFactorMutationResult,
   parseFlipchartMutationResult,
   parseFlipchartProjectionUpdates,
   parseFlipchartUpdates,
+  parseObjectiveComments,
+  saveObjectiveCommentSchema,
   selectFlipchartFactorInputSchema,
   statusFlipchartInputSchema,
   voteFlipchartInputSchema,
@@ -33,6 +36,28 @@ export class FlipchartApi {
   private matchBoard(notes: readonly FlipchartPublicNote[]) {
     if (notes.some(note => (note.factorKey !== undefined) !== (this.board === 'objective')))
       throw new Error('Ответ относится к другой доске.');
+  }
+
+  private matchDiscussion(sessionId: string, selection: FlipchartFactorSelection, value: unknown) {
+    const result = this.match(sessionId, parseObjectiveComments(value));
+    if (result.factorKey !== selection.factorKey || result.territoryKey !== selection.territoryKey)
+      throw new Error('Ответ относится к другой карточке.');
+    return result;
+  }
+
+  comments(sessionId: string, selection: FlipchartFactorSelection) {
+    const { factorKey, territoryKey } = objectiveCommentSelectionSchema.parse(selection);
+    return this.transport.rpc('dw_objective_factor_comments', {
+      p_session_id: sessionId, p_factor_key: factorKey, p_territory_key: territoryKey,
+    }, value => this.matchDiscussion(sessionId, selection, value));
+  }
+
+  saveComment(sessionId: string, selection: FlipchartFactorSelection, expectedRevision: number, text: string | null) {
+    const input = saveObjectiveCommentSchema.parse({ ...selection, expectedRevision, text });
+    return this.transport.mutate('dw_save_objective_factor_comment', {
+      p_session_id: sessionId, p_factor_key: input.factorKey, p_territory_key: input.territoryKey,
+      p_expected_revision: input.expectedRevision, p_text: input.text,
+    }, value => this.matchDiscussion(sessionId, selection, value));
   }
 
   private read<T extends { sessionId: string; notes: FlipchartPublicNote[] }>(

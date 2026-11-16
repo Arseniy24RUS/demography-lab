@@ -1,3 +1,4 @@
+import { startWorkshopPolling } from '../lib/workshop-polling';
 import { randomUuid } from '../../../../packages/security/crypto.mjs';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { WorkshopIdentitySession } from '../lib/declared-identity';
@@ -310,10 +311,9 @@ export function useSession(options: {
           })
       : null;
     void sync();
-    const timer = setInterval(() => {
-      if (document.visibilityState === 'visible' && (!live || Date.now() - reconcileAt > 30000))
-        void sync();
-    }, api.config.pollInterval);
+    const timer = startWorkshopPolling(api.config.pollInterval, () => {
+      if (!live || Date.now() - reconcileAt > 30000) return sync();
+    });
     const focus = () => {
       if (document.visibilityState === 'visible') void sync();
     };
@@ -325,7 +325,7 @@ export function useSession(options: {
     return () => {
       active = false;
       refreshing.current = async () => {};
-      clearInterval(timer);
+      timer();
       if (schedule) clearTimeout(schedule);
       if (channel) void api.client.removeChannel(channel);
       window.removeEventListener('online', focus);

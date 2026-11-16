@@ -1,14 +1,16 @@
 import fontkit from '@pdf-lib/fontkit';
 import { PDFDocument, rgb } from 'pdf-lib';
 import type { PDFFont, PDFPage, RGB } from 'pdf-lib';
+import { points, roadmapLayout } from './layout';
 import type { PdfExportFonts, PreparedRoadmapExport, ReportBlock, RoadmapFigure } from './types';
 
-// Same A4 page as the supplied Word template, converted from twips to PDF points.
-const PAGE_WIDTH = 11906 / 20;
-const PAGE_HEIGHT = 16838 / 20;
-const MARGIN = 54;
-const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
-const BOTTOM = 54;
+const PAGE_WIDTH = points(roadmapLayout.page.width);
+const PAGE_HEIGHT = points(roadmapLayout.page.height);
+const LEFT = points(roadmapLayout.margin.left);
+const TOP = points(roadmapLayout.margin.top);
+const BOTTOM = points(roadmapLayout.margin.bottom);
+const CONTENT_WIDTH = PAGE_WIDTH - LEFT - points(roadmapLayout.margin.right);
+const FIRST_LINE_INDENT = points(roadmapLayout.firstLineIndent);
 
 function color(hex: string): RGB {
   const raw = hex.replace('#', '');
@@ -18,55 +20,45 @@ function color(hex: string): RGB {
     parseInt(raw.slice(4, 6), 16) / 255,
   );
 }
-const ink = color('#17222F');
 const black = rgb(0, 0, 0);
-const muted = color('#4F5D6B');
-const lineColor = color('#D9D9D9');
+const lineColor = color('#A0A0A0');
 
-/** Wrap long identifiers as well as prose, preserving each non-whitespace code point. */
-function wrapText(text: string, font: PDFFont, size: number, width: number): string[] {
+function wrapLine(text: string, font: PDFFont, size: number, width: number, indent = 0): string[] {
   if (width <= size) throw new Error('Недопустимая ширина колонки PDF.');
   const lines: string[] = [];
-  for (const paragraph of text.replace(/\r\n?/gu, '\n').replace(/\t/gu, '    ').split('\n')) {
-    if (paragraph === '') {
-      lines.push('');
+  const limit = () => width - (lines.length === 0 ? indent : 0);
+  const fits = (part: string) => font.widthOfTextAtSize(part, size) <= limit();
+  let current = '';
+  for (const word of text.match(/[^\t ]+/gu) ?? []) {
+    const next = current ? `${current} ${word}` : word;
+    if (fits(next)) {
+      current = next;
       continue;
     }
-    const words = paragraph.split(/(?<=\s)|(?=\s)/u);
-    let current = '';
-    for (let word of words) {
-      if (!current && /^\s+$/u.test(word)) continue;
-      if (font.widthOfTextAtSize(current + word, size) <= width) {
-        current += word;
-        continue;
-      }
-      if (current.trim()) {
-        lines.push(current.trimEnd());
+    if (current) lines.push(current);
+    current = '';
+    if (fits(word)) {
+      current = word;
+      continue;
+    }
+    // A single very long word or URL also has to fit its column.
+    for (const character of word) {
+      if (current && !fits(current + character)) {
+        lines.push(current);
         current = '';
       }
-      if (/^\s+$/u.test(word)) continue;
-      if (font.widthOfTextAtSize(word, size) <= width) {
-        current = word;
-        continue;
-      }
-      let part = '';
-      for (const character of [...word]) {
-        if (part && font.widthOfTextAtSize(part + character, size) > width) {
-          lines.push(part);
-          part = '';
-        }
-        part += character;
-      }
-      current = part;
+      current += character;
     }
-    if (current || !lines.length) lines.push(current.trimEnd());
   }
+  if (current || !lines.length) lines.push(current);
   return lines;
 }
 
+const paragraphs = (text: string) => text.split(/\r\n?|\n/u);
+
 class PdfWriter {
   page!: PDFPage;
-  y = PAGE_HEIGHT - MARGIN;
+  y = PAGE_HEIGHT - TOP;
   constructor(
     readonly document: PDFDocument,
     readonly regular: PDFFont,
@@ -81,7 +73,18 @@ class PdfWriter {
         'Объём PDF превысил 2000 страниц. Сохраните JSON и сократите документальные приложения.',
       );
     this.page = this.document.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-    this.y = PAGE_HEIGHT - MARGIN;
+    this.y = PAGE_HEIGHT - TOP;
+    const pageNumber = this.document.getPageCount();
+    if (pageNumber > 1) {
+      const text = String(pageNumber);
+      const size = roadmapLayout.bodySize;
+      this.page.drawText(text, {
+        x: (PAGE_WIDTH - this.regular.widthOfTextAtSize(text, size)) / 2,
+        y: PAGE_HEIGHT - points(roadmapLayout.margin.header) - size,
+        size,
+        font: this.regular,
+      });
+    }
   }
   ensure(height: number): void {
     if (this.y - height < BOTTOM) this.newPage();
@@ -91,67 +94,81 @@ class PdfWriter {
     options: {
       size?: number;
       bold?: boolean;
-      muted?: boolean;
       before?: number;
       after?: number;
       indent?: number;
+      alignment?: 'left' | 'center' | 'justify';
+      keepLines?: boolean;
       keepSpace?: number;
     } = {},
   ): void {
-    const size = options.size ?? 10.7;
+    const size = options.size ?? roadmapLayout.bodySize;
     const font = options.bold ? this.bold : this.regular;
-    const lineHeight = size * 1.35;
+    const lineHeight = size * roadmapLayout.lineSpacing;
     const indent = options.indent ?? 0;
-    const lines = wrapText(text, font, size, CONTENT_WIDTH - indent * 2);
     const before = options.before ?? 0;
-    this.ensure(before + lineHeight * Math.min(2, lines.length) + (options.keepSpace ?? 0));
+    const after = options.after ?? 0;
+    const keepSpace = options.keepSpace ?? 0;
+    const groups = paragraphs(text).map((line) => wrapLine(line, font, size, CONTENT_WIDTH, indent));
+    const firstGroup = groups[0]!;
+    const firstLines = options.keepLines ? firstGroup.length : Math.min(2, firstGroup.length);
+    this.ensure(before + lineHeight * firstLines + after + keepSpace);
     this.y -= before;
-    for (const [index, line] of lines.entries()) {
-      const keep = index === lines.length - 1 ? (options.keepSpace ?? 0) : 0;
-      this.ensure(lineHeight + keep);
-      this.page.drawText(line, {
-        x: MARGIN + indent,
-        y: this.y - size,
-        size,
-        font,
-        color: options.muted ? muted : ink,
-      });
-      this.y -= lineHeight;
+    for (const [groupIndex, lines] of groups.entries()) {
+      this.ensure(lineHeight * Math.min(2, lines.length));
+      for (const [index, line] of lines.entries()) {
+        const remaining = lines.length - index;
+        const keep = remaining === 1 && groupIndex === groups.length - 1 ? keepSpace + after : 0;
+        this.ensure(lineHeight * (remaining === 2 ? 2 : 1) + keep);
+        const start = index === 0 ? indent : 0;
+        const width = CONTENT_WIDTH - start;
+        const textWidth = font.widthOfTextAtSize(line, size);
+        const x = LEFT + start + (options.alignment === 'center' ? (width - textWidth) / 2 : 0);
+        const y = this.y - size;
+        if (options.alignment === 'justify' && remaining > 1 && line.includes(' ')) {
+          // Type 0 fonts do not expand two-byte space CIDs via PDF's word-spacing operator.
+          const words = line.split(' ');
+          const runs = words.map((word, index) => (index < words.length - 1 ? `${word} ` : word));
+          const advances = runs.map((run) => font.widthOfTextAtSize(run, size));
+          const extra = Math.max(0, (width - advances.reduce((sum, n) => sum + n, 0)) / (words.length - 1));
+          let wordX = x;
+          for (const [index, run] of runs.entries()) {
+            this.page.drawText(run, { x: wordX, y, size, font, color: black });
+            wordX += advances[index]! + extra;
+          }
+        } else if (line) {
+          this.page.drawText(line, { x, y, size, font, color: black });
+        }
+        this.y -= lineHeight;
+      }
     }
-    this.y -= options.after ?? 6;
+    this.y -= after;
   }
   heading(text: string, level: number): void {
-    const size = level === 1 ? 14.3 : level === 2 ? 12.1 : 11.3;
-    const before = level === 1 ? 15 : 10;
-    const lines = wrapText(text, this.bold, size, CONTENT_WIDTH);
-    this.ensure(before + lines.length * size * 1.28 + 35);
-    this.y -= before;
-    for (const line of lines) {
-      this.page.drawText(line, {
-        x: MARGIN,
-        y: this.y - size,
-        size,
-        font: this.bold,
-        color: black,
-      });
-      this.y -= size * 1.28;
-    }
-    this.y -= 8;
+    this.paragraph(text, {
+      alignment: level === 1 ? 'center' : 'left',
+      indent: level === 1 ? 0 : FIRST_LINE_INDENT,
+      bold: true,
+      before: level === 1 ? 12 : 8,
+      after: 4,
+      keepLines: true,
+      keepSpace: roadmapLayout.bodySize * roadmapLayout.lineSpacing,
+    });
   }
-  table(block: Extract<ReportBlock, { kind: 'table' }>): void {
+  table(block: Extract<ReportBlock, { kind: 'table' }>, number: number): void {
     const weights = block.columns.reduce((sum, column) => sum + column.weight, 0);
     const widths = block.columns.map((column) => (column.weight / weights) * CONTENT_WIDTH);
-    const size = 9.1;
-    const lineHeight = 12.4;
-    const padding = 6;
-    const header = block.columns.map((column, i) =>
-      wrapText(column.title, this.bold, size, widths[i]! - padding * 2),
-    );
+    const size = roadmapLayout.tableSize;
+    const lineHeight = size * 1.18;
+    const padding = 4;
+    const wrapCell = (text: string, font: PDFFont, column: number) =>
+      paragraphs(text).flatMap((line) => wrapLine(line, font, size, widths[column]! - padding * 2));
+    const header = block.columns.map((column, i) => wrapCell(column.title, this.bold, i));
     const headerHeight = Math.max(...header.map((cell) => cell.length)) * lineHeight + padding * 2;
-    this.paragraph(block.caption, {
-      bold: true,
+    this.paragraph(`Таблица ${number} — ${block.caption}`, {
       before: 7,
       after: 6,
+      keepLines: true,
       keepSpace: headerHeight + lineHeight + padding * 2,
     });
     const drawRow = (
@@ -159,10 +176,9 @@ class PdfWriter {
       from: number,
       count: number,
       isHeader: boolean,
-      index: number,
     ) => {
       const height = count * lineHeight + padding * 2;
-      let x = MARGIN;
+      let x = LEFT;
       for (let column = 0; column < widths.length; column++) {
         const width = widths[column]!;
         this.page.drawRectangle({
@@ -170,7 +186,7 @@ class PdfWriter {
           y: this.y - height,
           width,
           height,
-          color: isHeader ? color('#2D435D') : index % 2 === 0 ? color('#F4F6F8') : rgb(1, 1, 1),
+          color: isHeader ? color('#F3F3F3') : rgb(1, 1, 1),
           borderColor: lineColor,
           borderWidth: 0.45,
         });
@@ -192,7 +208,7 @@ class PdfWriter {
             y: this.y - padding - size - rowIndex * lineHeight - offset,
             size,
             font,
-            color: isHeader ? rgb(1, 1, 1) : ink,
+            color: black,
           });
         });
         x += width;
@@ -200,15 +216,13 @@ class PdfWriter {
       this.y -= height;
     };
     const repeatHeader = () =>
-      drawRow(header, 0, Math.max(...header.map((cell) => cell.length)), true, 0);
+      drawRow(header, 0, Math.max(...header.map((cell) => cell.length)), true);
     repeatHeader();
-    for (const [rowIndex, values] of block.rows.entries()) {
-      const cells = values.map((value, i) =>
-        wrapText(value, this.regular, size, widths[i]! - padding * 2),
-      );
+    for (const values of block.rows) {
+      const cells = values.map((value, i) => wrapCell(value, this.regular, i));
       const count = Math.max(...cells.map((cell) => cell.length));
       const fullHeight = count * lineHeight + padding * 2;
-      const maxBodyHeight = PAGE_HEIGHT - MARGIN - BOTTOM - headerHeight;
+      const maxBodyHeight = PAGE_HEIGHT - TOP - BOTTOM - headerHeight;
       if (fullHeight > this.y - BOTTOM && fullHeight <= maxBodyHeight) {
         this.newPage();
         repeatHeader();
@@ -222,7 +236,7 @@ class PdfWriter {
           available = Math.floor((this.y - BOTTOM - padding * 2) / lineHeight);
         }
         const chunk = Math.min(available, count - cursor);
-        drawRow(cells, cursor, chunk, false, rowIndex);
+        drawRow(cells, cursor, chunk, false);
         cursor += chunk;
         if (cursor < count) {
           this.newPage();
@@ -232,13 +246,21 @@ class PdfWriter {
     }
     this.y -= 9;
   }
-  figure(figure: RoadmapFigure): void {
-    const scale = CONTENT_WIDTH / figure.width;
+  figure(figure: RoadmapFigure, number: number): void {
+    const caption = `Рисунок ${number} — ${figure.title}`;
+    const captionHeight =
+      wrapLine(caption, this.regular, roadmapLayout.bodySize, CONTENT_WIDTH).length *
+      roadmapLayout.bodySize * roadmapLayout.lineSpacing;
+    const figureSpacing = 14;
+    const scale = Math.min(
+      CONTENT_WIDTH / figure.width,
+      (PAGE_HEIGHT - TOP - BOTTOM - captionHeight - figureSpacing) / figure.height,
+    );
     const height = figure.height * scale;
-    this.paragraph(figure.title, { bold: true, before: 7, after: 6, keepSpace: height });
-    this.ensure(height);
-    const figureTop = this.y;
-    const xx = (x: number) => MARGIN + x * scale;
+    this.ensure(height + captionHeight + figureSpacing);
+    const figureTop = this.y - 7;
+    const figureLeft = LEFT + (CONTENT_WIDTH - figure.width * scale) / 2;
+    const xx = (x: number) => figureLeft + x * scale;
     const yy = (y: number) => figureTop - y * scale;
     for (const primitive of figure.primitives) {
       if (primitive.kind === 'line')
@@ -248,6 +270,7 @@ class PdfWriter {
           thickness: primitive.width * scale,
           color: color(primitive.color),
           dashArray: primitive.dash?.map((n) => n * scale),
+          dashPhase: primitive.dashPhase === undefined ? undefined : primitive.dashPhase * scale,
         });
       else if (primitive.kind === 'rect')
         this.page.drawRectangle({
@@ -286,8 +309,8 @@ class PdfWriter {
         });
       }
     }
-    this.y -= height + 4;
-    this.paragraph(figure.altText, { size: 9.4, muted: true, after: 8 });
+    this.y = figureTop - height;
+    this.paragraph(caption, { alignment: 'center', after: 7, keepLines: true });
   }
 }
 
@@ -306,7 +329,6 @@ function checkFontCoverage(prepared: PreparedRoadmapExport, regular: PDFFont, bo
             ? [block.caption, ...block.columns.map((c) => c.title), ...block.rows.flat()]
             : [
                 block.figure.title,
-                block.figure.altText,
                 ...block.figure.primitives.flatMap((p) => (p.kind === 'text' ? [p.text] : [])),
               ],
     ),
@@ -340,60 +362,30 @@ export async function buildRoadmapPdf(
   const regular = await document.embedFont(fonts.regular, { subset: true });
   const bold = await document.embedFont(fonts.bold, { subset: true });
   checkFontCoverage(prepared, regular, bold);
-  document.setTitle(`${prepared.title} ${prepared.subtitle}`);
+  document.setTitle([prepared.title, prepared.subtitle].filter(Boolean).join(' — '));
   document.setAuthor('Демографическая мастерская');
-  document.setSubject(`Версия ${prepared.version.number}; SHA-256 ${prepared.version.sha256}`);
-  document.setKeywords([
-    'Демографическая мастерская',
-    prepared.version.sha256,
-    prepared.exportVersion,
-  ]);
+  document.setSubject('Дорожная карта демографического проекта');
   document.setCreator('Демографическая мастерская');
-  document.setProducer('Демографическая мастерская / pdf-lib');
+  document.setProducer('Демографическая мастерская');
   document.setLanguage('ru-RU');
   const createdAt = new Date(prepared.version.createdAt);
   document.setCreationDate(createdAt);
   document.setModificationDate(createdAt);
   const writer = new PdfWriter(document, regular, bold);
-  writer.paragraph(prepared.title, { size: 20, bold: true, after: 10, keepSpace: 60 });
-  writer.paragraph(prepared.subtitle, { size: 14, after: 18, keepSpace: 35 });
+  writer.paragraph(prepared.title, { alignment: 'center', bold: true, after: 6, keepLines: true });
+  if (prepared.subtitle)
+    writer.paragraph(prepared.subtitle, { alignment: 'center', after: 6, keepLines: true });
+  let tableNumber = 0;
+  let figureNumber = 0;
   for (const block of prepared.blocks) {
     if (block.kind === 'heading') writer.heading(block.text, block.level);
     else if (block.kind === 'paragraph')
       writer.paragraph(`${block.label ? `${block.label}. ` : ''}${block.text}`, {
-        size: block.role === 'meta' ? 9.6 : 10.7,
-        muted: block.role === 'meta',
-        indent: block.role === 'quote' ? 12 : 0,
+        alignment: block.role === 'meta' ? 'center' : 'justify',
+        indent: block.role === 'meta' ? 0 : FIRST_LINE_INDENT,
       });
-    else if (block.kind === 'table') writer.table(block);
-    else writer.figure(block.figure);
+    else if (block.kind === 'table') writer.table(block, ++tableNumber);
+    else writer.figure(block.figure, ++figureNumber);
   }
-  const pages = document.getPages();
-  pages.forEach((page, index) => {
-    const text = `Версия ${prepared.version.number} · ${prepared.version.sha256.slice(0, 12)} · ${index + 1} / ${pages.length}`;
-    page.drawText(text, {
-      x: PAGE_WIDTH - MARGIN - regular.widthOfTextAtSize(text, 8),
-      y: 31,
-      size: 8,
-      font: regular,
-      color: muted,
-    });
-  });
-  await document.attach(
-    new TextEncoder().encode(prepared.version.canonicalJson),
-    'canonical.json',
-    {
-      mimeType: 'application/json',
-      description: `SHA-256 ${prepared.version.sha256}`,
-      creationDate: createdAt,
-      modificationDate: createdAt,
-    },
-  );
-  await document.attach(new TextEncoder().encode(fonts.license), 'FONT-LICENSE.txt', {
-    mimeType: 'text/plain',
-    description: 'DejaVu Sans font license',
-    creationDate: createdAt,
-    modificationDate: createdAt,
-  });
   return document.save({ useObjectStreams: true, addDefaultPage: false });
 }

@@ -1,6 +1,6 @@
 import {
   useEffect, useId, useMemo, useRef, useState,
-  type CSSProperties, type FormEvent, type KeyboardEvent,
+  type CSSProperties, type FormEvent, type KeyboardEvent, type ReactNode,
 } from 'react';
 import { BarChart3, Cloud, LoaderCircle, Plus, ThumbsDown, ThumbsUp, X } from 'lucide-react';
 import {
@@ -25,6 +25,7 @@ export type FlipchartBoardProps = {
   notes: readonly FlipchartNote[];
   onVote(note: FlipchartNote, value: FlipchartVote): Promise<void>;
   onWithdraw(note: FlipchartNote): Promise<void>;
+  renderNoteDetails?(note: FlipchartNote): ReactNode;
   pendingIds?: ReadonlySet<string>;
   submitting?: boolean;
   loading?: boolean;
@@ -41,14 +42,14 @@ export interface FlipchartProjectorProps {
 /** Full phrases remain intact: agreement is a vote on one thesis, not a word frequency. */
 export function FlipchartBoard({
   notes, onAdd, onVote, onWithdraw, pendingIds = noPending, submitting = false,
-  loading = false, error = null, objective = false,
+  loading = false, error = null, objective = false, renderNoteDetails,
 }: FlipchartBoardProps) {
   return (
     <section className="flipchart" aria-label={objective ? 'Объективные факторы' : 'Общий флипчарт'}>
       {!objective && onAdd ? <FlipchartComposer onAdd={onAdd} submitting={submitting} /> : null}
       {error ? <p className="flipchart-error" role="alert">{error}</p> : null}
       <FlipchartSurface notes={notes} loading={loading} pendingIds={pendingIds} objective={objective}
-        onVote={onVote} onWithdraw={onWithdraw} />
+        onVote={onVote} onWithdraw={onWithdraw} renderNoteDetails={renderNoteDetails} />
     </section>
   );
 }
@@ -142,9 +143,10 @@ interface SurfaceProps {
   pendingIds?: ReadonlySet<string>;
   onVote?: FlipchartBoardProps['onVote'];
   onWithdraw?: FlipchartBoardProps['onWithdraw'];
+  renderNoteDetails?: FlipchartBoardProps['renderNoteDetails'];
 }
 
-function FlipchartSurface({ notes, loading, projector = false, objective = false, pendingIds = noPending, onVote, onWithdraw }: SurfaceProps) {
+function FlipchartSurface({ notes, loading, projector = false, objective = false, pendingIds = noPending, onVote, onWithdraw, renderNoteDetails }: SurfaceProps) {
   const [filter, setFilter] = useState<'all' | FlipchartKind>('all');
   const [view, setView] = useState<'cloud' | 'ranking'>('cloud');
   const arrivals = useArrivals(notes, loading);
@@ -198,7 +200,7 @@ function FlipchartSurface({ notes, loading, projector = false, objective = false
             return <FlipchartCard key={note.id} note={note} projector={projector} objective={objective}
               ranking={view === 'ranking'} rank={rank} maximum={maximum}
               arrival={arrivals.has(note.id)} pending={pendingIds.has(note.id)}
-              onVote={onVote} onWithdraw={onWithdraw} />;
+              onVote={onVote} onWithdraw={onWithdraw} renderNoteDetails={renderNoteDetails} />;
           })}
         </div>}
       </div>
@@ -211,10 +213,11 @@ function FlipchartSurface({ notes, loading, projector = false, objective = false
   );
 }
 
-function FlipchartCard({ note, ranking, rank, maximum, projector, objective, arrival, pending, onVote, onWithdraw }: {
+function FlipchartCard({ note, ranking, rank, maximum, projector, objective, arrival, pending, onVote, onWithdraw, renderNoteDetails }: {
   note: FlipchartPublicNote; ranking: boolean; rank: number; maximum: number;
   projector: boolean; objective: boolean; arrival: boolean; pending: boolean;
   onVote?: FlipchartBoardProps['onVote']; onWithdraw?: FlipchartBoardProps['onWithdraw'];
+  renderNoteDetails?: FlipchartBoardProps['renderNoteDetails'];
 }) {
   const own = !projector && 'myVote' in note ? note as FlipchartNote : null;
   const category = kinds.find(item => item.kind === note.kind)!;
@@ -287,6 +290,7 @@ function FlipchartCard({ note, ranking, rank, maximum, projector, objective, arr
           </span>
         </div> : null}
         {error ? <p className="flipchart-error" role="alert">{error}</p> : null}
+        {own && renderNoteDetails ? renderNoteDetails(own) : null}
       </div>
     </article>
   );

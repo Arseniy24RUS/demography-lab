@@ -2,18 +2,21 @@ import { useId, useLayoutEffect, useRef, useState } from 'react';
 import type { RoadmapSeries } from '../../../../../packages/roadmaps/types';
 import type { ScenarioResult } from '../../../../../packages/analytics';
 import { numeric } from './common';
+import { DataExport } from './DataExport';
 
 export function ScenarioChart({
   series,
   result = null,
   comparisons = [],
   title,
+  territoryName,
   compact = false,
 }: {
   series: RoadmapSeries;
   result?: ScenarioResult | null;
   comparisons?: Array<{ name: string; series: RoadmapSeries }>;
   title?: string;
+  territoryName?: string;
   compact?: boolean;
 }) {
   const id = useId(),
@@ -107,8 +110,21 @@ export function ScenarioChart({
     yearTicks.push(maxYear);
   }
   const tooltipYear = hover ?? result?.parameters.endYear ?? history.at(-1)?.year ?? maxYear;
+  const name = [territoryName, `${title ?? series.title}, человек`].filter(Boolean).join(' — ');
+  const legend = [{ label: 'Наблюдения', color: '#2464b1' },
+    ...(result ? [{ label: 'Базовый сценарий', color: '#577091', dashed: true }, { label: 'Целевой сценарий', color: '#cf554e', dashed: true }] : []),
+    ...comparisons.map(({ name: label }, i) => ({ label, color: colors[i]!, dashed: i > 0 }))];
+  const exportedYears = new Map(result?.years.map(row => [row.year, row]) ?? []);
+  const rows = [
+    ['Год', 'Наблюдение', ...comparisons.map(row => row.name),
+      ...(result ? ['Базовый сценарий', 'Целевой сценарий', 'Плановый ориентир', 'Разрыв'] : [])],
+    ...years.map(year => [year, actual.get(year) ?? null, ...comparisonMaps.map(map => map.get(year) ?? null),
+      ...(result ? [baseline.get(year) ?? null, target.get(year) ?? null, exportedYears.get(year)?.plannedTargetValue ?? null,
+        exportedYears.get(year)?.delta ?? null] : [])]),
+  ];
   return (
-    <figure ref={container} className="rm-scenario-chart" data-compact={compact}>
+    <figure ref={container} className="rm-scenario-chart rm-exportable" data-compact={compact}>
+      {!compact ? <DataExport title={name} rows={rows} imageTarget={container} legend={legend} /> : null}
       <figcaption>
         {title ?? series.title}
         <span>
@@ -210,6 +226,7 @@ export function ScenarioChart({
         ) : null}
         {hover !== null ? (
           <line
+            data-export-skip=""
             x1={x(hover)}
             x2={x(hover)}
             y1={head}
@@ -221,6 +238,7 @@ export function ScenarioChart({
         {years.map((year) => (
           <rect
             key={`hit-${year}`}
+            data-export-skip=""
             x={x(year) - w / Math.max(1, years.length - 1) / 2}
             y={head}
             width={w / Math.max(1, years.length - 1)}
@@ -267,7 +285,9 @@ export function ScenarioChart({
       </div>
       <details className="rm-data-table">
         <summary>Точные значения и пропуски</summary>
-        <div className="rm-table-scroll">
+        <div className="rm-exportable rm-exportable-table">
+          {!compact ? <DataExport title={`${name} — таблица`} rows={rows} /> : null}
+          <div className="rm-table-scroll">
           <table>
             <thead>
               <tr>
@@ -311,6 +331,7 @@ export function ScenarioChart({
               })}
             </tbody>
           </table>
+          </div>
         </div>
       </details>
     </figure>

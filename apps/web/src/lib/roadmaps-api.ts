@@ -8,6 +8,7 @@ import {
   configureRoadmapsInputSchema,
   joinRoadmapInputSchema,
   saveRoadmapItemInputSchema,
+  saveRoadmapCohortInputSchema,
   captureRoadmapBasisInputSchema,
   importRoadmapWorkshopInputSchema,
   captureRoadmapFactInputSchema,
@@ -18,6 +19,7 @@ import type {
   ConfigureRoadmapsInput,
   JoinRoadmapInput,
   SaveRoadmapItemInput,
+  SaveRoadmapCohortInput,
   CaptureRoadmapBasisInput,
   ImportRoadmapWorkshopInput,
   CaptureRoadmapFactInput,
@@ -134,6 +136,9 @@ export class RoadmapsApi {
   saveItem(sessionId: string, input: SaveRoadmapItemInput) {
     return this.mutate(sessionId, 'dw_save_roadmap_item', saveRoadmapItemInputSchema.parse(input));
   }
+  saveCohortSettings(sessionId: string, input: SaveRoadmapCohortInput) {
+    return this.mutate(sessionId, 'dw_roadmap_cohort_save', saveRoadmapCohortInputSchema.parse(input));
+  }
   captureBasis(sessionId: string, input: CaptureRoadmapBasisInput) {
     return this.mutate(
       sessionId,
@@ -205,13 +210,19 @@ export class RoadmapsApi {
   review(sessionId: string, input: ReviewRoadmapInput) {
     return this.mutate(sessionId, 'dw_review_roadmap', reviewRoadmapInputSchema.parse(input));
   }
-  async version(sessionId: string, roadmapId: string, versionId: string) {
+  version(sessionId: string, roadmapId: string, versionId: string) {
+    return this.readVersion(sessionId, roadmapId, versionId);
+  }
+  currentVersion(sessionId: string, roadmapId: string) {
+    return this.readVersion(sessionId, roadmapId, null);
+  }
+  private async readVersion(sessionId: string, roadmapId: string, versionId: string | null) {
     const result = await this.transport.rpc(
       'dw_roadmap_version',
       { p_session_id: sessionId, p_roadmap_id: roadmapId, p_version_id: versionId },
       (v) => this.match(sessionId, parseRoadmapVersion(v)),
     );
-    if (result.roadmapId !== roadmapId || result.id !== versionId)
+    if (result.roadmapId !== roadmapId || result.id !== (versionId ?? roadmapId))
       throw new Error('Получена другая редакция дорожной карты.');
     const bytes = new TextEncoder().encode(result.canonicalJson);
     const digest = await sha256Hex(bytes);

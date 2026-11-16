@@ -1,6 +1,6 @@
 {
   "name": "demography-workshop",
-  "version": "0.11.3",
+  "version": "0.12.0",
   "private": true,
   "description": "Демографическая мастерская — документы, практики, барьеры и совместное проектирование",
   "scripts": {

@@ -6,6 +6,7 @@ import { join, resolve } from 'node:path';
 import { openRuntime } from '../../scripts/offline/storage.mjs';
 import { startServer } from '../../scripts/offline/server.mjs';
 import { unzipSync } from 'fflate';
+import { PDFArray, PDFDict, PDFDocument, PDFName, PDFRawStream, decodePDFRawStream } from 'pdf-lib';
 import { factorLinks, headerMenu, openReference, openStage as scene, revealHeader, stageLinks as scenes } from './workshop-nav.mjs';
 
 const port = Number(process.env.DW_SHARED_BROWSER_PORT ?? 8895);
@@ -23,6 +24,7 @@ const browser = await chromium.launch({ headless: true,
   args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu', `--host-resolver-rules=MAP ${host} 127.0.0.1`],
 });
 const errors = [], externalRequests = [], failedResponses = [], invitationRequests = [], steps = [];
+const responseChecks = [], reconciledPassportConflicts = [];
 const report = {
   version: JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8')).version,
   environment: 'Linux Chromium; compiled application and production offline PGlite; LAN host mapped to loopback; no physical Wi-Fi or macOS claim',
@@ -47,12 +49,29 @@ const rpc = (page, name) => page.waitForResponse(response =>
 function watch(page) {
   page.setDefaultTimeout(15000);
   page.on('pageerror', error => errors.push(error.message));
-  page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+  page.on('console', message => {
+    if (message.type() !== 'error') return;
+    // Inspect the actual RPC response below for a handled optimistic-write conflict.
+    if (message.location().url?.endsWith('/rest/v1/rpc/dw_save_roadmap_item') && message.text().startsWith('Failed to load resource:')) return;
+    errors.push(message.text());
+  });
   page.on('request', request => {
     if (new URL(request.url()).pathname === '/rest/v1/rpc/dw_invitation') invitationRequests.push(request.url());
   });
   page.on('response', response => {
-    if (response.status() >= 400) failedResponses.push({ path: new URL(response.url()).pathname, status: response.status() });
+    if (response.status() < 400) return;
+    const failed = { path: new URL(response.url()).pathname, status: response.status() };
+    responseChecks.push((async () => {
+      if (failed.path === '/rest/v1/rpc/dw_save_roadmap_item' && response.request().postDataJSON()?.p_input?.kind === 'passport') {
+        const cause = await response.json().catch(() => null);
+        if (cause?.message === 'REVISION_CONFLICT' || cause?.code === 'REVISION_CONFLICT') {
+          reconciledPassportConflicts.push(failed);
+          return;
+        }
+        Object.assign(failed, { code: cause?.code, message: cause?.message });
+      }
+      failedResponses.push(failed);
+    })());
   });
 }
 async function participant(mobile = false) {
@@ -76,6 +95,38 @@ async function stage(name, page, work) {
 }
 async function screenshot(page, name) {
   await page.screenshot({ path: join(evidence, name), fullPage: false, animations: 'disabled' });
+}
+function printedPdfText(pdf) {
+  const utf8 = new TextDecoder();
+  const utf16 = new TextDecoder('utf-16be');
+  const decode = stream => utf8.decode(decodePDFRawStream(stream).decode());
+  return pdf.getPages().flatMap(page => {
+    const fonts = page.node.Resources().lookup(PDFName.of('Font'), PDFDict);
+    const encodings = new Map(fonts.entries().map(([name]) => {
+      const font = fonts.lookup(name, PDFDict);
+      const cmap = decode(font.lookup(PDFName.of('ToUnicode'), PDFRawStream));
+      const charMap = new Map();
+      for (const [, mappings] of cmap.matchAll(/beginbfchar\s+([\s\S]*?)endbfchar/gu)) {
+        for (const [, glyph, unicode] of mappings.matchAll(/<([\da-f]{4})>\s*<([\da-f]+)>/giu))
+          charMap.set(glyph.toUpperCase(), utf16.decode(Buffer.from(unicode, 'hex')));
+      }
+      return [String(name).slice(1), charMap];
+    }));
+    const contents = page.node.Contents();
+    const streams = contents instanceof PDFArray
+      ? Array.from({ length: contents.size() }, (_, i) => contents.lookup(i, PDFRawStream))
+      : [contents];
+    const runs = [];
+    let currentFont;
+    for (const stream of streams) {
+      for (const [, font, hex] of decode(stream).matchAll(/\/([^\s]+)\s+[-\d.]+\s+Tf|<([\da-f]+)>\s+Tj/giu)) {
+        if (font) currentFont = encodings.get(font);
+        else if (currentFont)
+          runs.push((hex.match(/.{4}/gu) ?? []).map(glyph => currentFont.get(glyph.toUpperCase()) ?? '').join(''));
+      }
+    }
+    return runs;
+  }).join(' ').replace(/\s+/gu, ' ');
 }
 async function noOverflow(page, width) {
   const value = await page.evaluate(() => ({ width: innerWidth, document: document.documentElement.scrollWidth, body: document.body.scrollWidth }));
@@ -463,7 +514,9 @@ try {
     await expect(group).toContainText('124 608,81 ₽ (индексируется ежегодно)');
     await group.getByRole('button', { name: 'Подробности варианта' }).first().click();
     const details = a.page.getByRole('dialog');
-    await expect(details.getByRole('region', { name: 'Источник карточки' })).toBeVisible();
+    const cardSource = details.getByRole('region', { name: 'Источник карточки' });
+    await expect(cardSource.getByRole('link', { name: 'Меры поддержки семей с детьми' }))
+      .toHaveAttribute('href', 'https://меры-поддержки-семей.рф/');
     await details.getByRole('button', { name: 'Закрыть окно', exact: true }).click();
 
     await group.getByRole('button', { name: `Поддержать: ${familyName}`, exact: true }).click();
@@ -573,9 +626,13 @@ try {
     const passport = page => page.getByRole('form', { name: 'Паспорт проекта', exact: true });
     const title = 'Время для семьи в Ардатовском районе';
     const goal = 'К 2030 году увеличить долю родителей с гибким графиком с 20 до 35 процентов.';
+    const partners = 'Учреждения и работодатели Ардатовского района';
     const checklist = page => passport(page).getByRole('group', { name: 'Самопроверка цели по SMART', exact: true });
     await expect(checklist(a.page).getByRole('checkbox')).toHaveCount(5);
-    await passport(a.page).getByRole('textbox', { name: 'Название проекта', exact: true }).fill(title);
+    await Promise.all([
+      passport(a.page).getByRole('textbox', { name: 'Название проекта', exact: true }).fill(title),
+      passport(b.page).getByRole('textbox', { name: 'Партнёры', exact: true }).fill(partners),
+    ]);
     await passport(a.page).getByRole('textbox', { name: 'Цель проекта', exact: true }).fill(goal);
     await checklist(a.page).getByRole('checkbox', { name: /^Конкретная/u }).check();
     await checklist(a.page).getByRole('checkbox', { name: /^Измеримая/u }).check();
@@ -583,9 +640,8 @@ try {
     await roadmapTab(a.page, 'Статистика');
     await roadmapTab(a.page, 'Паспорт');
     await expect(passport(a.page).getByRole('textbox', { name: 'Цель проекта', exact: true })).toHaveValue(goal);
-    await passport(a.page).getByRole('button', { name: 'Сохранить паспорт', exact: true }).click();
     await expect(passport(a.page).getByText('Паспорт сохранён.', { exact: true })).toBeVisible();
-    await b.page.getByRole('button', { name: 'Обновить дорожные карты', exact: true }).click();
+    await expect(passport(a.page).getByRole('textbox', { name: 'Партнёры', exact: true })).toHaveValue(partners);
     await expect(passport(b.page).getByRole('textbox', { name: 'Название проекта', exact: true })).toHaveValue(title);
     await expect(passport(b.page).getByRole('textbox', { name: 'Цель проекта', exact: true })).toHaveValue(goal);
     await expect(checklist(b.page).getByRole('checkbox', { checked: true })).toHaveCount(3);
@@ -640,14 +696,28 @@ try {
     await expect(migration.getByRole('rowheader', { name: 'Международная', exact: true })).toBeVisible();
     await noOverflow(b.page, 390);
   });
-  await stage('The cohort forecast compares a changed scenario with the baseline through 2100', a.page, async () => {
+  await stage('A shared cohort forecast updates both teammates, protects a draft and keeps its archived version', a.page, async () => {
     await roadmapTab(a.page, 'Прогноз');
+    await roadmapTab(b.page, 'Прогноз');
     const forecast = a.page.getByRole('region', { name: 'Прогноз населения', exact: true });
+    const teammate = b.page.getByRole('region', { name: 'Прогноз населения', exact: true });
     await expect(forecast.getByRole('heading', { name: 'Параметры прогноза', exact: true })).toBeVisible();
     await expect(forecast.getByText('Базовый прогноз', { exact: true })).toBeVisible();
+    await teammate.getByRole('spinbutton', { name: 'Смертность, %', exact: true }).fill('110');
     await forecast.getByRole('spinbutton', { name: 'Конечный год', exact: true }).fill('2100');
     await forecast.getByRole('spinbutton', { name: 'Рождаемость, %', exact: true }).fill('120');
+    const saved = rpc(a.page, 'dw_roadmap_cohort_save');
     await forecast.getByRole('button', { name: 'Рассчитать', exact: true }).click();
+    expect((await saved).status()).toBe(200);
+    await b.page.bringToFront();
+    await expect(teammate.getByText('Команда изменила параметры. Чтобы продолжить, загрузите общие значения.',
+      { exact: true })).toBeVisible();
+    await expect(teammate.getByRole('spinbutton', { name: 'Смертность, %', exact: true })).toHaveValue('110');
+    await expect(teammate.getByRole('button', { name: 'Рассчитать', exact: true })).toBeDisabled();
+    await teammate.getByRole('button', { name: 'Взять общие параметры', exact: true }).click();
+    await expect(teammate.getByRole('spinbutton', { name: 'Конечный год', exact: true })).toHaveValue('2100');
+    await expect(teammate.getByRole('spinbutton', { name: 'Рождаемость, %', exact: true })).toHaveValue('120');
+    await expect(teammate.getByRole('spinbutton', { name: 'Смертность, %', exact: true })).toHaveValue('100');
     await expect(forecast.getByText('Ваш сценарий', { exact: true })).toBeVisible();
     const population = forecast.locator('.rm-forecast-kpi');
     await expect(population).toContainText('Население на 1 января 2100 года');
@@ -656,6 +726,7 @@ try {
     const baseline = people(await population.locator('small').innerText());
     expect(baseline).toBeGreaterThan(0);
     expect(scenario).toBeGreaterThan(baseline);
+    await expect(teammate.locator('.rm-forecast-kpi').locator('strong')).toHaveText(await population.locator('strong').innerText());
     await forecast.getByText('Половозрастная пирамида прогноза', { exact: true }).click();
     await expect(forecast.getByRole('figure', { name: 'Половозрастная пирамида прогноза на 2100 год', exact: true })).toBeVisible();
     await forecast.getByText('Таблица прогноза по годам', { exact: true }).click();
@@ -667,6 +738,29 @@ try {
     await noOverflow(a.page, 1440);
     await forecast.getByRole('heading', { name: 'Параметры прогноза', exact: true }).scrollIntoViewIfNeeded();
     await screenshot(a.page, 'roadmap-cohort-2100-desktop.png');
+
+    await roadmapTab(a.page, 'Проверка и экспорт');
+    await a.page.getByRole('button', { name: 'Зафиксировать черновик', exact: true }).click();
+    const freezeDialog = a.page.getByRole('dialog', { name: 'Зафиксировать рабочую версию', exact: true });
+    await freezeDialog.getByRole('button', { name: 'Зафиксировать версию', exact: true }).click();
+    const archivedVersion = a.page.locator('.rm-version').filter({ hasText: /Версия 1/u });
+    await expect(archivedVersion).toHaveCount(1);
+    await teammate.getByRole('spinbutton', { name: 'Конечный год', exact: true }).fill('2070');
+    await teammate.getByRole('spinbutton', { name: 'Рождаемость, %', exact: true }).fill('115');
+    const savedUpdate = rpc(b.page, 'dw_roadmap_cohort_save');
+    await teammate.getByRole('button', { name: 'Рассчитать', exact: true }).click();
+    expect((await savedUpdate).status()).toBe(200);
+    await expect(teammate.locator('.rm-forecast-kpi')).toContainText('Население на 1 января 2070 года');
+    const archived = a.page.waitForEvent('download', { timeout: 30000 });
+    await archivedVersion.getByRole('button', { name: 'DOCX', exact: true }).click();
+    const oldFile = await archived;
+    expect(await oldFile.failure()).toBeNull();
+    const oldParts = unzipSync(await readFile(await oldFile.path()));
+    const oldWord = new TextDecoder().decode(oldParts['word/document.xml']);
+    expect(oldWord).toContain('до 1 января 2100 года');
+    expect(oldWord).toMatch(/120\s*%/u);
+    expect(oldWord).not.toContain('до 1 января 2070 года');
+    await oldFile.saveAs(join(evidence, 'ardatov-archived-cohort.docx'));
   });
   await stage('A team selects linked measures and edits the imported activity in its roadmap', a.page, async () => {
     await roadmapTab(a.page, 'Мероприятия');
@@ -690,14 +784,15 @@ try {
     await expect(editor).toBeHidden();
     await expect(activity(a.page, renamed)).toBeVisible();
     await roadmapTab(b.page, 'Мероприятия');
-    await b.page.getByRole('button', { name: 'Обновить дорожные карты', exact: true }).click();
     await expect(activity(b.page, renamed)).toBeVisible();
     await expect(b.page.getByRole('heading', { name: LINKED_MEASURE, exact: true })).toBeVisible();
   });
-  await stage('A participant in Saransk reloads saved workshop choices and exports a real Word file', b.page, async () => {
+  await stage('Saransk exports a real Word with saved forecasts and a PDF with only the selected passport', b.page, async () => {
     const city = 'Городской округ Саранск';
     const title = 'Учебный проект: время с семьёй в Саранске';
     const tech = 'Цифровая запись и обезличенный журнал участия в пилоте.';
+    const targetGroup = 'Работающие родители детей до трёх лет в Саранске.';
+    const scenarioTitle = 'Плановая динамика рождаемости в Саранске';
     const passport = b.page.getByRole('form', { name: 'Паспорт проекта', exact: true });
     await joinRoadmap(b.page, city);
     await expect(passport.getByLabel('Дата защиты', { exact: true })).toHaveCount(0);
@@ -707,8 +802,6 @@ try {
     await passport.getByRole('textbox', { name: 'Название проекта', exact: true }).fill(title);
     await passport.getByRole('textbox', { name: 'Цель проекта', exact: true })
       .fill('К 2030 году в трёх организациях Саранска ввести гибкий график для работающих родителей.');
-    await passport.getByRole('button', { name: 'Сохранить паспорт', exact: true }).click();
-    await expect(passport.getByText('Паспорт сохранён.', { exact: true })).toBeVisible();
     await roadmapTab(b.page, 'Мероприятия');
     await b.page.getByRole('button', { name: 'Перенести барьеры и меры', exact: true }).click();
     const transfer = b.page.getByRole('dialog', { name: 'Перенос барьеров и мер', exact: true });
@@ -724,6 +817,43 @@ try {
     await expect(passport.getByRole('textbox', { name: 'Технологический ресурс', exact: true })).toHaveValue(tech);
     await roadmapTab(b.page, 'Мероприятия');
     await expect(b.page.locator('.rm-activity-card').getByRole('heading', { name: LINKED_MEASURE, exact: true })).toBeVisible();
+    await roadmapTab(b.page, 'Прогноз');
+    const forecast = b.page.getByRole('region', { name: 'Прогноз населения', exact: true });
+    await expect(forecast.locator('.rm-forecast-kpi')).toContainText('Население на 1 января 2050 года');
+    await expect(forecast.getByText('Ваш сценарий', { exact: true })).toHaveCount(0);
+    const chart = forecast.locator('.rm-forecast-chart');
+    async function downloadChart(format) {
+      await chart.locator('.rm-data-download > summary').click();
+      const downloading = b.page.waitForEvent('download', { timeout: 15000 });
+      await chart.getByRole('button', { name: format, exact: true }).click();
+      const file = await downloading;
+      expect(await file.failure()).toBeNull();
+      return file;
+    }
+    const worksheetFile = await downloadChart('Данные XLSX');
+    const worksheet = new TextDecoder().decode(unzipSync(await readFile(await worksheetFile.path()))['xl/worksheets/sheet1.xml']);
+    expect(worksheet).toContain('Базовый прогноз');
+    expect(worksheet).toMatch(/<v>2050<\/v>/u);
+    await worksheetFile.saveAs(join(evidence, 'saransk-forecast.xlsx'));
+    const imageFile = await downloadChart('Изображение PNG');
+    const image = await readFile(await imageFile.path());
+    expect(image.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a');
+    expect(image.readUInt32BE(16)).toBeGreaterThan(500);
+    await imageFile.saveAs(join(evidence, 'saransk-forecast.png'));
+    await b.page.getByText('Сценарии по отдельным показателям', { exact: true }).click();
+    await b.page.getByRole('group', { name: 'Показатели', exact: true })
+      .getByRole('button', { name: 'Число родившихся', exact: true }).click();
+    const scalar = b.page.locator('.rm-scenario-inspector');
+    await scalar.getByRole('textbox', { name: 'Название', exact: true }).fill(scenarioTitle);
+    await scalar.getByLabel('Горизонт сценария', { exact: true }).fill('2030');
+    await scalar.getByLabel('Способ задания цели', { exact: true }).selectOption('absolute_end');
+    await scalar.getByLabel('Параметр целевого сценария', { exact: true }).fill('2600');
+    const savedScenario = rpc(b.page, 'dw_save_roadmap_item');
+    await scalar.getByRole('button', { name: 'Сохранить сценарий', exact: true }).click();
+    expect((await savedScenario).status()).toBe(200);
+    await expect(b.page.getByText('Сценарий сохранён в общей дорожной карте.', { exact: true })).toBeVisible();
+    await roadmapTab(b.page, 'Паспорт');
+    await passport.getByRole('textbox', { name: 'Целевая группа', exact: true }).fill(targetGroup);
     await roadmapTab(b.page, 'Проверка и экспорт');
     const wordButton = b.page.getByRole('button', { name: 'Скачать Word', exact: true });
     const downloaded = b.page.waitForEvent('download', { timeout: 30000 });
@@ -732,18 +862,82 @@ try {
     expect(file.suggestedFilename()).toMatch(/\.docx$/iu);
     expect(await file.failure()).toBeNull();
     const parts = unzipSync(await readFile(await file.path()));
-    const word = new TextDecoder().decode(parts['word/document.xml']);
-    for (const line of [city, title, LINKED_BARRIER, LINKED_MEASURE, RANKED_FAMILY, 'Технологический ресурс', tech]) expect(word).toContain(line);
+    const decoder = new TextDecoder();
+    const word = decoder.decode(parts['word/document.xml']);
+    for (const line of [city, title, targetGroup, LINKED_BARRIER, LINKED_MEASURE, RANKED_FAMILY, 'Технологический ресурс', tech,
+      'Демографическая статистика', 'Демографический прогноз', 'Прогноз численности населения', scenarioTitle, 'до 1 января 2050 года'])
+      expect(word).toContain(line);
+    expect(decoder.decode(parts['word/styles.xml'])).toContain('w:ascii="Times New Roman"');
+    const printedXml = Object.keys(parts).filter(name => /^word\/(?:document|header\d+|footer\d+)\.xml$/u.test(name))
+      .map(name => decoder.decode(parts[name])).join(' ');
+    expect(printedXml).not.toMatch(/SHA[- ]?256|контрольная сумма|canonicalJson|canonical\.json|roadmap-analytics|\b[a-f0-9]{64}\b/iu);
     expect(word).not.toContain('Дата защиты');
+    const media = Object.keys(parts).filter(name => /^word\/media\/.*\.svg$/u.test(name))
+      .map(name => decoder.decode(parts[name]));
+    const cohortChart = media.find(svg => svg.includes('<title>Прогноз численности населения</title>'));
+    expect(cohortChart).toContain('2050');
+    expect(cohortChart).toContain('Базовый прогноз');
+    expect(cohortChart).not.toContain('Сценарий участников');
+    const scenarioChart = media.find(svg => svg.includes(`<title>${scenarioTitle}</title>`));
+    expect(scenarioChart).toContain('2030');
+    for (const label of ['Наблюдения', 'Базовая траектория', 'Целевая траектория'])
+      expect(scenarioChart).toContain(label);
+    expect(Object.keys(parts).some(name => /^word\/media\/.*\.png$/u.test(name))).toBe(true);
     await file.saveAs(join(evidence, 'saransk-participant.docx'));
-    await expect(b.page.locator('.rm-version')).toHaveCount(1);
+    await expect(b.page.locator('.rm-version')).toHaveCount(0);
     const downloadedAgain = b.page.waitForEvent('download', { timeout: 30000 });
     await wordButton.click();
     expect(await (await downloadedAgain).failure()).toBeNull();
-    await expect(b.page.locator('.rm-version')).toHaveCount(1);
+    await expect(b.page.locator('.rm-version')).toHaveCount(0);
     await screenshot(b.page, 'saransk-word-export-mobile.png');
+
+    await b.page.locator('summary').filter({ hasText: /^Разделы документа/u }).click();
+    const sections = b.page.getByRole('group', { name: 'Разделы для экспорта', exact: true });
+    const pdfButton = b.page.getByRole('button', { name: 'Скачать PDF', exact: true });
+    await sections.getByRole('checkbox', { name: 'Все разделы', exact: true }).uncheck();
+    await expect(pdfButton).toBeDisabled();
+    await sections.getByRole('checkbox', { name: 'Паспорт проекта', exact: true }).check();
+    await expect(sections.getByRole('checkbox', { checked: true })).toHaveCount(1);
+    await b.page.locator('summary').filter({ hasText: /^Шрифт PDF/u }).click();
+    await b.page.getByRole('combobox', { name: 'Шрифт PDF', exact: true }).selectOption('liberation');
+    const downloadingPdf = b.page.waitForEvent('download', { timeout: 30000 });
+    await pdfButton.click();
+    const pdfFile = await downloadingPdf;
+    expect(pdfFile.suggestedFilename()).toMatch(/\.pdf$/iu);
+    expect(await pdfFile.failure()).toBeNull();
+    const pdf = await PDFDocument.load(await readFile(await pdfFile.path()));
+    const contents = printedPdfText(pdf);
+    for (const line of [city, title, 'Паспорт проекта', targetGroup])
+      expect(contents).toContain(line);
+    for (const omitted of ['Демографический прогноз', 'Ресурсное обеспечение', tech, scenarioTitle, LINKED_BARRIER, LINKED_MEASURE])
+      expect(contents).not.toContain(omitted);
+    const fontObjects = pdf.context.enumerateIndirectObjects().flatMap(([, item]) =>
+      item instanceof PDFDict ? [item] : []);
+    expect(fontObjects.some(font => String(font.get(PDFName.of('BaseFont'))).includes('LiberationSerif'))).toBe(true);
+    expect(fontObjects.some(font => font.has(PDFName.of('FontFile2')))).toBe(true);
+    expect(pdf.catalog.lookupMaybe(PDFName.of('Names'), PDFDict)?.has(PDFName.of('EmbeddedFiles'))).not.toBe(true);
+    await expect(b.page.locator('.rm-version')).toHaveCount(0);
+    await pdfFile.saveAs(join(evidence, 'saransk-passport-only.pdf'));
+    if (process.env.PLAYWRIGHT_TIMES_FONT_DIR) {
+      await sections.getByRole('checkbox', { name: 'Все разделы', exact: true }).check();
+      await b.page.getByRole('combobox', { name: 'Шрифт PDF', exact: true }).selectOption('times');
+      const fontFiles = b.page.locator('.rm-export-font-files input[type="file"]');
+      const folder = process.env.PLAYWRIGHT_TIMES_FONT_DIR;
+      await fontFiles.setInputFiles([join(folder, 'times.ttf'), join(folder, 'timesbd.ttf')]);
+      await expect(b.page.getByText('Times New Roman готов к встраиванию.', { exact: true })).toBeVisible();
+      const downloadingTimes = b.page.waitForEvent('download', { timeout: 30000 });
+      await pdfButton.click();
+      const result = await downloadingTimes;
+      expect(await result.failure()).toBeNull();
+      const timesPdf = await PDFDocument.load(await readFile(await result.path()));
+      expect(timesPdf.context.enumerateIndirectObjects().some(([, item]) =>
+        item instanceof PDFDict && String(item.get(PDFName.of('BaseFont'))).includes('TimesNewRomanPS'))).toBe(true);
+      expect(timesPdf.getPageCount()).toBeGreaterThan(1);
+      await result.saveAs(join(evidence, 'saransk-participant.pdf'));
+    }
   });
   expect(externalRequests).toEqual([]);
+  await Promise.all(responseChecks);
   expect(failedResponses).toEqual([]);
   expect(errors).toEqual([]);
   report.result = 'passed';
@@ -758,6 +952,7 @@ try {
   throw error;
 } finally {
   report.externalRequests = externalRequests; report.browserErrors = errors; report.failedResponses = failedResponses; report.invitationRequests = invitationRequests;
+  report.reconciledPassportConflicts = reconciledPassportConflicts;
   await writeFile(join(evidence, 'report.json'), JSON.stringify(report, null, 2));
   await browser.close();
   await server.stop();

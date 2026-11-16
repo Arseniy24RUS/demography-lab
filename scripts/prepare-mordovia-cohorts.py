@@ -13,6 +13,11 @@ COMPONENTS = {"births": "births_total", "deaths": "deaths_total",
               "arrivals": "mig_in_total", "departures": "mig_out_total"}
 SEXES = {"male": "M", "female": "F"}
 BASE_YEAR = 2024
+SARANSK_CODE = "89701000"
+SARANSK_YEARBOOK = (
+    "https://16156f87-795b-4079-8919-61fc9e1ac096.istmat.org/files/uploads/54225/"
+    "mordovskiy_statisticheskiy_ezhegodnik_2011.pdf"
+)
 
 
 def read_json(path):
@@ -45,6 +50,8 @@ def observed_stocks(raw):
                & raw["reference_date"].astype(str).eq(raw["year"].astype(str) + "-01-01")]
     if rows.duplicated(["municipality_code", "year"]).any():
         raise ValueError("Duplicate observed stock for the same municipality and year")
+    # The BDMO cell 27,766 differs from the official 2011 district estimate of 325.9 thousand.
+    rows = rows[~(rows["municipality_code"].eq(SARANSK_CODE) & rows["year"].eq(2011))]
     return {code: {int(year): as_number(value) for year, value in zip(group["year"], group["value"])}
             for code, group in rows.groupby("municipality_code")}
 
@@ -182,6 +189,12 @@ def prepare(spectrum_dir):
             raise ValueError(f"Population by age does not reconcile with the observed total for {key}")
         if any(sum(row[name] is not None for row in history) < 5 for name in COMPONENTS):
             raise ValueError(f"Insufficient historical counts for {key}")
+        source = input_source(reference, is_region)
+        if selected_codes == [SARANSK_CODE]:
+            source["notes"].append("Значение численности из БДМО за 2011 год исключено из ряда Саранска "
+                                   "из-за расхождения с официальной оценкой Мордовиястата.")
+            source["citations"].append({"label": "Мордовский статистический ежегодник за 2011 год",
+                                        "url": SARANSK_YEARBOOK})
         return {
             "territoryKey": key,
             "name": name,
@@ -192,7 +205,7 @@ def prepare(spectrum_dir):
             "history": history,
             "assumptions": regional_assumptions if is_region else municipal_assumptions[selected_codes[0]],
             "migrationProfile": migration_profile(profiles, selected_codes, is_region),
-            "source": input_source(reference, is_region),
+            "source": source,
         }
 
     result = []

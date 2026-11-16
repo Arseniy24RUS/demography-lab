@@ -49,19 +49,27 @@ export function LifecycleBarrierStage({ api, session, userId, snapshot, actions,
   const visible = needle ? scoped.filter(card => `${card.title} ${card.description}`.toLocaleLowerCase('ru').includes(needle)) : scoped;
   const editable = session.status === 'open' && session.role !== 'observer';
   const isHost = session.role === 'host';
+  const editingCard = editor && editor !== 'new' ? editor : undefined;
+  const canManage = editingCard && canEditCard(editingCard, userId, isHost, editable);
 
   async function save(draft: BarrierDraft) {
     const primary = draft.stageIds[0];
-    if (!primary) throw new Error('Выберите хотя бы один этап.');
-    if (draft.source === 'subjective' || draft.source === 'objective') {
-      await onImport(draft);
-    } else if (draft.source === 'existing' && editor && editor !== 'new') {
-      const previousPrimary = editor.primaryStage;
+    if (draft.source === 'existing' && editingCard) {
+      const stageIds = [...draft.stageIds, ...editingCard.stageIds.filter(stage => !isLifecycleStage(stage))];
+      const previousPrimary = editingCard.primaryStage;
+      const primaryStage = stageIds.includes(previousPrimary) ? previousPrimary : stageIds[0];
+      if (!primaryStage) throw new Error('Выберите хотя бы один этап.');
       await actions.saveBarrier({
-        ...barrierInput(editor),
-        primaryStage: isLifecycleStage(previousPrimary) && draft.stageIds.includes(previousPrimary) ? previousPrimary : primary,
-        stageIds: draft.stageIds,
+        ...barrierInput(editingCard),
+        title: draft.text,
+        description: draft.description,
+        primaryStage,
+        stageIds,
       });
+    } else if (!primary) {
+      throw new Error('Выберите хотя бы один этап.');
+    } else if (draft.source === 'subjective' || draft.source === 'objective') {
+      await onImport(draft);
     } else if (draft.source === 'own') {
       await actions.saveBarrier({
         barrierId: null,
@@ -77,7 +85,7 @@ export function LifecycleBarrierStage({ api, session, userId, snapshot, actions,
     } else {
       throw new Error('Барьер недоступен. Обновите данные занятия.');
     }
-    setSelected(stage => stage && !draft.stageIds.includes(stage) ? primary : stage);
+    setSelected(stage => stage && !draft.stageIds.includes(stage) ? primary ?? null : stage);
     if (editor === 'new') setQuery('');
   }
 
@@ -107,6 +115,7 @@ export function LifecycleBarrierStage({ api, session, userId, snapshot, actions,
       {visible.length ? <div className="lifecycle-barrier-cards">
         {visible.map(card => {
           const stages = card.stageIds.filter(isLifecycleStage);
+          const canManageCard = canEditCard(card, userId, isHost, editable);
           return <article className="workshop-note lifecycle-barrier-card" key={card.id} aria-label={card.title}
             data-note-tone={noteTone(card.id)}>
             <h4>{card.title}</h4>
@@ -129,9 +138,9 @@ export function LifecycleBarrierStage({ api, session, userId, snapshot, actions,
                     }))}><VoteIcon size={16} aria-hidden="true" />{count}</button>;
                 })}
               </div>
-              {canEditCard(card, userId, isHost, editable) ? <button type="button" className="button button-quiet small"
+              {canManageCard || (editable && card.sourceNoteId) ? <button type="button" className="button button-quiet small"
                 onClick={() => setEditor(card)}><Pencil size={14} aria-hidden="true" />
-                {stages.length ? 'Изменить этапы' : 'Уточнить этап'}</button> : null}
+                {canManageCard ? 'Изменить' : 'Изменить этапы'}</button> : null}
             </div>
           </article>;
         })}
@@ -139,7 +148,10 @@ export function LifecycleBarrierStage({ api, session, userId, snapshot, actions,
     </> : loading || !error ? <Busy>Загружаем барьеры…</Busy> : <button className="button button-secondary"
       onClick={() => void onRefresh()}>Обновить барьеры</button>}
     {editor ? <LifecycleBarrierEditor
-      card={editor === 'new' ? undefined : editor} initialStage={selected} subjective={subjective} objective={objective}
-      onClose={() => setEditor(null)} onSave={save} /> : null}
+      card={editingCard} initialStage={selected} subjective={subjective} objective={objective}
+      onClose={() => setEditor(null)} onSave={save}
+      onRemove={canManage && editingCard
+        ? () => actions.saveBarrier({ ...barrierInput(editingCard), status: 'archived' })
+        : undefined} /> : null}
   </section>;
 }

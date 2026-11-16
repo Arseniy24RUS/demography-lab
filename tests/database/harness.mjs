@@ -70,6 +70,7 @@ export const rpcArguments = Object.freeze({
   dw_roadmap_version: ['p_session_id', 'p_roadmap_id', 'p_version_id'],
   dw_roadmaps_projector_snapshot: ['p_session_id', 'p_roadmap_id'],
   dw_roadmap_statistics_save: ['p_operation_id', 'p_session_id', 'p_input'],
+  dw_roadmap_cohort_save: ['p_operation_id', 'p_session_id', 'p_input'],
   dw_roadmap_statistics_restore: ['p_operation_id', 'p_session_id', 'p_input'],
   dw_roadmap_statistics_history: ['p_session_id', 'p_input'],
   dw_roadmap_statistics_series: ['p_session_id', 'p_input'],

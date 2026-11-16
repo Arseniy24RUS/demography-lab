@@ -5,8 +5,13 @@ import type {
   RoadmapExportFormat,
 } from '../../../../packages/export/types';
 import { prepareRoadmapExport, roadmapJson } from '../../../../packages/export/model';
+import type { RoadmapReportOptions } from '../../../../packages/export/sections';
 
 export type { ExportedRoadmapFile, RoadmapExportFormat };
+export interface RoadmapDownloadOptions extends RoadmapReportOptions {
+  includeCurrentData?: boolean;
+  pdfFonts?: PdfExportFonts;
+}
 
 let cachedFonts: Promise<PdfExportFonts> | null = null;
 
@@ -32,16 +37,16 @@ export async function loadRoadmapExportFonts(): Promise<PdfExportFonts> {
   if (!cachedFonts)
     cachedFonts = (async () => {
       const responses = await Promise.all([
-        getFontResponse('DejaVuSans.ttf'),
-        getFontResponse('DejaVuSans-Bold.ttf'),
-        getFontResponse('LICENSE-DejaVu.txt'),
+        getFontResponse('LiberationSerif-Regular.ttf'),
+        getFontResponse('LiberationSerif-Bold.ttf'),
+        getFontResponse('LICENSE-Liberation.txt'),
       ]);
       const [regular, bold, license] = await Promise.all([
         responses[0]!.arrayBuffer(),
         responses[1]!.arrayBuffer(),
         responses[2]!.text(),
       ]);
-      if (regular.byteLength < 10000 || bold.byteLength < 10000 || !license.includes('Bitstream'))
+      if (regular.byteLength < 10000 || bold.byteLength < 10000 || !license.includes('SIL OPEN FONT LICENSE'))
         throw new Error('Локальный комплект шрифтов PDF повреждён.');
       return { regular: new Uint8Array(regular), bold: new Uint8Array(bold), license };
     })().catch((error: unknown) => {
@@ -101,12 +106,63 @@ const mimeTypes: Record<RoadmapExportFormat, string> = {
   zip: 'application/zip',
 };
 
+async function reportCohort(version: RoadmapVersion): Promise<Partial<RoadmapReportOptions>> {
+  const { loadCohortInput, defaultCohortParameters } = await import('./cohort-data');
+  const input = await loadCohortInput(version.snapshot.territory.key);
+  if (!input) {
+    if (version.snapshot.cohortSettings) throw new Error('Исходные данные сохранённого прогноза недоступны.');
+    return {};
+  }
+  const { projectCohorts } = await import('../../../../packages/analytics/cohort');
+  const { cohortFigure } = await import('../../../../packages/export/figures');
+  const settings = version.snapshot.cohortSettings?.parameters ?? defaultCohortParameters(input.baseYear);
+  const baseline = projectCohorts(input, { endYear: settings.endYear });
+  const changed = [settings.fertilityMultiplier, settings.mortalityMultiplier,
+    settings.arrivalsMultiplier, settings.departuresMultiplier].some(value => value !== undefined && value !== 1);
+  const percent = new Intl.NumberFormat('ru-RU', { style: 'percent', maximumFractionDigits: 1 });
+  const cohortDescription = `Прогноз методом передвижки возрастов. Источники: БДМО Росстата и региональные возрастные профили. `
+    + `Исходная структура населения — на 1 января ${input.baseYear} года, `
+    + `горизонт расчёта — до 1 января ${settings.endYear} года.`
+    + (changed ? ` В варианте команды рождаемость составляет ${percent.format(settings.fertilityMultiplier ?? 1)} от базового уровня, `
+      + `смертность — ${percent.format(settings.mortalityMultiplier ?? 1)}, число прибытий — ${percent.format(settings.arrivalsMultiplier ?? 1)}, `
+      + `число выбытий — ${percent.format(settings.departuresMultiplier ?? 1)}.` : '');
+  return { cohortDescription, cohort: cohortFigure(input, baseline, changed ? projectCohorts(input, settings) : undefined) };
+}
+
+async function currentStatistics(territoryKey: string): Promise<Partial<RoadmapReportOptions>> {
+  const { loadTerritoryIndex, loadTerritoryRegistry, loadCanonicalSeries } = await import('./territories');
+  const index = await loadTerritoryIndex();
+  const registry = await loadTerritoryRegistry(index);
+  const record = registry.records.find(item => item.territoryKey === territoryKey);
+  if (!record?.regionId || !record.statistics.hasSeries) return {};
+  const publishedStatistics = (await loadCanonicalSeries(index, registry, record.regionId))
+    .filter(item => item.territoryKey === territoryKey);
+  return { publishedStatistics };
+}
+
+async function buildReportOptions(version: RoadmapVersion, options: RoadmapDownloadOptions): Promise<RoadmapReportOptions> {
+  const { key } = version.snapshot.territory;
+  const includes = (section: 'forecast' | 'statistics') => !options.sections || options.sections.includes(section);
+  const [cohort, statistics] = await Promise.all([
+    includes('forecast') && (options.includeCurrentData || version.snapshot.cohortSettings) ? reportCohort(version) : {},
+    includes('statistics') && options.includeCurrentData ? currentStatistics(key) : {},
+  ]);
+  return {
+    sections: options.sections, cohort: options.cohort, cohortDescription: options.cohortDescription,
+    publishedStatistics: options.publishedStatistics, ...cohort, ...statistics,
+  };
+}
+
 /** Load this module on demand; no export takes a second snapshot from the live room. */
 export async function exportRoadmapVersion(
   version: RoadmapVersion,
   format: RoadmapExportFormat,
+  options: RoadmapDownloadOptions = {},
 ): Promise<ExportedRoadmapFile> {
-  const prepared = await prepareRoadmapExport(version);
+  const printable = format === 'docx' || format === 'pdf';
+  const prepared = await prepareRoadmapExport(version, printable ? await buildReportOptions(version, options) : undefined);
+  if (printable && options.sections && !prepared.blocks.length)
+    throw new Error('В выбранных разделах пока нет данных. Выберите другие разделы.');
   let bytes: Uint8Array;
   if (format === 'json') bytes = new TextEncoder().encode(roadmapJson(prepared));
   else if (format === 'docx') {
@@ -114,7 +170,7 @@ export async function exportRoadmapVersion(
     bytes = await buildRoadmapDocx(prepared, { rasterizeSvg: rasterizeRoadmapSvg });
   } else if (format === 'pdf') {
     const { buildRoadmapPdf } = await import('../../../../packages/export/pdf');
-    bytes = await buildRoadmapPdf(prepared, await loadRoadmapExportFonts());
+    bytes = await buildRoadmapPdf(prepared, options.pdfFonts ?? await loadRoadmapExportFonts());
   } else if (format === 'zip') {
     const { buildRoadmapArchive } = await import('../../../../packages/export/archive');
     bytes = await buildRoadmapArchive(prepared, {
@@ -123,9 +179,11 @@ export async function exportRoadmapVersion(
     });
   } else throw new Error('Неподдерживаемый формат экспорта.');
   const mimeType = mimeTypes[format];
+  const territory = printable ? Array.from(version.snapshot.territory.name.replace(/[<>:"/\\|?*]/gu, ' ')
+    .replace(/\s+/gu, ' ').trim()).slice(0, 100).join('') : '';
   return {
     blob: new Blob([new Uint8Array(bytes).buffer], { type: mimeType }),
-    filename: `${prepared.basename}.${format}`,
+    filename: `${printable ? ['Дорожная карта', territory].filter(Boolean).join(' — ') : prepared.basename}.${format}`,
     mimeType,
   };
 }
@@ -134,9 +192,10 @@ export async function downloadRoadmapVersion(
   version: RoadmapVersion,
   format: RoadmapExportFormat,
   canDownload: () => boolean = () => true,
+  options?: RoadmapDownloadOptions,
 ): Promise<void> {
   if (!canDownload()) return;
-  const file = await exportRoadmapVersion(version, format);
+  const file = await exportRoadmapVersion(version, format, options);
   // Re-check membership context after asynchronous fonts/rasterisation/rendering.
   // A detached view must not deliver a sensitive old-account file after logout.
   if (!canDownload()) return;

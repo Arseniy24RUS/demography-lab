@@ -102,6 +102,7 @@ export function App() {
   const [view, setView] = useState<View>(() => route.has('documents') || route.has('document') ? 'documents' : 'sessions');
   const [workshopStage, setWorkshopStage] = useState(() => readWorkshopStage(route.get('stage')));
   const [workshopVisit, setWorkshopVisit] = useState(0);
+  const leaveRoadmaps = useRef<(() => Promise<boolean>) | null>(null);
   const [factorStage, setFactorStage] = useState<FactorStage>(() =>
     workshopStage === 'objective' ? 'objective' : 'flipchart');
   const [programmeReader, setProgrammeReader] = useState(false);
@@ -141,6 +142,12 @@ export function App() {
     workshopAddress(stage);
     if (scroll) requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'instant' }));
   }
+  function afterRoadmapSave(navigate: () => void) {
+    const flush = leaveRoadmaps.current;
+    if (view === 'sessions' && workshopStage === 'roadmaps' && flush) {
+      void flush().then(saved => { if (saved && leaveRoadmaps.current === flush) navigate(); }).catch(fail);
+    } else navigate();
+  }
   const session = useSession({
     onOpenSource: (anchor) => {
       void openAnchor(anchor);
@@ -177,14 +184,16 @@ export function App() {
     sessionId: session.sessionId,
     userId: session.state.auth.userId,
     projector: projectorMode,
-    enabled: Boolean(session.state.bootstrap?.profile) && (view === 'sessions' || programmeReader || projectorMode),
+    enabled: Boolean(session.state.bootstrap?.profile) && (projectorMode ||
+      (view === 'sessions' && workshopStage === 'board')),
   });
   const barriers = useBarriers({
     api: session.api,
     sessionId: session.sessionId,
     userId: session.state.auth.userId,
     projector: projectorMode,
-    enabled: Boolean(session.state.bootstrap?.profile) && (view === 'sessions' || projectorMode),
+    enabled: Boolean(session.state.bootstrap?.profile) && (projectorMode ||
+      (view === 'sessions' && ['barriers', 'solutions', 'roadmaps'].includes(workshopStage))),
   });
   useEffect(() => {
     const c = new AbortController();
@@ -531,13 +540,13 @@ export function App() {
       </a>
       <WorkshopHeader activeStage={view === 'sessions' ? workshopStage : undefined}
         reference={view === 'sessions' ? undefined : view}
-        onStage={stage => openWorkshopStage(stage === 'flipchart' ? factorStage : stage)}
-        onHome={() => openWorkshopStage('flipchart')}
-        onReference={reference => {
+        onStage={stage => afterRoadmapSave(() => openWorkshopStage(stage === 'flipchart' ? factorStage : stage))}
+        onHome={() => afterRoadmapSave(() => openWorkshopStage('flipchart'))}
+        onReference={reference => afterRoadmapSave(() => {
           setProgrammeReader(false);
           setView(reference);
           requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'instant' }));
-        }}
+        })}
         tools={<>
           {currentWorkshop?.role === 'host' ? (
             <HostControls key={currentWorkshop.id} session={currentWorkshop} busy={session.state.busy !== null}
@@ -741,7 +750,7 @@ export function App() {
             )}
             renderRoadmaps={() => (
               <Suspense fallback={<p aria-busy="true">Открываем дорожные карты…</p>}>
-                <ConnectedRoadmaps key={`${session.sessionId}:${session.state.auth.userId}`} state={session.state} sessionActions={session.actions} api={session.api} barriers={barriers} manifest={manifest} />
+                <ConnectedRoadmaps key={`${session.sessionId}:${session.state.auth.userId}`} state={session.state} sessionActions={session.actions} api={session.api} barriers={barriers} manifest={manifest} leaveGuard={leaveRoadmaps} />
               </Suspense>
             )}
             renderBarriers={() => (

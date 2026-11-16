@@ -1,4 +1,4 @@
-import { Activity, lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Activity, lazy, Suspense, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import {
   BarChart3,
   CalendarDays,
@@ -19,6 +19,7 @@ import { readable } from '../lib/corpus';
 import type { SessionApi } from '../lib/session-api';
 import type { useBarriers } from '../hooks/useBarriers';
 import { useRoadmaps } from '../hooks/useRoadmaps';
+import { usePassportAutosave } from '../hooks/usePassportAutosave';
 import { TerritoryPanel, useTerritoryDataset } from './roadmaps/TerritoryPanel';
 import { DiagnosticWorkbench } from './roadmaps/DiagnosticWorkbench';
 import { ActivityWorkbench } from './roadmaps/ActivityWorkbench';
@@ -48,12 +49,14 @@ export function ConnectedRoadmaps({
   api,
   barriers,
   manifest,
+  leaveGuard,
 }: {
   state: SessionAreaState;
   sessionActions: SessionAreaActions;
   api: SessionApi | null;
   barriers: ReturnType<typeof useBarriers>;
   manifest: CorpusManifest;
+  leaveGuard?: RefObject<(() => Promise<boolean>) | null>;
 }) {
   const session = state.snapshot?.session ?? null;
   const [tab, setTab] = useState<RoadmapTab>('territory'),
@@ -73,6 +76,22 @@ export function ConnectedRoadmaps({
     editable = Boolean(
       snapshot?.canEdit && session?.status === 'open' && session.role !== 'observer',
     );
+  const passport = usePassportAutosave(snapshot, controller, editable);
+  const root = useRef<HTMLElement | null>(null);
+  async function saveBeforeLeaving() {
+    const saved = await passport.flush();
+    if (!saved) requestAnimationFrame(() => root.current?.querySelector('.rm-passport-form [role="alert"]')
+      ?.scrollIntoView({ block: 'center', behavior: 'instant' }));
+    return saved;
+  }
+  const flushPassport = useRef(saveBeforeLeaving);
+  flushPassport.current = saveBeforeLeaving;
+  useEffect(() => {
+    if (!leaveGuard) return;
+    const flush = () => flushPassport.current();
+    leaveGuard.current = flush;
+    return () => { if (leaveGuard.current === flush) leaveGuard.current = null; };
+  }, [leaveGuard]);
   useEffect(() => {
     setEditor(null);
     if (snapshot) setSelectedKey(snapshot.territory.key);
@@ -125,18 +144,21 @@ export function ConnectedRoadmaps({
     }
   }
 
+  async function goToTab(next: RoadmapTab) {
+    if (next === tab || !await saveBeforeLeaving()) return;
+    setEditor(null);
+    setTab(next);
+  }
+
   return (
-    <section className="rm-workspace" aria-label="Дорожные карты">
+    <section ref={root} className="rm-workspace" aria-label="Дорожные карты">
       <header className="rm-heading">
         <div>
           <h2>Дорожные карты</h2>
           {tab !== 'territory' && snapshot ? <p>{snapshot.territory.name}</p> : null}
         </div>
         <div className="rm-actions">
-          {tab !== 'territory' ? <button type="button" className="button button-secondary" onClick={() => {
-            setEditor(null);
-            setTab('territory');
-          }}>К территориям</button> : null}
+          {tab !== 'territory' ? <button type="button" className="button button-secondary" onClick={() => void goToTab('territory')}>К территориям</button> : null}
           <button
             className="icon-button"
             aria-label="Обновить дорожные карты"
@@ -156,10 +178,7 @@ export function ConnectedRoadmaps({
               className={tab === key ? 'active' : ''}
               aria-current={tab === key ? 'page' : undefined}
               disabled={!snapshot}
-              onClick={() => {
-                setTab(key);
-                setEditor(null);
-              }}
+              onClick={() => void goToTab(key)}
             >
               <Icon size={18} />
               {label}
@@ -189,7 +208,7 @@ export function ConnectedRoadmaps({
       ) : null}
       {workspace ? (
         <Activity mode={tab === 'passport' ? 'visible' : 'hidden'}>
-          <PassportWorkbench key={workspace.snapshot.roadmapId} {...workspace} />
+          <PassportWorkbench key={workspace.snapshot.roadmapId} {...workspace} autosave={passport} />
         </Activity>
       ) : null}
       {tab === 'territory' ? (
@@ -287,8 +306,7 @@ export function ConnectedRoadmaps({
       ) : tab === 'forecast' ? (
         <>
           <Suspense fallback={<p className="rm-empty" role="status">Загружаем прогноз…</p>}>
-            <ForecastWorkbench key={workspace.snapshot.roadmapId} roadmapId={workspace.snapshot.roadmapId}
-              territoryKey={workspace.snapshot.territory.key} />
+              <ForecastWorkbench key={workspace.snapshot.roadmapId} workspace={workspace} />
           </Suspense>
           {data.index && data.registry && selectedTerritory && editionMatches ? (
             <details className="rm-source-details">
@@ -309,7 +327,7 @@ export function ConnectedRoadmaps({
       ) : tab === 'resources' ? (
         <CalendarResources {...workspace} />
       ) : (
-        <ReviewExport {...workspace} isHost={isHost && session.status === 'open'} onTab={setTab} />
+        <ReviewExport {...workspace} isHost={isHost && session.status === 'open'} onTab={tab => void goToTab(tab)} flushPassport={passport.flush} />
       )}
       {editor && workspace ? (
         <RoadmapItemEditor

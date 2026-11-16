@@ -1,3 +1,4 @@
+import { startWorkshopPolling } from '../lib/workshop-polling';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FlipchartReplica } from '../../../../packages/flipchart/replica';
 import type {
@@ -95,13 +96,13 @@ export function useFlipchart({ api, sessionId, userId, projector = false, enable
     void read();
     // Compact deltas work identically through Supabase and the offline LAN server.
     // No full-board download is needed when no sticker or vote has changed.
-    const interval = setInterval(() => { if (document.visibilityState === 'visible') void read(); }, api.config.pollInterval);
+    const stopPolling = startWorkshopPolling(api.config.pollInterval, read);
     const resume = () => { if (document.visibilityState === 'visible') void read(); };
     window.addEventListener('online', resume);
     document.addEventListener('visibilitychange', resume);
     return () => {
       runtime.active = false;
-      clearInterval(interval);
+      stopPolling();
       window.removeEventListener('online', resume);
       document.removeEventListener('visibilitychange', resume);
       if (runtimeRef.current === runtime) runtimeRef.current = null;

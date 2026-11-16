@@ -1,3 +1,4 @@
+import { startWorkshopPolling } from '../lib/workshop-polling';
 import { randomUuid } from '../../../../packages/security/crypto.mjs';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { SessionApi } from '../lib/session-api';
@@ -16,6 +17,7 @@ import type {
   ConfigureRoadmapsInput,
   JoinRoadmapInput,
   SaveRoadmapItemInput,
+  SaveRoadmapCohortInput,
   CaptureRoadmapBasisInput,
   ImportRoadmapWorkshopInput,
   CaptureRoadmapFactInput,
@@ -264,10 +266,9 @@ export function useRoadmaps({
           })
       : null;
     void sync();
-    const timer = setInterval(() => {
-      if (document.visibilityState === 'visible' && (!live || Date.now() - lastSync > 30000))
-        void sync();
-    }, api.config.pollInterval);
+    const timer = startWorkshopPolling(api.config.pollInterval, () => {
+      if (!live || Date.now() - lastSync > 30000) return sync();
+    });
     const onFocus = () => {
       if (document.visibilityState === 'visible') void sync();
     };
@@ -276,7 +277,7 @@ export function useRoadmaps({
     document.addEventListener('visibilitychange', onFocus);
     return () => {
       active = false;
-      clearInterval(timer);
+      timer();
       if (eventTimer) clearTimeout(eventTimer);
       if (channel) void api.client.removeChannel(channel);
       window.removeEventListener('focus', onFocus);
@@ -287,6 +288,7 @@ export function useRoadmaps({
   }, [api, client, sessionId, userId, identity, enabled, projector, selectedId, apply]);
   async function run<T>(
     operation: (client: RoadmapsApi, sessionId: string) => Promise<T>,
+    reconcileConflict = false,
   ): Promise<T> {
     if (!client || !sessionId || !userId || projector || !isCurrent(identity, client))
       throw new Error('Откройте дорожную карту в учебной сессии.');
@@ -305,7 +307,8 @@ export function useRoadmaps({
       return result;
     } catch (cause) {
       if (isCurrent(token, client)) {
-        setError(message(cause));
+        if (!(reconcileConflict && cause instanceof Error && 'code' in cause && cause.code === 'REVISION_CONFLICT'))
+          setError(message(cause));
         if (forbidden(cause)) {
           state.current.snapshot = null;
           state.current.index = null;
@@ -324,8 +327,9 @@ export function useRoadmaps({
   }
   async function write(
     operation: (client: RoadmapsApi, sessionId: string) => Promise<RoadmapSnapshot>,
+    reconcileConflict = false,
   ) {
-    const next = await run(operation);
+    const next = await run(operation, reconcileConflict);
     if (!isCurrent(identity, client))
       throw new Error('Учётная запись, занятие или открытый модуль изменились.');
     apply(next, identity);
@@ -334,8 +338,20 @@ export function useRoadmaps({
       throw new Error('Учётная запись, занятие или открытый модуль изменились.');
     return next;
   }
+  async function readRoadmapVersion(roadmapId: string, versionId?: string) {
+    if (!client || !sessionId || !userId || !isCurrent(identity, client))
+      throw new Error('Сначала откройте занятие.');
+    const token = identity;
+    const next = versionId === undefined
+      ? await client.currentVersion(sessionId, roadmapId)
+      : await client.version(sessionId, roadmapId, versionId);
+    if (!isCurrent(token, client))
+      throw new Error('Учётная запись, занятие или открытый модуль изменились.');
+    return next;
+  }
   const actions = {
     select,
+    currentSnapshot: () => isCurrent(identity, client) ? state.current.snapshot : null,
     refresh: () => refreshRef.current(),
     clearError: () => setError(null),
     configure: async (input: ConfigureRoadmapsInput) => {
@@ -354,7 +370,8 @@ export function useRoadmaps({
       await refreshRef.current();
       return next;
     },
-    saveItem: (input: SaveRoadmapItemInput) => write((c, id) => c.saveItem(id, input)),
+    saveItem: (input: SaveRoadmapItemInput) => write((c, id) => c.saveItem(id, input), input.kind === 'passport'),
+    saveCohortSettings: (input: SaveRoadmapCohortInput) => write((c, id) => c.saveCohortSettings(id, input)),
     captureBasis: (input: CaptureRoadmapBasisInput) => write((c, id) => c.captureBasis(id, input)),
     importWorkshop: (input: ImportRoadmapWorkshopInput) => write((c, id) => c.importWorkshop(id, input)),
     captureFact: (input: CaptureRoadmapFactInput) => write((c, id) => c.captureFact(id, input)),
@@ -395,15 +412,8 @@ export function useRoadmaps({
     },
     freeze: (input: FreezeRoadmapInput) => write((c, id) => c.freeze(id, input)),
     review: (input: ReviewRoadmapInput) => write((c, id) => c.review(id, input)),
-    readVersion: async (roadmapId: string, versionId: string) => {
-      if (!client || !sessionId || !userId || !isCurrent(identity, client))
-        throw new Error('Сначала откройте занятие.');
-      const token = identity;
-      const next = await client.version(sessionId, roadmapId, versionId);
-      if (!isCurrent(token, client))
-        throw new Error('Учётная запись, занятие или открытый модуль изменились.');
-      return next;
-    },
+    readVersion: (roadmapId: string, versionId: string) => readRoadmapVersion(roadmapId, versionId),
+    readCurrentVersion: (roadmapId: string) => readRoadmapVersion(roadmapId),
   };
   return { index, snapshot, projection, selectedId, loading, busy, error, presenceCounts, actions };
 }

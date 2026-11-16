@@ -69,7 +69,8 @@ const ICONS = new Set([
   'site.webmanifest',
 ]);
 // Export fonts are public assets. Keep the list exact: no arbitrary text/source files.
-const EXPORT_FONT_FILES = new Set(['DejaVuSans.ttf', 'DejaVuSans-Bold.ttf', 'LICENSE-DejaVu.txt']);
+const EXPORT_FONT_FILES = new Set(['DejaVuSans.ttf', 'DejaVuSans-Bold.ttf', 'LICENSE-DejaVu.txt',
+  'LiberationSerif-Regular.ttf', 'LiberationSerif-Bold.ttf', 'LICENSE-Liberation.txt']);
 // Exact public runtime copies of the author's RUDN reader, never arbitrary source.
 const READER_MODULE_FILES = new Set([
   'site/apps/legal-lab/lib/reader-controller.mjs',

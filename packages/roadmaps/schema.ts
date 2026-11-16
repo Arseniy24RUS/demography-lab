@@ -514,6 +514,20 @@ export const roadmapsIndexSchema = z
       (v.myRoadmapId === null || v.rooms.some((x) => x.id === v.myRoadmapId)) &&
       v.configuration.locked === v.rooms.length > 0,
   );
+const cohortMultiplier = z.number().min(0).max(3);
+const cohortParameters = z.strictObject({
+  endYear: year.min(2025).max(2100),
+  fertilityMultiplier: cohortMultiplier,
+  mortalityMultiplier: cohortMultiplier,
+  arrivalsMultiplier: cohortMultiplier,
+  departuresMultiplier: cohortMultiplier,
+});
+const cohortSettings = z.strictObject({ revision, parameters: cohortParameters });
+export const saveRoadmapCohortInputSchema = z.strictObject({
+  roadmapId: uuid,
+  expectedRevision: integer,
+  parameters: cohortParameters,
+});
 const sharedData = {
   territory: roadmapTerritorySchema,
   roomLevel: scope,
@@ -554,6 +568,7 @@ export const roadmapSnapshotSchema = z
     sourceCursor: integer,
     revision,
     ...sharedData,
+    cohortSettings: cohortSettings.optional(),
     canEdit: z.boolean(),
     members: z.array(z.strictObject({ userId: uuid, fullName: text(200, 1) })).max(1000),
     items: z.array(roadmapItemSchema).max(600),
@@ -576,6 +591,7 @@ export const frozenRoadmapDataSchema = z
     templateVersion: z.literal('organizers-roadmap-1'),
     calculationVersion: z.literal('roadmap-analytics-1'),
     ...sharedData,
+    cohortSettings: cohortSettings.optional(),
     roadmapRevision: revision,
     session: z.strictObject({ title: text(200, 1), scope, regionId: id.nullable() }),
     teamNames: z.array(text(200, 1)).max(1000),
@@ -602,7 +618,7 @@ export const frozenRoadmapDataSchema = z
       issue('В новой версии отсутствует состояние рабочих статистических рядов.');
     if (
       v.schemaVersion === 1 &&
-      (v.statistics !== undefined || v.series.some((s) => s.sourceKind === 'team_reported'))
+      (v.statistics !== undefined || v.cohortSettings !== undefined || v.series.some((s) => s.sourceKind === 'team_reported'))
     )
       issue('Старая версия не должна содержать структуру нового формата.');
     if (!coherentStatistics(v))

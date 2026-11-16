@@ -1,15 +1,13 @@
-import { useId, useState } from 'react';
+import { useId } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { randomUuid } from '../../../../../packages/security/crypto.mjs';
 import { passportResources } from '../../../../../packages/roadmaps/passport-resources';
-import { roadmapPassportDataSchema } from '../../../../../packages/roadmaps/schema';
 import {
   roadmapSmartCriteria,
-  type RoadmapItem,
-  type RoadmapPassportData,
   type RoadmapSmartCriterion,
 } from '../../../../../packages/roadmaps/types';
-import { activeItems, saveInput, SectionHeading, useRoadmapTask } from './common';
+import type { PassportAutosave } from '../../hooks/usePassportAutosave';
+import { SectionHeading } from './common';
 import type { RoadmapWorkspaceProps } from './common';
 import './passport-workbench.css';
 
@@ -65,50 +63,24 @@ function DateField({ label, value, onChange }: {
   </label>;
 }
 
-function PassportForm({ item, snapshot, controller, editable }: Omit<RoadmapWorkspaceProps, 'onEdit'> & {
-  item: RoadmapItem<'passport'>;
+function PassportForm({ autosave, snapshot, editable }: Omit<RoadmapWorkspaceProps, 'onEdit'> & {
+  autosave: PassportAutosave;
 }) {
-  const task = useRoadmapTask();
-  const [draft, setDraft] = useState<{ revision: number; data: RoadmapPassportData } | null>(null);
-  const data = draft?.data ?? item.data;
-  const changedByTeam = draft !== null && draft.revision !== item.revision;
-  const disabled = !editable || task.working || controller.busy;
-
-  function update(changes: Partial<RoadmapPassportData>) {
-    setDraft((previous) => ({
-      revision: previous?.revision ?? item.revision,
-      data: { ...(previous?.data ?? item.data), ...changes },
-    }));
-  }
+  const { data, update, flush, conflicts, working, dirty, error, saved, discard, acceptTeamVersion } = autosave;
+  if (!data) return null;
 
   function toggleCriterion(criterion: RoadmapSmartCriterion, checked: boolean) {
-    const selected = new Set(data.smartChecks);
+    const selected = new Set(data?.smartChecks);
     if (checked) selected.add(criterion);
     else selected.delete(criterion);
     update({ smartChecks: roadmapSmartCriteria.filter((key) => selected.has(key)) });
   }
 
-  async function save() {
-    if (!draft || disabled || changedByTeam) return;
-    await task.run(async () => {
-      const parsed = roadmapPassportDataSchema.safeParse(draft.data);
-      if (!parsed.success)
-        throw new Error('Проверьте заполненные поля. Для периода нужны обе даты, начало должно быть не позднее окончания.');
-      try {
-        await controller.actions.saveItem(saveInput(snapshot.roadmapId, item, parsed.data));
-        setDraft(null);
-      } catch (cause) {
-        void controller.actions.refresh();
-        throw cause;
-      }
-    }, 'Паспорт сохранён.');
-  }
-
   return <form className="rm-passport-form" aria-label="Паспорт проекта" onSubmit={(event) => {
     event.preventDefault();
-    void save();
+    if (!conflicts.length) void flush();
   }}>
-    <fieldset disabled={disabled} className="rm-passport-fields">
+    <fieldset disabled={!editable} className="rm-passport-fields">
       <div className="rm-passport-card">
         <div className="rm-passport-level"><span>Уровень проекта</span> <strong>{levels[snapshot.territory.level]}</strong></div>
         <TextField label="Название проекта" singleLine value={data.title} onChange={(title) => update({ title })}
@@ -177,22 +149,27 @@ function PassportForm({ item, snapshot, controller, editable }: Omit<RoadmapWork
       </div>
     </fieldset>
 
-    {changedByTeam ? <div className="session-message" data-tone="error" role="alert">
-      <p>Команда сохранила новую редакцию паспорта. До загрузки изменений ваш текст доступен для копирования.</p>
-      <button className="button button-secondary" type="button" disabled={disabled}
-        onClick={() => setDraft(null)}>Загрузить паспорт команды</button>
+    {conflicts.length ? <div className="session-message" data-tone="error" role="alert">
+      <p>Вы и участник команды изменили одни и те же поля. Выберите, какую версию сохранить.</p>
+      <div className="rm-actions">
+        <button className="button button-secondary" type="button" disabled={working || !editable}
+          onClick={() => void flush(true)}>Сохранить мои изменения</button>
+        <button className="button button-secondary" type="button" disabled={working} onClick={acceptTeamVersion}>Оставить значения команды</button>
+      </div>
     </div> : null}
-    {task.feedback}
-    {editable ? <button className="button button-primary" type="submit" disabled={disabled || !draft || changedByTeam}>
-      {task.working ? 'Сохраняем…' : 'Сохранить паспорт'}
-    </button> : null}
+    {error ? <p className="session-message" data-tone="error" role="alert">{error}</p> : null}
+    {editable ? <div className="rm-actions">
+      <p className="rm-muted" role="status">{working ? 'Сохраняем паспорт…' : saved ? 'Паспорт сохранён.' : dirty ? 'Есть несохранённые изменения.' : 'Изменения сохраняются автоматически.'}</p>
+      {dirty && !conflicts.length ? <button className="button button-secondary" type="submit" disabled={working}>Сохранить паспорт</button> : null}
+      {error && dirty && !conflicts.length ? <button className="button button-quiet" type="button" disabled={working} onClick={discard}>Отменить несохранённые изменения</button> : null}
+    </div> : null}
   </form>;
 }
 
-export function PassportWorkbench(props: Omit<RoadmapWorkspaceProps, 'onEdit'>) {
-  const item = activeItems(props.snapshot, 'passport')[0];
+export function PassportWorkbench(props: Omit<RoadmapWorkspaceProps, 'onEdit'> & { autosave: PassportAutosave }) {
+  const item = props.autosave.item;
   return <section className="rm-section rm-passport-workbench">
     <SectionHeading title="Паспорт проекта" />
-    {item ? <PassportForm key={item.id} {...props} item={item} /> : <p className="rm-empty">Паспорт недоступен.</p>}
+    {item ? <PassportForm key={item.id} {...props} /> : <p className="rm-empty">Паспорт недоступен.</p>}
   </section>;
 }

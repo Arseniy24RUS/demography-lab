@@ -143,6 +143,7 @@
 }
 .rm-data-table-scroll th:first-child { text-align: left; white-space: normal; }
 .rm-data-table-scroll thead th { background: #ecf3fa; color: #254465; font-weight: 700; }
+.rm-exportable-table { padding-top: 38px; }
 .rm-data-table-scroll tbody tr:nth-child(even) { background: #f6f9fc; }
 .rm-data-table-scroll tbody th { font-weight: 600; }
 .rm-flow-table td { position: relative; min-width: 4.5rem; padding-bottom: 9px; }

@@ -20,6 +20,7 @@ export type FigurePrimitive =
       color: string;
       width: number;
       dash?: number[];
+      dashPhase?: number;
     }
   | {
       kind: 'rect';
@@ -43,7 +44,7 @@ export type FigurePrimitive =
     };
 export interface RoadmapFigure {
   id: string;
-  kind: 'scenario' | 'calendar';
+  kind: 'statistics' | 'scenario' | 'cohort' | 'calendar';
   title: string;
   altText: string;
   width: number;

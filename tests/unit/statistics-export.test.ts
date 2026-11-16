@@ -4,7 +4,7 @@ import { makeStatisticsExportFixture } from './statistics.fixture';
 import { resealFixture } from './roadmap-export.fixture';
 
 describe('manual statistics in immutable document exports', () => {
-  it('exports original and used values, per-year sources and the explicitly pinned earlier edition', async () => {
+  it('reports distinct observation sets and retains year-level provenance in the technical export', async () => {
     const { version, v1, v2, manualScenarioId } = await makeStatisticsExportFixture();
     const prepared = await prepareRoadmapExport(version);
     const text = prepared.blocks
@@ -18,17 +18,22 @@ describe('manual statistics in immutable document exports', () => {
               : '',
       )
       .join('\n');
-    expect(text).toContain('Исходные и используемые значения');
-    expect(text).toContain('2023|Нет данных|0|Участники');
-    expect(text).toContain('2024|Год отсутствует|Нет данных|Участники');
-    expect(text).toContain('2018|204|205|Участники');
-    expect(text).toContain('значение подтверждено без изменения');
+    expect(text).toContain('2023|0|');
+    expect(text).toContain('2024|—|');
+    expect(text).toContain('2025|190|');
     expect(text).toContain(v1.sourceReference);
     expect(text).toContain(v2.sourceReference);
-    expect(text).toContain('Рабочая редакция статистики изменилась');
-    expect(text).toContain('Дата источника этого наблюдения: 12.03.2026');
+    expect(text).toContain('использован другой набор наблюдений');
+    expect(text).not.toContain(v1.id);
+    expect(text).not.toContain(v2.fingerprint);
+    expect(text).not.toContain('Дата источника');
     const json = JSON.parse(roadmapJson(prepared));
     expect(json.snapshot.statistics[0].seriesId).toBe(v2.id);
+    const usedEdition = json.snapshot.series.find((row: { id: string }) => row.id === v1.id);
+    expect(usedEdition.overrides).toEqual(v1.overrides);
+    expect(
+      usedEdition.baseSeries.points.find((row: { year: number }) => row.year === 2018).value,
+    ).toBe(204);
     expect(
       json.calculations.scenarios.find((row: { itemId: string }) => row.itemId === manualScenarioId)
         .result.baselineObservedValue,
@@ -80,7 +85,7 @@ describe('manual statistics in immutable document exports', () => {
     expect(
       prepared.blocks.some(
         (block) =>
-          block.kind === 'paragraph' && block.text.includes('Команда вернулась к исходным данным'),
+          block.kind === 'paragraph' && block.text.includes('использован другой набор наблюдений'),
       ),
     ).toBe(true);
     expect(prepared.version.snapshot.series.some((row) => row.id === v2.id)).toBe(true);

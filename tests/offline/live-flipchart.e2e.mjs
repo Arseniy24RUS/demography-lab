@@ -440,6 +440,19 @@ try {
       .filter({ has: page.getByRole('heading', { name: title, exact: true }) });
     for (const page of [a.page, b.page])
       await objective(page).getByRole('searchbox', { name: 'Показатель', exact: true }).fill(title);
+    const explanation = 'Жилищные условия могут влиять на возможность появления ребёнка.';
+    const openMechanism = (card) => card.getByRole('button', { name: 'Механизм связи', exact: true }).click();
+    await stage('Participants share an optional explanation inside an unselected correlation card', a.page, async () => {
+      await openMechanism(housingCard(a.page));
+      await housingCard(a.page).getByRole('textbox', { name: 'Как вы объясняете эту связь?' }).fill(explanation);
+      await housingCard(a.page).getByRole('button', { name: 'Сохранить комментарий', exact: true }).click();
+      await expect(housingCard(a.page).getByText('Ваш комментарий')).toBeVisible();
+      await openMechanism(housingCard(b.page));
+      await expect(housingCard(b.page).getByText(explanation, { exact: true })).toBeVisible();
+      await expect(housingCard(b.page).getByRole('textbox', { name: 'Как вы объясняете эту связь?' })).toHaveValue('');
+      await expect(housingCard(a.page).getByRole('button', { name: 'На флипчарт', exact: true })).toHaveAttribute('aria-pressed', 'false');
+      for (const page of [a.page, b.page]) await openMechanism(housingCard(page));
+    });
     // Both clicks must record the unchecked action before a real reply can update either board.
     const addRoute = '**/rest/v1/rpc/dw_flipchart_add';
     const release = Promise.withResolvers();
@@ -482,6 +495,15 @@ try {
       await expect(note(page, objectiveFirst).locator('.flipchart-territory-count')).toHaveAttribute('aria-label', 'Территорий: 2');
       await expect(note(page, objectiveSecond)).toHaveAttribute('data-kind', 'condition');
     }
+    await stage('The shared factor shows the explanation only under the territory it describes', b.page, async () => {
+      await openMechanism(note(b.page, objectiveFirst));
+      const boardTerritory = note(b.page, objectiveFirst).getByRole('combobox', { name: 'Территория', exact: true });
+      await expect(boardTerritory).toHaveValue('region-respublika-mordoviia');
+      await expect(note(b.page, objectiveFirst).getByText(explanation, { exact: true })).toHaveCount(0);
+      await boardTerritory.selectOption('89-89701000-6877fd2c07');
+      await expect(note(b.page, objectiveFirst).getByText(explanation, { exact: true })).toBeVisible();
+      await openMechanism(note(b.page, objectiveFirst));
+    });
     await vote(b.page, objectiveFirst, -1).click();
     await expect(vote(a.page, objectiveFirst, -1)).toHaveText('1');
     await vote(b.page, objectiveFirst, 1).click();

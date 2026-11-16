@@ -1,3 +1,4 @@
+import { startWorkshopPolling } from '../lib/workshop-polling';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { randomUuid } from '../../../../packages/security/crypto.mjs';
 import type { WorkspaceVoteFamily, WorkspaceVotesProjection, WorkspaceVotesSnapshot, WorkspaceVoteValue } from '../../../../packages/workshop/live-votes';
@@ -61,7 +62,7 @@ export function useLivePracticeVotes({ api, sessionId, userId, projector = false
     refreshRef.current = read;
     setLoading(true);
     void read();
-    const interval = setInterval(() => { if (document.visibilityState === 'visible') void read(); }, api.config.pollInterval);
+    const stopPolling = startWorkshopPolling(api.config.pollInterval, read);
     const channel = api.config.realtime ? api.client.channel(`dw-live-votes-${sessionId}-${randomUuid()}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'dw_workshop_events', filter: `session_id=eq.${sessionId}` }, () => {
         if (!timer) timer = setTimeout(() => { timer = undefined; void read(); }, 120);
@@ -71,7 +72,7 @@ export function useLivePracticeVotes({ api, sessionId, userId, projector = false
     document.addEventListener('visibilitychange', resume);
     return () => {
       active = false;
-      clearInterval(interval);
+      stopPolling();
       if (timer) clearTimeout(timer);
       if (channel) void api.client.removeChannel(channel);
       window.removeEventListener('online', resume);

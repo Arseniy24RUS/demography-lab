@@ -379,6 +379,22 @@ export interface RoadmapVersionSummary {
   createdAt: string;
   review: RoadmapReview | null;
 }
+export interface CohortForecastParameters {
+  endYear: number;
+  fertilityMultiplier: number;
+  mortalityMultiplier: number;
+  arrivalsMultiplier: number;
+  departuresMultiplier: number;
+}
+export interface RoadmapCohortSettings {
+  revision: number;
+  parameters: CohortForecastParameters;
+}
+export interface SaveRoadmapCohortInput {
+  roadmapId: string;
+  expectedRevision: number;
+  parameters: CohortForecastParameters;
+}
 export interface RoadmapSnapshot {
   sessionId: string;
   roadmapId: string;
@@ -393,6 +409,7 @@ export interface RoadmapSnapshot {
   basis: RoadmapBasis[];
   series: RoadmapSeries[];
   statistics?: StatisticsHead[];
+  cohortSettings?: RoadmapCohortSettings;
   versions: RoadmapVersionSummary[];
   budget: RoadmapBudgetTotals;
 }
@@ -419,6 +436,8 @@ export interface FrozenRoadmapData {
   series: RoadmapSeries[];
   /** Required for schemaVersion 2; absent in unchanged stage-5 frozen bytes. */
   statistics?: StatisticsHead[];
+  /** Saved cohort parameters, omitted when the team has no settings on record. */
+  cohortSettings?: RoadmapCohortSettings;
   /** Complete immutable regional materials, copied by the server at capture time. */
   evidence: BarrierEvidence[];
   budget: RoadmapBudgetTotals;

@@ -16,8 +16,18 @@
 .objective-card dl { display: flex; gap: .65rem; flex-wrap: wrap; }
 .objective-card dt { font-size: .78rem; color: #345478; }
 .objective-card dd { font-variant-numeric: tabular-nums; font-weight: 600; }
-.objective-card .button { align-self: flex-start; margin-top: auto; min-height: 44px; }
+.objective-actions { display: flex; flex-wrap: wrap; gap: .45rem; }
+.objective-card > .objective-actions { margin-top: auto; }
+.objective-actions .button { min-height: 44px; }
 .objective-card[data-added] { background: var(--note-background); border-color: var(--note-accent); box-shadow: inset 0 0 0 1px var(--note-line); }
-.objective-card[data-added] .button { color: #fff; background: var(--note-accent); border-color: var(--note-accent); }
+.objective-card[data-added] .objective-flipchart-toggle { color: #fff; background: var(--note-accent); border-color: var(--note-accent); }
+.objective-discussion { display: grid; gap: .65rem; padding-top: .65rem; border-top: 1px solid #c6d6e6; }
+.objective-comments { display: grid; gap: .65rem; padding: 0; margin: 0; list-style: none; }
+.objective-comments li { border-inline-start: 2px solid #8aa8c6; padding-inline-start: .55rem; }
+.objective-comments p { white-space: pre-wrap; }
+.objective-comment-form, .objective-comment-form label { display: grid; gap: .4rem; }
+.objective-comment-form textarea { width: 100%; resize: vertical; }
+.objective-board-comments, .objective-board-comments > label { display: grid; gap: .4rem; min-width: 0; }
+.objective-board-comments > label select { min-height: 44px; max-width: 100%; }
 .objective-source { margin: 0; font-size: .85rem; }
 .objective-scroll-cursor { block-size: 1px; }

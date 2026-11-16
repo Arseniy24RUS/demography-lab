@@ -1,11 +1,14 @@
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDownToLine, ArrowUpFromLine, Baby, HeartPulse, MoveHorizontal, RotateCcw, SlidersHorizontal, UsersRound } from 'lucide-react';
-import { loadCohortInput } from '@/lib/cohort-data';
+import { defaultCohortParameters, loadCohortInput, readLegacyCohortOptions } from '@/lib/cohort-data';
 import type { AgeSex } from '@/lib/roadmap-demography';
 import {
-  projectCohorts, type CohortInput, type CohortOptions, type CohortProjection, type CohortYear,
+  projectCohorts, type CohortInput, type CohortProjection, type CohortYear,
 } from '../../../../../packages/analytics/cohort';
+import type { CohortForecastParameters } from '../../../../../packages/roadmaps/types';
+import { useRoadmapTask, type RoadmapWorkspaceProps } from './common';
 import { formatPeople, PopulationPyramid } from './PopulationPyramid';
+import { DataExport } from './DataExport';
 import './roadmap-data.css';
 
 const metrics = [
@@ -21,9 +24,17 @@ const fields = [
   ['arrivalsMultiplier', 'Прибытия'], ['departuresMultiplier', 'Выбытия'],
 ] as const;
 type PercentField = (typeof fields)[number][0];
-const defaultPercentages: Record<PercentField, string> = {
-  fertilityMultiplier: '100', mortalityMultiplier: '100', arrivalsMultiplier: '100', departuresMultiplier: '100',
-};
+type ForecastWorkspace = Pick<RoadmapWorkspaceProps, 'snapshot' | 'controller' | 'editable'>;
+type ForecastDraft = { revision: number; year: string; percent: Record<PercentField, string> };
+function draftFrom(parameters: CohortForecastParameters, revision: number): ForecastDraft {
+  const percent = Object.fromEntries(
+    fields.map(([id]) => [id, String(Number((parameters[id] * 100).toFixed(8)))]),
+  ) as Record<PercentField, string>;
+  return {
+    revision, year: String(parameters.endYear),
+    percent,
+  };
+}
 const sum = (items: readonly number[]) => items.reduce((total, value) => total + value, 0);
 const shortNumber = new Intl.NumberFormat('ru-RU', { notation: 'compact', maximumFractionDigits: 1 });
 
@@ -50,7 +61,7 @@ function future(projection: CohortProjection, observed: Observation[], metric: M
   return anchor ? [anchor, ...values] : values;
 }
 
-function ForecastChart({ label, lines, start }: { label: string; lines: Line[]; start: number }) {
+function ForecastChart({ label, name, lines, start }: { label: string; name: string; lines: Line[]; start: number }) {
   const id = useId();
   const figure = useRef<HTMLElement>(null);
   const [width, setWidth] = useState(720);
@@ -74,7 +85,9 @@ function ForecastChart({ label, lines, start }: { label: string; lines: Line[]; 
   const low = lower >= 0 ? Math.max(0, lower - padding) : lower - padding;
   const high = upper + padding;
   const height = width > 510 ? 306 : 228;
-  const left = 51, right = 21, top = 16, bottom = 31;
+  const ticks = Array.from({ length: 5 }, (_, i) => low + (high - low) * i / 4);
+  const left = Math.max(52, ...ticks.map(value => shortNumber.format(value).length * 7 + 14));
+  const right = 21, top = 16, bottom = 31;
   const x = (year: number) => left + (year - firstYear) * (width - left - right) / Math.max(1, lastYear - firstYear);
   const y = (value: number) => top + (high - value) * (height - top - bottom) / (high - low);
   const tickCount = width > 510 ? 6 : 4;
@@ -89,11 +102,18 @@ function ForecastChart({ label, lines, start }: { label: string; lines: Line[]; 
       return `${command}${x(year).toFixed(1)},${y(value).toFixed(1)}`;
     }).join(' ');
   }
-  return <figure className="rm-forecast-chart" ref={figure}>
+  const lastObserved = lines[0]?.points.filter(([, value]) => value !== null).at(-1);
+  const source = lines.map(({ points }, index) => new Map(index && points[0] === lastObserved ? points.slice(1) : points));
+  const exportRows = [['Год', ...lines.map(line => line.label)], ...Array.from({ length: lastYear - firstYear + 1 }, (_, i) => {
+    const year = firstYear + i;
+    return [year, ...source.map(points => points.get(year) ?? null)];
+  })];
+  return <figure className="rm-forecast-chart rm-exportable" ref={figure}>
+    <DataExport title={`${name} — ${label}, человек`} rows={exportRows} imageTarget={figure} legend={lines} />
     <figcaption id={id}>{label} <span>человек</span></figcaption>
     <svg role="img" aria-labelledby={id} viewBox={`0 0 ${width} ${height}`}>
       <rect x={x(start)} y={top} width={Math.max(0, x(lastYear) - x(start))} height={height - top - bottom} fill="#f0f5fc" />
-      {Array.from({ length: 5 }, (_, i) => low + (high - low) * i / 4).map(value => (
+      {ticks.map(value => (
         <g key={value}>
           <line x1={left} x2={width - right} y1={y(value)} y2={y(value)} stroke="#e0e8f2" strokeDasharray="3 3" />
           <text x={left - 7} y={y(value) + 4} textAnchor="end">{shortNumber.format(value)}</text>
@@ -126,25 +146,35 @@ function pyramid(point: CohortYear): AgeSex[] {
   });
 }
 
-function readOptions(key: string, baseYear: number): CohortOptions {
-  try {
-    const item = JSON.parse(localStorage.getItem(key) ?? 'null') as CohortOptions | null;
-    if (item && Number.isInteger(item.endYear) && item.endYear > baseYear && item.endYear <= 2100 &&
-        fields.every(([id]) => item[id] === undefined || (Number.isFinite(item[id]) && item[id]! >= 0 && item[id]! <= 3))) return item;
-  } catch { /* The calculator also works without browser storage. */ }
-  return { endYear: Math.min(2050, baseYear + 30) };
-}
-
-function CohortEditor({ input, roadmapId }: { input: CohortInput; roadmapId: string }) {
-  const storageKey = `dw:cohort-options:1:${roadmapId}`;
-  const [options, setOptions] = useState<CohortOptions>(() => readOptions(storageKey, input.baseYear));
-  const [draftYear, setDraftYear] = useState(() => String(options.endYear));
-  const [percent, setPercent] = useState(() => Object.fromEntries(fields.map(([id]) =>
-    [id, String(Number(((options[id] ?? 1) * 100).toFixed(8)))],
-  )) as Record<PercentField, string>);
-  function applyOptions(next: CohortOptions) {
-    setOptions(next);
-    try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch { /* Storage can be unavailable. */ }
+function CohortEditor({ input, workspace }: { input: CohortInput; workspace: ForecastWorkspace }) {
+  const { snapshot, controller, editable } = workspace;
+  const settings = snapshot.cohortSettings;
+  const revision = settings?.revision ?? 0;
+  const defaults = useMemo(() => defaultCohortParameters(input.baseYear), [input.baseYear]);
+  const options = settings?.parameters ?? defaults;
+  const [draft, setDraft] = useState<ForecastDraft | null>(() => {
+    const existing = !settings && editable ? readLegacyCohortOptions(snapshot.roadmapId, input.baseYear) : undefined;
+    return existing ? draftFrom(existing, revision) : null;
+  });
+  const applied = draftFrom(options, revision);
+  const { year: draftYear, percent } = draft ?? applied;
+  const conflict = draft !== null && draft.revision !== revision;
+  const task = useRoadmapTask();
+  const enabled = editable && !controller.busy && !task.working;
+  function applyOptions(parameters: CohortForecastParameters) {
+    if (!enabled || conflict) return;
+    void task.run(async () => {
+      try {
+        await controller.actions.saveCohortSettings({
+          roadmapId: snapshot.roadmapId, expectedRevision: draft?.revision ?? revision, parameters,
+        });
+        setDraft(null);
+      } catch (cause) {
+        if (cause instanceof Error && 'code' in cause && cause.code === 'REVISION_CONFLICT')
+          await controller.actions.refresh().catch(() => {});
+        throw cause;
+      }
+    }, 'Параметры прогноза сохранены для команды.');
   }
   const [metric, setMetric] = useState<Metric>('population');
   const [pyramidYear, setPyramidYear] = useState<number | null>(null);
@@ -152,7 +182,7 @@ function CohortEditor({ input, roadmapId }: { input: CohortInput; roadmapId: str
   const valid = Number.isInteger(year) && year > input.baseYear && year <= 2100 &&
     fields.every(([id]) => percent[id].trim() !== '' && Number.isFinite(Number(percent[id])) &&
       Number(percent[id]) >= 0 && Number(percent[id]) <= 300);
-  const modified = fields.some(([id]) => (options[id] ?? 1) !== 1);
+  const modified = fields.some(([id]) => options[id] !== 1);
   const result = useMemo(() => {
     try {
       const baseline = projectCohorts(input, { endYear: options.endYear });
@@ -171,6 +201,9 @@ function CohortEditor({ input, roadmapId }: { input: CohortInput; roadmapId: str
   ] : [];
   const last = result.scenario?.points.at(-1);
   const chosenPyramid = result.scenario?.points.find(row => row.year === pyramidYear) ?? last;
+  const tablePoints = result.scenario?.points.filter(point => point.componentYear !== null) ?? [];
+  const forecastRows = [['Год событий', 'Численность на конец года', ...metrics.slice(1).map(([, title]) => title)],
+    ...tablePoints.map(point => [point.componentYear, point.population, ...metrics.slice(1).map(([id]) => point[id])])];
   return <>
     <div className="rm-forecast-layout">
       <div className="rm-demography-panel rm-forecast-output">
@@ -180,32 +213,44 @@ function CohortEditor({ input, roadmapId }: { input: CohortInput; roadmapId: str
             <Icon size={17} aria-hidden="true" /><span>{name}{last ? <strong>{formatPeople(last[key])}</strong> : null}</span>
           </button>)}
         </div>
-        {lines.length ? <ForecastChart label={label} lines={lines} start={input.baseYear} /> : <p role="alert">{result.error}</p>}
+        {lines.length ? <ForecastChart name={input.name} label={label} lines={lines} start={input.baseYear} /> : <p role="alert">{result.error}</p>}
         {last ? <div className="rm-forecast-kpi"><span>Население на 1 января {last.year} года</span><strong>{formatPeople(last.population)}</strong>
           {modified ? <small>Базовый прогноз {formatPeople(result.baseline!.points.at(-1)!.population)}</small> : null}</div> : null}
       </div>
       <form className="rm-demography-panel rm-forecast-controls" onSubmit={event => {
         event.preventDefault();
-        if (valid) {
-          const revised: CohortOptions = { endYear: year };
-          for (const [id] of fields) revised[id] = Number(percent[id]) / 100;
-          applyOptions(revised);
-        }
+        if (valid) applyOptions({
+          endYear: year,
+          fertilityMultiplier: Number(percent.fertilityMultiplier) / 100,
+          mortalityMultiplier: Number(percent.mortalityMultiplier) / 100,
+          arrivalsMultiplier: Number(percent.arrivalsMultiplier) / 100,
+          departuresMultiplier: Number(percent.departuresMultiplier) / 100,
+        });
       }}>
         <h3><SlidersHorizontal size={18} aria-hidden="true" />Параметры прогноза</h3>
         <label className="rm-field"><span>Конечный год</span>
-          <input type="number" required min={input.baseYear + 1} max={2100} value={draftYear}
-            onChange={event => setDraftYear(event.target.value)} />
+          <input type="number" required min={input.baseYear + 1} max={2100} value={draftYear} disabled={!enabled}
+            onChange={event => setDraft({ ...(draft ?? applied), year: event.target.value })} />
         </label>
         <p>100% соответствует базовому прогнозу.</p>
         {fields.map(([id, name]) => <label className="rm-field rm-forecast-percent" key={id}>
-          <span>{name}, %</span><input type="number" required min={0} max={300} step="any" value={percent[id]}
-            onChange={event => setPercent(values => ({ ...values, [id]: event.target.value }))} />
+          <span>{name}, %</span><input type="number" required min={0} max={300} step="any" value={percent[id]} disabled={!enabled}
+            onChange={event => setDraft({ ...(draft ?? applied), percent: { ...percent, [id]: event.target.value } })} />
         </label>)}
-        <button type="submit" className="button button-primary" disabled={!valid}>Рассчитать</button>
-        <button type="button" className="button button-quiet" onClick={() => {
-          setPercent(defaultPercentages); setDraftYear(String(options.endYear)); applyOptions({ endYear: options.endYear });
-        }}><RotateCcw size={15} aria-hidden="true" />Вернуть базовые значения</button>
+        {editable ? <>
+          <button type="submit" className="button button-primary" disabled={!enabled || !valid || conflict}>Рассчитать</button>
+          <button type="button" className="button button-quiet" disabled={!enabled || conflict}
+            onClick={() => applyOptions({ ...defaults, endYear: options.endYear })}>
+            <RotateCcw size={15} aria-hidden="true" />Вернуть базовые значения
+          </button>
+        </> : null}
+        {conflict ? <div>
+          <p role="alert">Команда изменила параметры. Чтобы продолжить, загрузите общие значения.</p>
+          <button type="button" className="button button-quiet" disabled={!enabled} onClick={() => setDraft(null)}>
+            Взять общие параметры
+          </button>
+        </div> : null}
+        {task.feedback}
       </form>
     </div>
     {result.scenario && chosenPyramid ? <>
@@ -220,14 +265,17 @@ function CohortEditor({ input, roadmapId }: { input: CohortInput; roadmapId: str
       </details>
       <details className="rm-demography-panel rm-forecast-expand">
         <summary>Таблица прогноза по годам</summary>
+        <div className="rm-exportable rm-exportable-table">
+        <DataExport title={`${input.name} — таблица прогноза по годам, человек`} rows={forecastRows} />
         <div className="rm-data-table-scroll"><table className="rm-data-table">
           <thead><tr><th scope="col">Год событий</th><th scope="col">Численность на конец года</th>
             {metrics.slice(1).map(([id, label]) => <th scope="col" key={id}>{label}</th>)}</tr></thead>
-          <tbody>{result.scenario.points.filter(point => point.componentYear !== null).map(point => <tr key={point.year}>
+          <tbody>{tablePoints.map(point => <tr key={point.year}>
             <th scope="row">{point.componentYear}</th><td>{formatPeople(point.population)}</td>
             {metrics.slice(1).map(([id]) => <td key={id}>{formatPeople(point[id])}</td>)}
           </tr>)}</tbody>
         </table></div>
+        </div>
       </details>
     </> : null}
     <details className="rm-source-details">
@@ -242,7 +290,8 @@ function CohortEditor({ input, roadmapId }: { input: CohortInput; roadmapId: str
   </>;
 }
 
-export function ForecastWorkbench({ territoryKey, roadmapId }: { territoryKey: string; roadmapId: string }) {
+export function ForecastWorkbench({ workspace }: { workspace: ForecastWorkspace }) {
+  const { roadmapId, territory: { key: territoryKey } } = workspace.snapshot;
   const [input, setInput] = useState<CohortInput | null | undefined>(undefined);
   const [error, setError] = useState('');
   const [attempt, retry] = useState(0);
@@ -263,6 +312,6 @@ export function ForecastWorkbench({ territoryKey, roadmapId }: { territoryKey: s
     {error ? <p role="alert">{error} <button className="button button-secondary" onClick={() => retry(value => value + 1)}>Повторить</button></p>
       : input === undefined ? <p role="status">Загружаем исходные данные…</p>
       : input === null ? <p className="rm-demography-empty">Для этой территории пока нет комплекта исходных данных для передвижки возрастов.</p>
-      : <CohortEditor key={roadmapId} input={input} roadmapId={roadmapId} />}
+      : <CohortEditor key={roadmapId} input={input} workspace={workspace} />}
   </section>;
 }

@@ -78,34 +78,40 @@ const summary = manifestBase.extend({ revision, responseCount: count.min(5).max(
   .refine((v) => (!v.canRespond || (v.status === 'open' && !v.expired))
     && (!(v.expired || v.status === 'purged') || v.responseCount === null));
 const snapshot = z.strictObject({
-  sessionId: uuid, cursor: count, barriers: z.array(barrier).max(200), families: z.array(family).max(5000),
-  links: z.array(link).max(600), solutions: z.array(solution).max(200), greenFactorLinks: greenFactorLinks.optional(), survey: summary.nullable(),
+  sessionId: uuid, cursor: count, barriers: z.array(barrier), families: z.array(family).max(5000),
+  links: z.array(link), solutions: z.array(solution), greenFactorLinks: greenFactorLinks.optional(), survey: summary.nullable(),
 }).superRefine(checkBoard);
 const projection = z.strictObject({
   sessionId: uuid, title: text(200, 1), scope: z.enum(['municipality', 'region', 'federal']), regionId: text(160, 1).nullable(),
   phase: z.enum(['reading', 'review', 'discussion']), status: z.enum(['open', 'paused', 'closed']), cursor: count,
-  barriers: z.array(projectedBarrier).max(200), families: z.array(family).max(5000),
-  links: z.array(projectedLink).max(600), solutions: z.array(projectedSolution).max(200),
+  barriers: z.array(projectedBarrier), families: z.array(family).max(5000),
+  links: z.array(projectedLink), solutions: z.array(projectedSolution),
   greenFactorLinks: greenFactorLinks.optional(),
   survey: z.strictObject({ title: nonempty(240, 5), status: z.enum(['draft', 'open', 'closed', 'purged']), responseCount: count.min(5).max(250).nullable() }).nullable(),
 }).superRefine(checkBoard);
 function checkBoard(value: {
   barriers: Array<{ id: string; contentRevision: number; status: string }>; families: Array<{ id: string; fingerprint: string }>;
-  links: Array<{ id: string; barrierId: string; familyId: string; barrierContentRevision: number; familyFingerprint: string; staleReasons: string[] }>;
-  solutions: Array<{ id: string; barrierIds: string[] }>;
+  links: Array<{ id: string; barrierId: string; familyId: string; barrierContentRevision: number; familyFingerprint: string; staleReasons: string[]; status: string }>;
+  solutions: Array<{ id: string; barrierIds: string[]; status: string }>;
   greenFactorLinks?: Array<{ noteId: string; barrierId: string }>;
 }, ctx: z.RefinementCtx) {
-  const barrierSet = new Set(value.barriers.map((v) => v.id));
+  const barriers = new Map(value.barriers.map((v) => [v.id, v]));
+  const families = new Map(value.families.map((v) => [v.id, v]));
+  if (value.barriers.filter(({ status }) => status === 'active').length > 500
+    || value.solutions.filter(({ status }) => status === 'active').length > 500
+    || value.links.filter(({ status }) => status === 'active').length > 1500) {
+    ctx.addIssue({ code: 'custom', message: 'Превышено число активных записей доски.' });
+  }
   if ([value.barriers, value.families, value.links, value.solutions].some((items) => new Set(items.map((v) => v.id)).size !== items.length)
-    || value.links.some((l) => !barrierSet.has(l.barrierId))
-    || value.greenFactorLinks?.some((l) => !barrierSet.has(l.barrierId))
+    || value.links.some((l) => !barriers.has(l.barrierId))
+    || value.greenFactorLinks?.some((l) => !barriers.has(l.barrierId))
     || (value.greenFactorLinks && new Set(value.greenFactorLinks.map((l) => `${l.noteId}:${l.barrierId}`)).size !== value.greenFactorLinks.length)
-    || value.solutions.some((s) => s.barrierIds.some((id) => !barrierSet.has(id)))) {
+    || value.solutions.some((s) => s.barrierIds.some((id) => !barriers.has(id)))) {
     ctx.addIssue({ code: 'custom', message: 'Нарушена целостность связей доски.' });
   }
   for (const link of value.links) {
-    const b = value.barriers.find((x) => x.id === link.barrierId);
-    const f = value.families.find((x) => x.id === link.familyId);
+    const b = barriers.get(link.barrierId);
+    const f = families.get(link.familyId);
     if (!b) continue;
     const expected = [b.contentRevision !== link.barrierContentRevision ? 'barrier_changed' : null,
       b.status === 'archived' ? 'barrier_archived' : null,

@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
-import { CircleCheck, Plus } from 'lucide-react';
+import { CircleCheck, MessageCircle, Plus } from 'lucide-react';
 import { useFlipchart } from '../hooks/useFlipchart';
 import type { SessionApi } from '../lib/session-api';
+import { FlipchartApi } from '../lib/flipchart-api';
 import {
   loadFactorIndex, loadMunicipalFactors, loadRegionalFactors, loadSettlementParents, observationYears,
   type FactorIndex, type FactorRow, type RegionalFactors,
 } from '../lib/municipal-factors';
 import { FlipchartBoard } from './flipchart/FlipchartBoard';
 import { ObjectiveTerritories, type ObjectiveSelection } from './ObjectiveTerritories';
+import { ObjectiveFactorComments } from './ObjectiveFactorComments';
 import './objective-factors.css';
 
 const batchSize = 48;
@@ -74,10 +76,57 @@ function useCatalog<T>(load: () => Promise<T>, enabled: boolean, retry: number) 
   return { value, failed: enabled && failed };
 }
 
+function ObjectiveBoardDiscussion({ client, sessionId, factorKey, territories, regions, preferred, editable }: {
+  client: FlipchartApi;
+  sessionId: string;
+  factorKey: string;
+  territories: readonly string[];
+  regions: readonly { id: string; name: string }[];
+  preferred?: string;
+  editable: boolean;
+}) {
+  const [territory, setTerritory] = useState(preferred ?? '');
+  const [retry, setRetry] = useState(0);
+  const hasUpper = territories.some(key => !key.startsWith('region-') && !key.startsWith('l-'));
+  const hasLower = territories.some(key => key.startsWith('l-'));
+  const upper = useCatalog(loadUpperIndex, hasUpper, retry);
+  const lower = useCatalog(loadLowerIndex, hasLower, retry);
+  const options = useMemo(() => {
+    const selected = new Set(territories);
+    const locations = regions.filter(({ id }) => selected.has(`region-${id}`))
+      .map(({ id, name }) => ({ key: `region-${id}`, name }));
+    for (const index of [upper.value, lower.value]) {
+      for (const place of index?.territories ?? []) {
+        if (selected.has(place.key)) locations.push({ key: place.key, name: `${place.name} · ${place.regionName}` });
+      }
+    }
+    return locations.sort(byName);
+  }, [regions, upper.value, lower.value, territories]);
+  const selected = options.find(option => option.key === territory) ?? options[0];
+  const loading = (hasUpper && !upper.value && !upper.failed) || (hasLower && !lower.value && !lower.failed);
+  return <div className="objective-board-comments">
+    {upper.failed || lower.failed ? <div className="objective-actions">
+      <p role="alert">Не удалось загрузить названия территорий.</p>
+      <button type="button" className="button button-secondary" onClick={() => setRetry(value => value + 1)}>Повторить</button>
+    </div> : null}
+    {selected ? <>
+      {options.length > 1 ? <label>Территория
+        <select value={selected.key} onChange={event => setTerritory(event.target.value)}>
+          {options.map(option => <option key={option.key} value={option.key}>{option.name}</option>)}
+        </select>
+      </label> : <p>{selected.name}</p>}
+      <ObjectiveFactorComments key={selected.key} client={client} sessionId={sessionId}
+        territoryKey={selected.key} factorKey={factorKey} editable={editable} />
+    </> : loading ? <p role="status">Загружаем территории…</p>
+      : !upper.failed && !lower.failed ? <p>Территории этой карточки недоступны.</p> : null}
+  </div>;
+}
+
 export function ObjectiveFactors({ api, sessionId, userId, regionId, editable }: {
   api: SessionApi | null; sessionId: string | null; userId: string | null; regionId: string | null; editable: boolean;
 }) {
   const board = useFlipchart({ api, sessionId, userId, board: 'objective' });
+  const commentsClient = useMemo(() => api && new FlipchartApi(api, 'objective'), [api]);
   const [selection, setSelection] = useState<ObjectiveSelection>({
     level: 'region', region: regionId ?? '', municipality: '', settlement: '',
   });
@@ -87,6 +136,8 @@ export function ObjectiveFactors({ api, sessionId, userId, regionId, editable }:
   const [query, setQuery] = useState('');
   const [limit, setLimit] = useState(batchSize);
   const [view, setView] = useState<'cards' | 'board'>('cards');
+  const [discussion, setDiscussion] = useState<string | null>(null);
+  const [boardDiscussion, setBoardDiscussion] = useState<string | null>(null);
   const cursor = useRef<HTMLDivElement>(null);
   const { level, region, municipality, settlement } = selection;
 
@@ -157,6 +208,7 @@ export function ObjectiveFactors({ api, sessionId, userId, regionId, editable }:
     setSelection(next);
     setPackFailed(false);
     setQuery('');
+    setDiscussion(null);
     setLimit(batchSize);
   }
 
@@ -187,7 +239,16 @@ export function ObjectiveFactors({ api, sessionId, userId, regionId, editable }:
       </div>
     </header>
     {view === 'board' ? <FlipchartBoard objective notes={board.notes} onVote={board.vote} onWithdraw={board.withdraw}
-      pendingIds={board.pendingIds} loading={board.loading} error={board.error} /> : <>
+      pendingIds={board.pendingIds} loading={board.loading} error={board.error}
+      renderNoteDetails={note => commentsClient && sessionId && userId && note.factorKey && note.territoryKeys?.length ? <>
+        <button type="button" className="button button-secondary" aria-expanded={boardDiscussion === note.id}
+          onClick={() => setBoardDiscussion(value => value === note.id ? null : note.id)}>
+          <MessageCircle size={16} aria-hidden />Механизм связи
+        </button>
+        {boardDiscussion === note.id ? <ObjectiveBoardDiscussion
+          key={`${sessionId}:${userId}:${note.id}`} client={commentsClient} sessionId={sessionId} factorKey={note.factorKey}
+          territories={note.territoryKeys} regions={regions} preferred={selectedKey} editable={editable} /> : null}
+      </> : null} /> : <>
       <ObjectiveTerritories selection={selection} change={select} regions={regions} municipalities={parents} settlements={settlements} />
       {rows.length ? <label className="objective-search">Показатель<input type="search" placeholder="Поиск по названию"
         value={query} onChange={event => { setQuery(event.target.value); setLimit(batchSize); }} /></label> : null}
@@ -205,6 +266,7 @@ export function ObjectiveFactors({ api, sessionId, userId, regionId, editable }:
         <ol className="objective-cards">
           {visible.slice(0, limit).map(({ card, rank }) => {
             const added = chosen.has(card.factorKey);
+            const expanded = discussion === card.factorKey;
             const years = card.years;
             return <li key={rank} className="objective-card" data-direction={card.factorKey.slice(-1)} data-added={added || undefined}>
               <span className="objective-section">{rank}{card.section ? `. ${card.section}` : ''}</span>
@@ -213,11 +275,22 @@ export function ObjectiveFactors({ api, sessionId, userId, regionId, editable }:
               <dl><div><dt>{level === 'region' ? 'Корреляция из исследования' : 'Байесовская корреляция'}</dt><dd>{format.format(card.value)}</dd></div>
                 {card.interval ? <div><dt>95% интервал</dt><dd>{format.format(card.interval[0])} … {format.format(card.interval[1])}</dd></div> : null}
                 <div><dt>Годы наблюдений</dt><dd title={years.join(', ')}>{years.length ? `${years[0]}–${years.at(-1)} · ${years.length}` : 'Не указаны'}</dd></div></dl>
-              <button type="button" className="button button-secondary" disabled={!editable || board.submitting || board.loading}
-                aria-pressed={added} title={added ? 'Убрать с флипчарта для этой территории' : undefined}
-                onClick={() => void selectCard(card, !added)}>
-                {added ? <><CircleCheck size={19} aria-hidden />На флипчарте</> : <><Plus size={16} aria-hidden />На флипчарт</>}
-              </button>
+              <div className="objective-actions">
+                <button type="button" className="button button-secondary objective-flipchart-toggle"
+                  disabled={!editable || board.submitting || board.loading}
+                  aria-pressed={added} title={added ? 'Убрать с флипчарта для этой территории' : undefined}
+                  onClick={() => void selectCard(card, !added)}>
+                  {added ? <><CircleCheck size={19} aria-hidden />На флипчарте</> : <><Plus size={16} aria-hidden />На флипчарт</>}
+                </button>
+                {commentsClient && sessionId && userId ? <button className="button button-secondary" type="button"
+                  aria-expanded={expanded} onClick={() => setDiscussion(expanded ? null : card.factorKey)}>
+                  <MessageCircle size={16} aria-hidden />Механизм связи
+                </button> : null}
+              </div>
+              {expanded && commentsClient && sessionId && userId ? <ObjectiveFactorComments
+                key={`${sessionId}:${userId}:${selectedKey}:${card.factorKey}`}
+                client={commentsClient} sessionId={sessionId} territoryKey={selectedKey}
+                factorKey={card.factorKey} editable={editable} /> : null}
             </li>;
           })}
         </ol>

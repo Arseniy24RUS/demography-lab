@@ -14,6 +14,7 @@ if (config.schemaVersion !== 1 || config.offline || !config.supabaseUrl?.startsW
 for (const file of [
   'survey.html', 'data/corpus/index.json', 'data/territories/index.json',
   'data/regions.map.json', 'data/regions.detail.map.json', 'favicon.svg',
+  'fonts/LiberationSerif-Regular.ttf', 'fonts/LiberationSerif-Bold.ttf', 'fonts/LICENSE-Liberation.txt',
 ])
   if (!(await stat(join(root, file))).isFile()) throw new Error(`Missing public asset: ${file}`);
 for (const factors of [join(root, 'data/factors'), join(root, 'data/factors/lower')]) {
@@ -48,7 +49,11 @@ for (const region of demography.regions) {
     throw new Error(`Invalid demographic data shard: ${region.id}`);
 }
 
-const cohorts = JSON.parse(await readFile(join(root, 'data/cohort/mordovia.json'), 'utf8'));
+const cohortBytes = await readFile(join(root, 'data/cohort/mordovia.json'));
+const appCohortSource = await readFile(new URL('../apps/web/src/lib/cohort-data.ts', import.meta.url), 'utf8');
+if (!appCohortSource.includes(`'${createHash('sha256').update(cohortBytes).digest('hex')}'`))
+  throw new Error('The published cohort input does not match the one used by saved forecasts.');
+const cohorts = JSON.parse(cohortBytes);
 const registry = JSON.parse(await readFile(join(root, 'data/territories/registry.json'), 'utf8'));
 const mordovia = registry.records.filter(record => record.regionId === 'respublika-mordoviia' &&
   (record.level === 'municipality' || record.level === 'region'));

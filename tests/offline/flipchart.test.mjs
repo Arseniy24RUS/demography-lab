@@ -44,6 +44,13 @@ it('production offline HTTP shares anonymous notes/votes across identities and p
     const entered = await Promise.all([a, b].map((s) => rpc('dw_enter_workspace', { p_operation_id: op() }, s)));
     const sid = entered[0].session.id;
     assert.equal(entered[1].session.id, sid); assert(entered.every((x) => x.session.role === 'participant'));
+    const commentScope = { p_session_id: sid, p_factor_key: 'care-p', p_territory_key: 'region-mordovia' };
+    const commentInput = { ...commentScope, p_operation_id: op(), p_expected_revision: 0,
+      p_text: 'Ясли освобождают время для возвращения к работе.' };
+    const savedComment = await rpc('dw_save_objective_factor_comment', commentInput, a);
+    assert.equal(savedComment.comments[0].mine, true);
+    assert.deepEqual((await rpc('dw_objective_factor_comments', commentScope, b)).comments,
+      [{ ...savedComment.comments[0], mine: false }]);
     const sharedSurvey = await rpc('dw_workshop_survey', { p_session_id: sid }, a);
     const responseSecret = randomBytes(32).toString('hex');
     const answers = { expectedRevision: 0, questionVersion: 1, perspective: 'self', intention12m: null, intention36m: null,
@@ -83,6 +90,7 @@ it('production offline HTTP shares anonymous notes/votes across identities and p
     const returned = await identify('flipchart-a@example.test');
     assert.equal(returned.user.id, a.user.id);
     assert.equal((await rpc('dw_enter_workspace', { p_operation_id: op() }, returned)).session.id, sid);
+    assert.deepEqual(await rpc('dw_objective_factor_comments', commentScope, returned), savedComment);
     assert.deepEqual(await rpc('dw_flipchart_updates', { p_session_id: sid }, returned), current);
     assert.deepEqual(await rpc('dw_flipchart_updates', { p_session_id: sid, p_after_cursor: current.cursor }, returned),
       { sessionId: sid, cursor: current.cursor, reset: false, notes: [], removedIds: [] });

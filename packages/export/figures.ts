@@ -1,10 +1,13 @@
 import { calendarDay } from '../analytics/calendar';
-import type { CalendarResult, ScenarioResult } from '../analytics/types';
+import type { CohortInput, CohortProjection } from '../analytics/cohort';
+import type { CalendarResult, ObservationPoint, ScenarioResult } from '../analytics/types';
 import type { FigurePrimitive, RoadmapFigure } from './types';
 
 const ink = '#263545';
 const muted = '#627080';
 const observed = '#284F83';
+const baselineColor = '#576373';
+const baselineDash = [11, 7];
 const target = '#27766B';
 const grid = '#D8DEE4';
 
@@ -20,7 +23,7 @@ export function figureSvg(figure: RoadmapFigure): string {
   const primitives = figure.primitives
     .map((p) => {
       if (p.kind === 'line')
-        return `<line x1="${p.x1}" y1="${p.y1}" x2="${p.x2}" y2="${p.y2}" stroke="${p.color}" stroke-width="${p.width}"${p.dash ? ` stroke-dasharray="${p.dash.join(' ')}"` : ''}/>`;
+        return `<line x1="${p.x1}" y1="${p.y1}" x2="${p.x2}" y2="${p.y2}" stroke="${p.color}" stroke-width="${p.width}"${p.dash ? ` stroke-dasharray="${p.dash.join(' ')}"` : ''}${p.dashPhase ? ` stroke-dashoffset="${p.dashPhase}"` : ''}/>`;
       if (p.kind === 'rect')
         return `<rect x="${p.x}" y="${p.y}" width="${p.width}" height="${p.height}" fill="${p.fill}"${p.stroke ? ` stroke="${p.stroke}"` : ''}/>`;
       if (p.kind === 'circle')
@@ -28,180 +31,322 @@ export function figureSvg(figure: RoadmapFigure): string {
       return `<text x="${p.x}" y="${p.y}" font-size="${p.size}" fill="${p.color}" text-anchor="${p.align ?? 'start'}"${p.bold ? ' font-weight="bold"' : ''}>${svgEscape(p.text)}</text>`;
     })
     .join('');
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${figure.width}" height="${figure.height}" viewBox="0 0 ${figure.width} ${figure.height}" role="img"><title>${svgEscape(figure.title)}</title><desc>${svgEscape(figure.altText)}</desc><rect width="100%" height="100%" fill="white"/><g font-family="DejaVu Sans, Arial, sans-serif">${primitives}</g></svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${figure.width}" height="${figure.height}" viewBox="0 0 ${figure.width} ${figure.height}" role="img"><title>${svgEscape(figure.title)}</title><desc>${svgEscape(figure.altText)}</desc><rect width="100%" height="100%" fill="white"/><g font-family="Times New Roman, Liberation Serif, serif">${primitives}</g></svg>`;
 }
 
-function shortNumber(value: number): string {
-  const abs = Math.abs(value);
-  if (abs >= 1e7 || (abs > 0 && abs < 0.01)) return value.toExponential(1).replace('e+', 'e');
-  return new Intl.NumberFormat('ru-RU', { maximumFractionDigits: abs < 10 ? 2 : 0 }).format(value);
+type ChartSeries = {
+  points: readonly ObservationPoint[];
+  label: string;
+  color: string;
+  dash?: number[];
+  markers?: boolean;
+};
+
+function numberAxis(values: number[]) {
+  const first = Math.min(...values);
+  const last = Math.max(...values);
+  const delta = last - first;
+  const pad = delta > 0 ? Math.max(delta * 0.07, 1e-14) : Math.max(Math.abs(first) * 0.07, 1e-14);
+  const low = first >= 0 ? Math.max(0, first - pad) : first - pad;
+  const high = last < 0 ? Math.min(0, last + pad) : first === 0 && last === 0 ? 1 : last + pad;
+  const rawStep = (high - low) / 5;
+  const order = 10 ** Math.floor(Math.log10(rawStep));
+  const step = ([1, 2, 2.5, 5, 10].find((value) => value * order >= rawStep) ?? 10) * order;
+  const start = Math.floor(low / step);
+  const end = Math.ceil(high / step);
+  const formatter = new Intl.NumberFormat('ru-RU', {
+    maximumFractionDigits: Math.max(0, Math.min(16, -Math.floor(Math.log10(step)) + 1)),
+  });
+  return Array.from({ length: end - start + 1 }, (_, index) => {
+    const value = (start + index) * step;
+    return { value, label: formatter.format(value) };
+  });
 }
+
 function shorten(value: string, limit: number): string {
   const points = [...value];
   return points.length <= limit ? value : `${points.slice(0, limit - 1).join('')}…`;
 }
 
-export function scenarioFigure(id: string, title: string, result: ScenarioResult): RoadmapFigure {
+function timeSeriesFigure(spec: {
+  id: string;
+  title: string;
+  kind: Exclude<RoadmapFigure['kind'], 'calendar'>;
+  unit: string;
+  firstYear: number;
+  lastYear: number;
+  cutoff?: number;
+  series: readonly ChartSeries[];
+  altText: string;
+}): RoadmapFigure {
+  const { id, title, kind, unit, firstYear, lastYear, cutoff, series, altText } = spec;
   const width = 960;
-  const height = 440;
-  const left = 125;
-  const right = width - 25;
-  const top = 45;
-  const bottom = 340;
+  const height = 410;
+  const right = 926;
+  const top = 47;
+  const bottom = 321;
+  const yTicks = numberAxis(
+    series.flatMap((line) =>
+      line.points.flatMap((point) => (point.value === null ? [] : [point.value])),
+    ),
+  );
+  const left = Math.max(120, ...yTicks.map((row) => row.label.length * 13 + 18));
+  const min = yTicks[0]!.value;
+  const max = yTicks.at(-1)!.value;
+  const x = (year: number) => left + ((year - firstYear) / (lastYear - firstYear)) * (right - left);
+  const y = (value: number) => bottom - ((value - min) / (max - min)) * (bottom - top);
   const primitives: FigurePrimitive[] = [];
-  const values = result.years
-    .flatMap((row) => [row.observedValue, row.baselineValue, row.targetValue])
-    .filter((v): v is number => v !== null);
-  let minimum = Math.min(0, ...values);
-  let maximum = Math.max(0, ...values);
-  if (maximum === minimum) maximum = minimum + 1;
-  const pad = (maximum - minimum) * 0.06;
-  if (minimum < 0) minimum -= pad;
-  maximum += pad;
-  const firstYear = result.years[0]!.year;
-  const lastYear = result.years.at(-1)!.year;
-  const px = (year: number) =>
-    left + ((year - firstYear) / Math.max(1, lastYear - firstYear)) * (right - left);
-  const py = (value: number) => bottom - ((value - minimum) / (maximum - minimum)) * (bottom - top);
-  const boundary = px(result.baselineYear);
-  primitives.push({
-    kind: 'rect',
-    x: boundary,
-    y: top,
-    width: right - boundary,
-    height: bottom - top,
-    fill: '#F3F7F7',
-  });
-  for (let tick = 0; tick <= 4; tick++) {
-    const value = minimum + ((maximum - minimum) * tick) / 4;
-    const y = py(value);
-    primitives.push({ kind: 'line', x1: left, x2: right, y1: y, y2: y, color: grid, width: 1 });
+  if (cutoff !== undefined)
+    primitives.push({
+      kind: 'rect',
+      x: x(cutoff),
+      y: top,
+      width: right - x(cutoff),
+      height: bottom - top,
+      fill: '#F3F6F8',
+    });
+  for (const tick of yTicks) {
+    const py = y(tick.value);
+    primitives.push({
+      kind: 'line',
+      x1: left,
+      y1: py,
+      x2: right,
+      y2: py,
+      color: tick.value === 0 ? '#87939F' : grid,
+      width: tick.value === 0 ? 1.5 : 1,
+    });
     primitives.push({
       kind: 'text',
       x: left - 14,
-      y: y + 7,
-      text: shortNumber(value),
+      y: py + 7,
+      text: tick.label,
       size: 20,
-      color: muted,
+      color: ink,
       align: 'end',
     });
   }
+  const years = [firstYear, lastYear];
+  if (cutoff !== undefined && years.every((year) => Math.abs(x(year) - x(cutoff)) > 58))
+    years.push(cutoff);
   const yearStep = Math.max(1, Math.ceil((lastYear - firstYear) / 7));
-  const tickYears = new Set([firstYear, lastYear]);
-  for (let year = firstYear + yearStep; year < lastYear - yearStep / 2; year += yearStep)
-    tickYears.add(year);
-  for (const year of [...tickYears].sort((a, b) => a - b)) {
+  for (let year = firstYear + yearStep; year < lastYear; year += yearStep)
+    if (years.every((labeled) => Math.abs(x(year) - x(labeled)) > 58)) years.push(year);
+  for (const year of years) {
+    const px = x(year);
     primitives.push({
       kind: 'line',
-      x1: px(year),
-      x2: px(year),
+      x1: px,
       y1: bottom,
+      x2: px,
       y2: bottom + 6,
       color: muted,
       width: 1,
     });
     primitives.push({
       kind: 'text',
-      x: px(year),
-      y: bottom + 30,
+      x: px,
+      y: bottom + 29,
       text: String(year),
       size: 20,
-      color: muted,
+      color: ink,
       align: 'middle',
     });
   }
   primitives.push({
     kind: 'text',
     x: left,
-    y: 25,
-    text: result.definition.unit === 'persons' ? 'Человек' : result.definition.unit,
+    y: 27,
+    text: unit === 'persons' ? 'человек' : unit,
     size: 20,
     color: ink,
   });
-  if (right - boundary > 230)
+  if (cutoff !== undefined) {
+    const boundary = x(cutoff);
     primitives.push({
-      kind: 'text',
-      x: right - 10,
-      // Keep the planning-region label outside the data area: an upward target
-      // can otherwise cross the text after users update their observed series.
-      y: 25,
-      text: 'Расчётные траектории',
-      size: 18,
+      kind: 'line',
+      x1: boundary,
+      y1: top,
+      x2: boundary,
+      y2: bottom,
       color: muted,
-      align: 'end',
+      width: 1.5,
+      dash: [5, 6],
     });
-  primitives.push({
-    kind: 'line',
-    x1: boundary,
-    x2: boundary,
-    y1: top,
-    y2: bottom,
-    color: muted,
-    width: 1.5,
-    dash: [6, 6],
-  });
-  const series = [
-    { key: 'observedValue', color: observed, dash: undefined },
-    { key: 'baselineValue', color: '#697381', dash: [10, 7] },
-    { key: 'targetValue', color: target, dash: undefined },
-  ] as const;
-  for (const line of series) {
-    let previous: { year: number; value: number } | null = null;
-    for (const row of result.years) {
-      const value = row[line.key];
-      if (value === null) {
-        previous = null;
-        continue;
-      }
-      if (previous !== null && row.year === previous.year + 1)
+    if (right - boundary > 285)
+      primitives.push({
+        kind: 'text',
+        x: right,
+        y: 27,
+        text: 'Расчётный период',
+        size: 19,
+        color: ink,
+        align: 'end',
+      });
+  }
+  // Draw observations last so a confirmed value remains visible where trajectories coincide.
+  for (const line of [...series].reverse()) {
+    let previous: ObservationPoint | undefined;
+    const dashPeriod = line.dash?.reduce((sum, length) => sum + length, 0) ?? 0;
+    let dashPhase = 0;
+    for (const point of line.points) {
+      if (
+        previous &&
+        previous.value !== null &&
+        point.value !== null &&
+        point.year === previous.year + 1
+      ) {
+        const x1 = x(previous.year),
+          y1 = y(previous.value),
+          x2 = x(point.year),
+          y2 = y(point.value);
         primitives.push({
           kind: 'line',
-          x1: px(previous.year),
-          x2: px(row.year),
-          y1: py(previous.value),
-          y2: py(value),
+          x1,
+          y1,
+          x2,
+          y2,
           color: line.color,
-          width: 3.4,
-          dash: line.dash ? [...line.dash] : undefined,
+          width: 3,
+          dash: line.dash,
+          ...(dashPeriod ? { dashPhase } : {}),
         });
-      if (line.key === 'observedValue')
+        // Preserve the dash pattern across adjacent year-to-year segments.
+        if (dashPeriod) dashPhase = (dashPhase + Math.hypot(x2 - x1, y2 - y1)) % dashPeriod;
+      } else {
+        dashPhase = 0;
+      }
+      if (line.markers && point.value !== null)
         primitives.push({
           kind: 'circle',
-          x: px(row.year),
-          y: py(value),
+          x: x(point.year),
+          y: y(point.value),
           radius: 4.5,
           fill: line.color,
         });
-      previous = { year: row.year, value };
+      previous = point;
     }
   }
-  const legend = [
-    { x: 125, text: 'Источник', color: observed, dash: undefined },
-    { x: 380, text: 'Базовая', color: '#697381', dash: [10, 7] },
-    { x: 635, text: 'Целевая', color: target, dash: undefined },
-  ];
-  for (const row of legend) {
+  series.forEach((line, index) => {
+    const px = 42 + index * 305;
     primitives.push({
       kind: 'line',
-      x1: row.x,
-      x2: row.x + 38,
-      y1: 410,
-      y2: 410,
-      color: row.color,
-      width: 3.5,
-      dash: row.dash,
+      x1: px,
+      y1: 386,
+      x2: px + 42,
+      y2: 386,
+      color: line.color,
+      width: 3,
+      dash: line.dash,
     });
-    primitives.push({ kind: 'text', x: row.x + 50, y: 417, text: row.text, size: 21, color: ink });
-  }
-  return {
+    if (line.markers)
+      primitives.push({ kind: 'circle', x: px + 21, y: 386, radius: 4.5, fill: line.color });
+    primitives.push({ kind: 'text', x: px + 56, y: 393, text: line.label, size: 21, color: ink });
+  });
+  return { id, kind, title, altText, width, height, primitives };
+}
+
+export function statisticalFigure(
+  id: string,
+  title: string,
+  unit: string,
+  points: readonly ObservationPoint[],
+): RoadmapFigure | null {
+  const observations = points
+    .filter((point) => point.value !== null)
+    .sort((a, b) => a.year - b.year);
+  const firstYear = observations[0]?.year;
+  const lastYear = observations.at(-1)?.year;
+  if (firstYear === undefined || lastYear === undefined || firstYear === lastYear) return null;
+  return timeSeriesFigure({
     id,
-    kind: 'scenario',
     title,
-    width,
-    height,
-    primitives,
-    altText: `Исходный ряд ${firstYear}–${result.baselineYear}, базовая и целевая траектории до ${lastYear} года. Пропуски исходных значений не соединены. Значения по годам приведены в следующей таблице.`,
-  };
+    kind: 'statistics',
+    unit,
+    firstYear,
+    lastYear,
+    series: [{ points: observations, label: 'Наблюдения', color: observed, markers: true }],
+    altText: `Наблюдения за ${firstYear}–${lastYear} годы. Пропуски исходного ряда оставлены без линии.`,
+  });
+}
+
+export function scenarioFigure(
+  id: string,
+  title: string,
+  result: ScenarioResult,
+  pinnedPoints?: readonly ObservationPoint[],
+): RoadmapFigure {
+  const firstYear = result.years[0]!.year;
+  const lastYear = result.years.at(-1)!.year;
+  const observations = pinnedPoints
+    ? pinnedPoints
+        .filter((point) => point.year >= firstYear && point.year <= lastYear)
+        .sort((a, b) => a.year - b.year)
+    : result.years.map((row) => ({ year: row.year, value: row.observedValue }));
+  return timeSeriesFigure({
+    id,
+    title,
+    kind: 'scenario',
+    unit: result.definition.unit,
+    firstYear,
+    lastYear,
+    cutoff: result.baselineYear,
+    series: [
+      { points: observations, label: 'Наблюдения', color: observed, markers: true },
+      {
+        points: result.years.map((row) => ({ year: row.year, value: row.baselineValue })),
+        label: 'Базовая траектория',
+        color: baselineColor,
+        dash: baselineDash,
+      },
+      {
+        points: result.years.map((row) => ({ year: row.year, value: row.targetValue })),
+        label: 'Целевая траектория',
+        color: target,
+      },
+    ],
+    altText: `Наблюдения и две расчётные траектории. Опорный год ${result.baselineYear}. Базовая и целевая траектории рассчитаны до ${lastYear} года. Пропуски наблюдений оставлены без линии.`,
+  });
+}
+
+export function cohortFigure(
+  input: CohortInput,
+  baseline: CohortProjection,
+  scenario?: CohortProjection,
+): RoadmapFigure {
+  const observations = input.history.flatMap(({ year, population }) =>
+    year < input.baseYear && population !== undefined && population !== null
+      ? [{ year, value: population }]
+      : [],
+  );
+  observations.sort((a, b) => a.year - b.year);
+  observations.push({ year: input.baseYear, value: baseline.points[0]!.population });
+  const series: ChartSeries[] = [
+    { points: observations, label: 'Наблюдения', color: observed, markers: true },
+    {
+      points: baseline.points.map(({ year, population }) => ({ year, value: population })),
+      label: 'Базовый прогноз',
+      color: baselineColor,
+      dash: baselineDash,
+    },
+  ];
+  if (scenario)
+    series.push({
+      points: scenario.points.map(({ year, population }) => ({ year, value: population })),
+      label: 'Сценарий участников',
+      color: target,
+    });
+  return timeSeriesFigure({
+    id: 'cohort-population',
+    title: 'Прогноз численности населения',
+    kind: 'cohort',
+    unit: 'человек на 1 января',
+    firstYear: observations[0]!.year,
+    lastYear: baseline.endYear,
+    cutoff: input.baseYear,
+    series,
+    altText: `Численность населения на 1 января. Наблюдения заканчиваются в ${input.baseYear} году. Базовый прогноз${scenario ? ' и выбранный сценарий' : ''} рассчитаны методом передвижки возрастов до ${baseline.endYear} года.`,
+  });
 }
 
 export function calendarFigures(calendar: CalendarResult): RoadmapFigure[] {

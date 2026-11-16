@@ -444,7 +444,7 @@ export function DiagnosticWorkbench({
           {selected ? (
             <div className={scenarioMode && parameters ? 'rm-analysis-layout' : undefined}>
               <div className="rm-chart-panel">
-                <ScenarioChart series={selected} result={calculated} comparisons={comparisons} />
+                <ScenarioChart series={selected} result={calculated} comparisons={comparisons} territoryName={territory.name} />
                 {calculated && parameters ? (
                   <div className="rm-scenario-results">
                     <div>
@@ -639,6 +639,7 @@ export function DiagnosticWorkbench({
                   <label className="rm-field">
                     <span>Способ задания цели</span>
                     <select
+                      aria-label="Способ задания цели"
                       value={parameters.targetMode}
                       onChange={(event) =>
                         param(
