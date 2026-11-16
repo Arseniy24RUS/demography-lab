@@ -294,9 +294,8 @@
 .workshop-programmes .workshop-region-row { grid-template-columns: 18px minmax(0, 1fr) 18px; }
 .workshop-programmes .workshop-region-row[data-measures='selected'] { background-color: #e6f2e4; color: #245337; }
 .workshop-programmes .workshop-region-row[data-measures='selected']:hover { background-color: #d8ebd6; }
-.workshop-programmes .workshop-region-row[data-document='unavailable']:not([data-measures='selected']) { background-color: #edf1f6; }
-.workshop-programmes .workshop-region-row[data-document='unavailable'] {
-  background-image: repeating-linear-gradient(135deg, transparent 0 6px, #69809d21 6px 7px);
+.workshop-programmes .workshop-region-row[data-catalogue='unavailable'] {
+  background-image: repeating-linear-gradient(135deg, transparent 0, transparent 4px, #9aa9be33 4px, #9aa9be33 5.2px);
 }
 .workshop-programmes .workshop-region-row[data-measures='selected'] > svg { color: #327246; }
 .workshop-programmes .workshop-region-row-name small { display: block; color: var(--muted); }

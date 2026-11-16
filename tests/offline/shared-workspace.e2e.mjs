@@ -248,7 +248,7 @@ try {
     await expect(scenes(a.page)).toBeVisible();
     await cleanInterface(a.page);
   });
-  await stage('Map and list open regional cards first and mark missing programme texts', a.page, async () => {
+  await stage('All 89 regions have measure cards without hatching, independently of programme text availability', a.page, async () => {
     await scene(a.page, 'Программы');
     await scene(b.page, 'Программы');
     const map = a.page.getByRole('group', { name: 'Карта региональных программ', exact: true });
@@ -268,21 +268,32 @@ try {
     await expect.poll(lengths).toEqual(overviewLengths);
     const catalogue = page => page.getByRole('region', { name: 'Каталог мер', exact: true });
     const moscow = map.locator('[data-region-id="moskva"]');
-    await expect(moscow).toHaveAttribute('data-document', 'unavailable');
-    await expect(moscow.locator('path').first()).toHaveAttribute('fill', /^url\(#.+\)$/u);
-    const moscowRow = a.page.getByRole('group', { name: 'Выбрать программу по названию' }).locator('[data-region-id="moskva"]');
-    await expect(moscowRow).toHaveAttribute('data-document', 'unavailable');
-    await expect(moscowRow).toHaveCSS('background-image', /^repeating-linear-gradient/u);
+    const regionList = a.page.getByRole('group', { name: 'Выбрать программу по названию' });
+    await expect(map.locator('[data-region-id][data-catalogue="available"]')).toHaveCount(89);
+    await expect(regionList.locator('[data-region-id][data-catalogue="available"]')).toHaveCount(89);
+    await expect(map.locator('[data-region-id] > path[fill^="url("]')).toHaveCount(0);
+    await expect(layer.getByText('Нет подготовленного текста', { exact: true })).toHaveCount(0);
+    await expect(layer.getByText('Нет карточек мер', { exact: true })).toHaveCount(0);
+    await expect(regionList.getByText('Текст недоступен', { exact: true })).toHaveCount(0);
+    expect(await regionList.locator('[data-region-id]').evaluateAll(rows =>
+      rows.every(row => getComputedStyle(row).backgroundImage === 'none'))).toBe(true);
+    const moscowRow = regionList.locator('[data-region-id="moskva"]');
+    await expect(moscow.locator('path').first()).not.toHaveAttribute('fill', /^url\(#.+\)$/u);
+    await expect(moscowRow).toHaveCSS('background-image', 'none');
     await moscow.press('Enter');
     await expect(catalogue(a.page).getByRole('combobox', { name: 'Территория меры' })).toHaveValue('moskva');
+    await expect(catalogue(a.page).getByRole('status')).toHaveText('Найдено мер: 23');
+    await expect(catalogue(a.page).getByRole('article')).toHaveCount(23);
     await expect(catalogue(a.page).getByRole('button', { name: 'Текст программы' })).toHaveCount(0);
     const selecting = rpc(a.page, 'dw_select_catalog_practice');
     await catalogue(a.page).getByRole('button', { name: 'Отобрать меру' }).first().click();
     expect((await selecting).status()).toBe(200);
     await a.page.getByRole('button', { name: 'К карте и списку программ' }).click();
     await expect(moscow).toHaveAttribute('data-measures', 'selected');
-    await expect(moscow.locator('path').first()).toHaveAttribute('fill', /-selected\)$/u);
-    await expect(moscowRow).toHaveCSS('background-image', /^repeating-linear-gradient/u);
+    await expect(moscow.locator('path').first()).not.toHaveAttribute('fill', /^url\(#.+\)$/u);
+    await expect(moscow.locator('path').first()).toHaveCSS('fill', 'rgb(169, 217, 137)');
+    await expect(moscowRow).toHaveCSS('background-image', 'none');
+    await expect(moscowRow).toHaveAttribute('data-measures', 'selected');
 
     await map.getByRole('button', { name: /^Республика Мордовия:/u }).click();
     const reader = page => page.getByRole('region', { name: 'Полный текст программы', exact: true });

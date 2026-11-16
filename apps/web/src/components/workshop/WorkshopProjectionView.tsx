@@ -35,7 +35,7 @@ export function WorkshopProjectionView({
         </div>
       </section>
     );
-  const covered = regions.filter(region => region.hasDocument && measureRegionIds.has(region.id)).length;
+  const covered = regions.filter(region => measureRegionIds.has(region.id)).length;
   const selectedRegion = regions.find((region) => region.id === selected);
   const round = projection.round;
   return (
@@ -62,7 +62,7 @@ export function WorkshopProjectionView({
             <div className="workshop-projection-coverage">
               <strong>
                 {covered}
-                <span> / {regions.filter((region) => region.hasDocument).length}</span>
+                <span> / {regions.length}</span>
               </strong>
               <p>регионов с отобранными мерами</p>
             </div>

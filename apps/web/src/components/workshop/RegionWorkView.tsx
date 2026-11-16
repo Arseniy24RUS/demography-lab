@@ -55,13 +55,15 @@ export function RegionWorkView({ regions, renderMap, onOpenDocument, measureRegi
           return <button key={region.id} type="button" className="workshop-region-row"
             disabled={!renderCatalogue && !region.hasDocument} data-region-id={region.id}
             data-document={region.hasDocument ? 'available' : 'unavailable'}
+            data-catalogue={renderCatalogue && region.hasMeasures !== undefined ? (region.hasMeasures ? 'available' : 'unavailable') : undefined}
             data-measures={hasMeasures ? 'selected' : 'unselected'}
             onClick={() => selectRegion(region.id)}>
             {renderCatalogue ? <Layers size={17} aria-hidden="true" /> : <BookOpen size={17} aria-hidden="true" />}
             <span className="workshop-region-row-name">
               {region.name}
               <span className="session-sr-only">{hasMeasures ? ', меры отобраны' : ''}</span>
-              {!region.hasDocument ? <small>Текст недоступен</small> : null}
+              {renderCatalogue ? (region.hasMeasures === false ? <small>Нет карточек мер</small> : null)
+                : !region.hasDocument ? <small>Текст недоступен</small> : null}
             </span>
             {hasMeasures ? <Check size={17} aria-hidden="true" /> : <ChevronRight size={17} aria-hidden="true" />}
           </button>;

@@ -9,6 +9,7 @@ import {
   type FamilyCatalogItem,
   type FamilyCatalogSource,
 } from '../../apps/web/src/lib/family-catalog';
+import { parseRegionMap } from '../../apps/web/src/lib/region-map';
 
 const dataRoot = new URL('../../public/data/corpus/', import.meta.url);
 const json = <T>(name: string): T => JSON.parse(readFileSync(new URL(name, dataRoot), 'utf8')) as T;
@@ -28,6 +29,18 @@ afterEach(() => {
 });
 
 describe('complete source catalogue adapter', () => {
+  it('provides measure cards for every mapped region, including all passports without prepared text', () => {
+    const variants = adaptFamilyCatalog(catalogue, manifest);
+    const regional = variants.filter(item => item.scope === 'regional');
+    const available = new Set(regional.map(item => item.regionId));
+    const map = parseRegionMap(JSON.parse(readFileSync(new URL('../../public/data/regions.map.json', import.meta.url), 'utf8')));
+    expect([...available].sort()).toEqual(map.shapes.map(shape => shape.regionId).sort());
+    const withoutText = manifest.documents.filter(entry => !entry.textUrl || !entry.pageCount);
+    expect(withoutText).toHaveLength(9);
+    for (const entry of withoutText) expect(available.has(entry.regionId), entry.territory).toBe(true);
+    expect(regional.filter(item => item.regionId === 'moskva')).toHaveLength(23);
+  });
+
   it('keeps all 2,274 source cards, maps all 89 regional names, and separates federal scope', () => {
     const variants = adaptFamilyCatalog(catalogue, manifest);
     expect(variants).toHaveLength(2274);

@@ -4,7 +4,7 @@ import { ProjectorView } from './session/ProjectorView';
 import { WorkshopProjectionView } from './workshop/WorkshopProjectionView';
 import { programmeMeasureRegions } from './workshop/workshop-ui';
 import { RegionMap } from './geography/RegionMap';
-import { readable } from '@/lib/corpus';
+import { useProgrammeRegions } from '@/hooks/useProgrammeRegions';
 import type { CorpusManifest } from '@/lib/corpus';
 import type { useSession } from '@/hooks/useSession';
 import type { useWorkshop } from '@/hooks/useWorkshop';
@@ -59,12 +59,8 @@ export function ProjectorContainer({
     : Boolean(heldWorkshop);
   const pending =
     heldWorkshop && workshop.projection ? Math.max(0, workshop.projection.cursor - heldWorkshop.projection.cursor) : 0;
-  const regions = manifest.documents.map((entry) => ({
-    id: entry.regionId,
-    name: entry.territory,
-    hasDocument: readable(entry),
-    documentTitle: entry.title,
-  }));
+  const catalogue = useProgrammeRegions(manifest, mode === 'regions');
+  const { regions } = catalogue;
   async function refresh() {
     setBusy(true);
     setError(null);
@@ -204,6 +200,11 @@ export function ProjectorContainer({
               )}
             </>
           ) : (
+            <>
+            {mode === 'regions' && catalogue.loading ? <p role="status">Проверяем наличие карточек мер…</p> : null}
+            {mode === 'regions' && catalogue.error ? <div role="alert" className="session-message" data-tone="error">
+              <p>{catalogue.error}</p><button className="button button-secondary" onClick={catalogue.retry}>Повторить</button>
+            </div> : null}
             <WorkshopProjectionView
               mode={mode}
               projection={shown}
@@ -221,6 +222,7 @@ export function ProjectorContainer({
                 />
               )}
             />
+            </>
           )}
         </main>
       )}

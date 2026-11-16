@@ -5,7 +5,7 @@ import type { RegionMapData, RegionMapDetail } from '@/lib/region-map';
 import { useMapViewport } from './useMapViewport';
 import './geography.css';
 
-export interface MapRegion { id: string; name: string; hasDocument: boolean }
+export interface MapRegion { id: string; name: string; hasDocument: boolean; hasMeasures?: boolean }
 export interface MapRegionWork {
   regionId: string;
   status: 'available' | 'in_progress' | 'completed';
@@ -78,6 +78,10 @@ export function RegionMap({ regions, work = emptyWork, selectedRegionId, onSelec
     if (item?.status === 'in_progress' && item.leaseExpiresAt && Date.parse(item.leaseExpiresAt) <= clock) return 'available';
     return item?.status ?? 'available';
   };
+  const unavailableOf = (regionId: string) => showMeasures
+    ? !regionById.has(regionId) || regionById.get(regionId)?.hasMeasures === false
+    : statusOf(regionId) === 'unavailable';
+  const unavailableLabel = showMeasures ? 'Нет карточек мер' : labels.unavailable;
   function selectKeyboard(regionId: string, key: string) {
     if (!shapes || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(key)) return;
     const current = shapes.find((shape) => shape.regionId === regionId);
@@ -97,8 +101,9 @@ export function RegionMap({ regions, work = emptyWork, selectedRegionId, onSelec
     if (!showMeasures) onSelect(next.regionId);
     requestAnimationFrame(() => svg.current?.querySelector<SVGGElement>(`[data-region-id="${CSS.escape(next.regionId)}"]`)?.focus());
   }
-  const legend: MapStatus[] = showMeasures ? ['measures-selected', 'measures-unselected', 'unavailable']
-    : showWork ? ['available', 'in_progress', 'completed', 'unavailable'] : ['available', 'unavailable'];
+  const legend: MapStatus[] = showMeasures ? ['measures-selected', 'measures-unselected']
+    : showWork ? ['available', 'in_progress', 'completed'] : ['available'];
+  if (data?.shapes.some(shape => unavailableOf(shape.regionId))) legend.push('unavailable');
   if (error) return <div className="geo-fallback" role="status"><p>{error}</p><button className="button button-secondary" onClick={() => setAttempt((value) => value + 1)}>Повторить загрузку карты</button></div>;
   if (!data) return <div className="geo-fallback" aria-busy="true">{isTerritoryPicker ? 'Загружаем карту России…' : 'Загружаем карту программ…'}</div>;
   return <div className={`region-map${compact ? ' region-map-compact' : ''}`}>
@@ -127,8 +132,8 @@ export function RegionMap({ regions, work = emptyWork, selectedRegionId, onSelec
       </defs>
       {(shapes ?? data.shapes).map((shape) => {
         const status = statusOf(shape.regionId);
-        const hasDocument = Boolean(regionById.get(shape.regionId)?.hasDocument);
-        const unavailable = status === 'unavailable' || (showMeasures && !hasDocument);
+        const region = regionById.get(shape.regionId);
+        const unavailable = unavailableOf(shape.regionId);
         const fill = unavailable
           ? `url(#${status === 'measures-selected' ? selectedHatch : hatch})`
           : undefined;
@@ -137,9 +142,10 @@ export function RegionMap({ regions, work = emptyWork, selectedRegionId, onSelec
         const small = (shape.bounds[2] - shape.bounds[0]) * (shape.bounds[3] - shape.bounds[1]) < 90;
         const detailed = detailEnabled && detail?.shapes.has(shape.regionId);
         const label = isTerritoryPicker ? (enabled ? shape.name : `${shape.name} — отсутствует в списке`)
-          : `${shape.name}: ${!showWork && status === 'available' ? 'текст доступен' : labels[status]}${showMeasures && !hasDocument ? '. Текст программы недоступен' : ''}`;
+          : `${shape.name}: ${!showWork && status === 'available' ? 'текст доступен' : labels[status]}${showMeasures && unavailable ? `. ${unavailableLabel}` : ''}`;
         return <g key={shape.regionId} data-region-id={shape.regionId} className={`geo-region geo-${status}${chosen ? ' is-selected' : ''}`}
-          data-document={showMeasures ? (hasDocument ? 'available' : 'unavailable') : undefined}
+          data-document={showMeasures ? (region?.hasDocument ? 'available' : 'unavailable') : undefined}
+          data-catalogue={showMeasures && region?.hasMeasures !== undefined ? (region.hasMeasures ? 'available' : 'unavailable') : undefined}
           data-measures={showMeasures ? (status === 'measures-selected' ? 'selected' : 'unselected') : undefined}
           role={enabled ? 'button' : undefined} aria-label={label} aria-pressed={enabled && !showMeasures ? chosen : undefined}
           tabIndex={enabled ? (tabbable === shape.regionId ? 0 : -1) : undefined}
@@ -161,7 +167,7 @@ export function RegionMap({ regions, work = emptyWork, selectedRegionId, onSelec
     <div className="geo-legend" aria-label="Условные обозначения">
       {legend.map((status) => <span key={status}><i className={`geo-swatch geo-${status}`} aria-hidden="true" />{isTerritoryPicker
         ? (status === 'available' ? 'Доступно для выбора' : 'Отсутствует в списке')
-        : (!showWork && status === 'available' ? 'Текст доступен' : labels[status])}</span>)}
+        : (status === 'unavailable' ? unavailableLabel : !showWork && status === 'available' ? 'Текст доступен' : labels[status])}</span>)}
     </div>
   </div>;
 }

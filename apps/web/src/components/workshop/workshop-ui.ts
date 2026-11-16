@@ -15,6 +15,8 @@ export interface WorkshopRegionOption {
   id: string;
   name: string;
   hasDocument: boolean;
+  /** Undefined while catalogue coverage has not been established. */
+  hasMeasures?: boolean;
   documentTitle?: string;
   /** Source completeness and text extraction are separate from the group's progress. */
   documentHint?: string;
