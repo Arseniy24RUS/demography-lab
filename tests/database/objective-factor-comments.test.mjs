@@ -89,3 +89,48 @@ it('shares optional explanations for the same correlation and territory with rev
     await db.close();
   }
 });
+
+it('keeps independent concurrent explanations on one shared sticker and detects competing edits by the same author', async () => {
+  const db = await createTestDatabase({ seedCorpus: false });
+  try {
+    const a = await identify(db, 'Первый Участник');
+    const b = await identify(db, 'Второй Участник');
+    const enter = (user) => rpc(db, user, 'dw_enter_workspace', { p_operation_id: randomUUID() });
+    const sessionId = (await enter(a)).session.id;
+    assert.equal((await enter(b)).session.id, sessionId);
+    const scope = { p_session_id: sessionId, p_factor_key: 'kindergarten-p', p_territory_key: 'region-13' };
+    const save = (user, text, revision) => rpc(db, user, 'dw_save_objective_factor_comment', {
+      ...scope, p_operation_id: randomUUID(), p_expected_revision: revision, p_text: text,
+    });
+    const read = (user) => rpc(db, user, 'dw_objective_factor_comments', scope);
+    const explanations = ['Доступность садов упрощает возвращение к работе.', 'Спрос выше там, где много молодых семей.'];
+    const saved = await Promise.all([save(a, explanations[0], 0), save(b, explanations[1], 0)]);
+    assert.deepEqual(saved.map(value => value.myRevision), [1, 1]);
+
+    const add = (user) => rpc(db, user, 'dw_flipchart_add', {
+      p_session_id: sessionId, p_operation_id: randomUUID(), p_input: {
+        board: 'objective', factorKey: scope.p_factor_key, territoryKey: scope.p_territory_key,
+        territorySelected: true, kind: 'condition', text: 'Доступность детских садов',
+      },
+    });
+    const stickers = await Promise.all([add(a), add(b)]);
+    assert.equal(stickers[0].note.id, stickers[1].note.id);
+    const board = await rpc(db, b, 'dw_flipchart_updates', { p_session_id: sessionId, p_board: 'objective-v2' });
+    assert.equal(board.notes.length, 1);
+    assert.deepEqual(board.notes[0].territoryKeys, [scope.p_territory_key]);
+    for (const [index, user] of [a, b].entries()) {
+      const comments = (await read(user)).comments;
+      assert.equal(new Set(comments.map(comment => comment.id)).size, 2);
+      assert.deepEqual(new Set(comments.map(comment => comment.text)), new Set(explanations));
+      assert.deepEqual(comments.filter(comment => comment.mine).map(comment => comment.text), [explanations[index]]);
+    }
+
+    const edits = await Promise.allSettled([save(a, 'Первая правка', 1), save(a, 'Вторая правка', 1)]);
+    assert.equal(edits.filter(edit => edit.status === 'fulfilled').length, 1);
+    assert.equal(edits.find(edit => edit.status === 'rejected').reason.message, 'REVISION_CONFLICT');
+    assert.equal((await read(a)).myRevision, 2);
+    assert.equal((await read(b)).myRevision, 1);
+  } finally {
+    await db.close();
+  }
+});

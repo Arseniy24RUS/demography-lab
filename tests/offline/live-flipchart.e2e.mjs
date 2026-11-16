@@ -29,6 +29,11 @@ const responseReads = new Set();
 const NAME_A = 'Первый участник флипчарта';
 const NAME_B = 'Второй участник флипчарта';
 const EMAIL_A = 'flipchart-a@example.test', EMAIL_B = 'flipchart-b@example.test';
+const HOUSING_EXPLANATIONS = [
+  'Жилищные условия могут влиять на возможность появления ребёнка.',
+  'Большая жилплощадь может облегчать уход сразу за несколькими детьми.',
+];
+const SARANSK_KEY = '89-89701000-6877fd2c07';
 const TEXT = {
   housing: 'Не хватает жилья рядом с работой',
   income: 'Нестабильный доход',
@@ -58,6 +63,39 @@ const vote = (page, text, value) => note(page, text).getByRole('button', {
 });
 const rpc = (page, name) => page.waitForResponse(response =>
   new URL(response.url()).pathname === `/rest/v1/rpc/${name}` && response.request().method() === 'POST');
+
+async function synchronizedRequests(pages, methods, work) {
+  const gates = methods.map(method => {
+    const route = `**/rest/v1/rpc/${method}`;
+    const release = Promise.withResolvers();
+    let arrived = 0;
+    const handler = async (request) => {
+      if (++arrived === pages.length) release.resolve();
+      await release.promise;
+      await request.fallback();
+    };
+    return { route, release, handler, arrivals: () => arrived };
+  });
+  await Promise.all(pages.flatMap(page => gates.map(({ route, handler }) => page.route(route, handler))));
+  try {
+    const responses = await Promise.all(pages.map(work));
+    for (const gate of gates) expect(gate.arrivals()).toBe(pages.length);
+    return responses;
+  } finally {
+    for (const gate of gates) gate.release.resolve();
+    await Promise.all(pages.flatMap(page => gates.map(({ route, handler }) => page.unroute(route, handler))));
+  }
+}
+
+const mechanism = card => card.getByRole('button', { name: 'Механизм связи', exact: true });
+async function expectBothExplanations(card, index) {
+  const comments = card.locator('.objective-comments');
+  await expect(comments.getByRole('listitem')).toHaveCount(2);
+  for (const explanation of HOUSING_EXPLANATIONS)
+    await expect(comments.getByText(explanation, { exact: true })).toBeVisible();
+  await expect(comments.getByText('Ваш комментарий', { exact: true })).toHaveCount(1);
+  await expect(card.getByRole('textbox', { name: 'Как вы объясняете эту связь?' })).toHaveValue(HOUSING_EXPLANATIONS[index]);
+}
 
 function watch(page) {
   page.setDefaultTimeout(20000);
@@ -440,42 +478,56 @@ try {
       .filter({ has: page.getByRole('heading', { name: title, exact: true }) });
     for (const page of [a.page, b.page])
       await objective(page).getByRole('searchbox', { name: 'Показатель', exact: true }).fill(title);
-    const explanation = 'Жилищные условия могут влиять на возможность появления ребёнка.';
-    const openMechanism = (card) => card.getByRole('button', { name: 'Механизм связи', exact: true }).click();
-    await stage('Participants share an optional explanation inside an unselected correlation card', a.page, async () => {
-      await openMechanism(housingCard(a.page));
-      await housingCard(a.page).getByRole('textbox', { name: 'Как вы объясняете эту связь?' }).fill(explanation);
-      await housingCard(a.page).getByRole('button', { name: 'Сохранить комментарий', exact: true }).click();
-      await expect(housingCard(a.page).getByText('Ваш комментарий')).toBeVisible();
-      await openMechanism(housingCard(b.page));
-      await expect(housingCard(b.page).getByText(explanation, { exact: true })).toBeVisible();
-      await expect(housingCard(b.page).getByRole('textbox', { name: 'Как вы объясняете эту связь?' })).toHaveValue('');
-      await expect(housingCard(a.page).getByRole('button', { name: 'На флипчарт', exact: true })).toHaveAttribute('aria-pressed', 'false');
-      for (const page of [a.page, b.page]) await openMechanism(housingCard(page));
-    });
-    // Both clicks must record the unchecked action before a real reply can update either board.
-    const addRoute = '**/rest/v1/rpc/dw_flipchart_add';
-    const release = Promise.withResolvers();
-    let waiting = 0;
-    const holdAdd = async (route) => {
-      if (++waiting === 2) release.resolve();
-      await release.promise;
-      await route.fallback();
-    };
     const pages = [a.page, b.page];
-    let first, duplicate;
-    await Promise.all(pages.map(page => page.route(addRoute, holdAdd)));
-    try {
-      [first, duplicate] = await Promise.all(pages.map(page => select(page, housingCard(page))));
-    } finally {
-      release.resolve();
-      await Promise.all(pages.map(page => page.unroute(addRoute, holdAdd)));
-    }
-    expect(duplicate.id).toBe(first.id);
-    expect(duplicate.factorKey).toBe(first.factorKey);
-    expect(first.factorKey).toMatch(/^[a-z0-9][a-z0-9_-]{0,79}$/u);
-    expect(first.territoryKeys).toHaveLength(1);
-    objectiveFirst = first.text;
+    let first;
+    await stage('Concurrent board clicks save two unsaved explanations and create one sticker for Saransk', a.page, async () => {
+      await Promise.all(pages.map(async (page, index) => {
+        const card = housingCard(page);
+        await mechanism(card).click();
+        const textarea = card.getByRole('textbox', { name: 'Как вы объясняете эту связь?' });
+        await expect(textarea).toHaveValue('');
+        await textarea.fill(HOUSING_EXPLANATIONS[index]);
+        await expect(card.getByRole('button', { name: 'На флипчарт', exact: true })).toHaveAttribute('aria-pressed', 'false');
+        await expect(card.locator('.objective-comments').getByRole('listitem')).toHaveCount(0);
+      }));
+      // Both actual requests reach each gate before either is allowed to reach the server.
+      const outcomes = await synchronizedRequests(pages, ['dw_save_objective_factor_comment', 'dw_flipchart_add'], async (page, index) => {
+        const saving = rpc(page, 'dw_save_objective_factor_comment');
+        const added = await select(page, housingCard(page));
+        const response = await saving;
+        expect(response.status(), await response.text()).toBe(200);
+        const input = response.request().postDataJSON();
+        expect(input.p_expected_revision).toBe(0);
+        expect(input.p_factor_key).toBe(added.factorKey);
+        expect(input.p_territory_key).toBe(SARANSK_KEY);
+        expect(input.p_text).toBe(HOUSING_EXPLANATIONS[index]);
+        const data = await response.json();
+        expect(data.myRevision).toBe(1);
+        const mine = data.comments.filter(comment => comment.mine);
+        expect(mine).toHaveLength(1);
+        expect(mine[0].text).toBe(HOUSING_EXPLANATIONS[index]);
+        return { added, commentId: mine[0].id };
+      });
+      first = outcomes[0].added;
+      expect(outcomes[1].added.id).toBe(first.id);
+      expect(outcomes[1].added.factorKey).toBe(first.factorKey);
+      expect(outcomes[1].commentId).not.toBe(outcomes[0].commentId);
+      expect(first.factorKey).toMatch(/^[a-z0-9][a-z0-9_-]{0,79}$/u);
+      expect(first.territoryKeys).toEqual([SARANSK_KEY]);
+      objectiveFirst = first.text;
+
+      await Promise.all(pages.map(async (page, index) => {
+        await expectBothExplanations(housingCard(page), index);
+        await objective(page).getByRole('button', { name: /^Флипчарт факторов/u }).click();
+        await expect(objectiveBoard(page).getByRole('article')).toHaveCount(1);
+        const sticker = note(page, objectiveFirst);
+        await expect(sticker).toHaveAttribute('data-note-id', first.id);
+        await mechanism(sticker).click();
+        await expectBothExplanations(sticker, index);
+        await mechanism(sticker).click();
+        await objective(page).getByRole('button', { name: 'Корреляции', exact: true }).click();
+      }));
+    });
     await objective(a.page).getByRole('searchbox', { name: 'Показатель', exact: true }).clear();
     objectiveSecond = (await select(a.page, objective(a.page).locator('.objective-card[data-direction="p"]').first())).text;
     expect(objectiveSecond).not.toBe(objectiveFirst);
@@ -496,13 +548,14 @@ try {
       await expect(note(page, objectiveSecond)).toHaveAttribute('data-kind', 'condition');
     }
     await stage('The shared factor shows the explanation only under the territory it describes', b.page, async () => {
-      await openMechanism(note(b.page, objectiveFirst));
+      await mechanism(note(b.page, objectiveFirst)).click();
       const boardTerritory = note(b.page, objectiveFirst).getByRole('combobox', { name: 'Территория', exact: true });
       await expect(boardTerritory).toHaveValue('region-respublika-mordoviia');
-      await expect(note(b.page, objectiveFirst).getByText(explanation, { exact: true })).toHaveCount(0);
-      await boardTerritory.selectOption('89-89701000-6877fd2c07');
-      await expect(note(b.page, objectiveFirst).getByText(explanation, { exact: true })).toBeVisible();
-      await openMechanism(note(b.page, objectiveFirst));
+      for (const explanation of HOUSING_EXPLANATIONS)
+        await expect(note(b.page, objectiveFirst).getByText(explanation, { exact: true })).toHaveCount(0);
+      await boardTerritory.selectOption(SARANSK_KEY);
+      await expectBothExplanations(note(b.page, objectiveFirst), 1);
+      await mechanism(note(b.page, objectiveFirst)).click();
     });
     await vote(b.page, objectiveFirst, -1).click();
     await expect(vote(a.page, objectiveFirst, -1)).toHaveText('1');
@@ -538,6 +591,10 @@ try {
     await expect(objectiveBoard(b.page).getByRole('article')).toHaveCount(2);
     await expect(vote(b.page, objectiveFirst, 1)).toHaveAttribute('aria-pressed', 'true');
     await expect(vote(b.page, objectiveSecond, -1)).toHaveAttribute('aria-pressed', 'true');
+    await mechanism(note(b.page, objectiveFirst)).click();
+    await note(b.page, objectiveFirst).getByRole('combobox', { name: 'Территория', exact: true }).selectOption(SARANSK_KEY);
+    await expectBothExplanations(note(b.page, objectiveFirst), 1);
+    await mechanism(note(b.page, objectiveFirst)).click();
     await noOverflow(b.page, 390);
   });
   await stage('The territory selector loads distinct settlement and district correlation packs', a.page, async () => {
@@ -607,6 +664,13 @@ try {
     await expect(vote(a.page, objectiveFirst, 1)).toHaveText('1');
     await expect(vote(b.page, objectiveFirst, 1)).toHaveAttribute('aria-pressed', 'true');
     await expect(vote(b.page, objectiveSecond, -1)).toHaveAttribute('aria-pressed', 'true');
+    await Promise.all([a.page, b.page].map(async (page, index) => {
+      const sticker = note(page, objectiveFirst);
+      await mechanism(sticker).click();
+      await sticker.getByRole('combobox', { name: 'Территория', exact: true }).selectOption(SARANSK_KEY);
+      await expectBothExplanations(sticker, index);
+      await mechanism(sticker).click();
+    }));
   });
   await stage('A checkmark removes just its territory and the last removal hides the shared sticker', a.page, async () => {
     const returnToCards = page => objective(page).getByRole('button', { name: 'Корреляции', exact: true }).click();

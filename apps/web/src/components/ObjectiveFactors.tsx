@@ -11,7 +11,7 @@ import {
 } from '../lib/municipal-factors';
 import { FlipchartBoard } from './flipchart/FlipchartBoard';
 import { ObjectiveTerritories, type ObjectiveSelection } from './ObjectiveTerritories';
-import { ObjectiveFactorComments } from './ObjectiveFactorComments';
+import { ObjectiveFactorComments, type ObjectiveCommentEditor } from './ObjectiveFactorComments';
 import './objective-factors.css';
 
 const batchSize = 48;
@@ -137,6 +137,7 @@ export function ObjectiveFactors({ api, sessionId, userId, regionId, editable }:
   const [limit, setLimit] = useState(batchSize);
   const [view, setView] = useState<'cards' | 'board'>('cards');
   const [discussion, setDiscussion] = useState<string | null>(null);
+  const commentEditor = useRef<ObjectiveCommentEditor | null>(null);
   const [boardDiscussion, setBoardDiscussion] = useState<string | null>(null);
   const cursor = useRef<HTMLDivElement>(null);
   const { level, region, municipality, settlement } = selection;
@@ -214,6 +215,7 @@ export function ObjectiveFactors({ api, sessionId, userId, regionId, editable }:
 
   async function selectCard(card: Card, selected: boolean) {
     if (!selectedKey) return;
+    if (selected && discussion === card.factorKey && commentEditor.current && !await commentEditor.current.saveDraft()) return;
     const kind = card.factorKey.endsWith('-n') ? 'barrier' : 'condition';
     const details = card.info.filter(value => value !== 'Значение показателя за год').join(' · ');
     const text = short(card.title, 110) + (details ? ` · ${short(details, 66)}` : '');
@@ -289,6 +291,7 @@ export function ObjectiveFactors({ api, sessionId, userId, regionId, editable }:
               </div>
               {expanded && commentsClient && sessionId && userId ? <ObjectiveFactorComments
                 key={`${sessionId}:${userId}:${selectedKey}:${card.factorKey}`}
+                ref={commentEditor}
                 client={commentsClient} sessionId={sessionId} territoryKey={selectedKey}
                 factorKey={card.factorKey} editable={editable} /> : null}
             </li>;

@@ -1,16 +1,19 @@
-import { useEffect, useRef, useState } from 'react';
-import type { FormEvent } from 'react';
+import { useEffect, useImperativeHandle, useRef, useState } from 'react';
+import type { FormEvent, Ref } from 'react';
 import { MAX_OBJECTIVE_COMMENT_LENGTH } from '../../../../packages/flipchart/schema';
 import type { ObjectiveComments } from '../../../../packages/flipchart/schema';
 import type { FlipchartApi } from '../lib/flipchart-api';
 import { SessionApiError } from '../lib/session-api';
 
-export function ObjectiveFactorComments({ client, sessionId, territoryKey, factorKey, editable }: {
+export type ObjectiveCommentEditor = { saveDraft(): Promise<boolean> };
+
+export function ObjectiveFactorComments({ client, sessionId, territoryKey, factorKey, editable, ref }: {
   client: FlipchartApi;
   sessionId: string;
   territoryKey: string;
   factorKey: string;
   editable: boolean;
+  ref?: Ref<ObjectiveCommentEditor>;
 }) {
   const [discussion, setDiscussion] = useState<ObjectiveComments | null>(null);
   const [draft, setDraft] = useState<{ text: string; revision: number } | null>(null);
@@ -18,6 +21,7 @@ export function ObjectiveFactorComments({ client, sessionId, territoryKey, facto
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const write = useRef({ mounted: false, pending: false, generation: 0 });
+  const pendingSave = useRef<Promise<boolean> | null>(null);
 
   useEffect(() => {
     const state = write.current;
@@ -61,38 +65,54 @@ export function ObjectiveFactorComments({ client, sessionId, territoryKey, facto
   const mine = discussion?.comments.find(comment => comment.mine);
   const text = draft?.text ?? mine?.text ?? '';
 
-  async function save(value: string | null) {
+  function save(value: string | null): Promise<boolean> {
+    if (pendingSave.current) return pendingSave.current;
     const state = write.current;
-    if (!discussion || !editable || state.pending) return;
+    if (!discussion || !editable) return Promise.resolve(false);
     const selection = { territoryKey, factorKey };
     state.pending = true;
     const generation = ++state.generation;
     const current = () => state.mounted && state.generation === generation;
     setSaving(true);
     setError(null);
-    try {
-      const result = await client.saveComment(sessionId, selection, draft?.revision ?? discussion.myRevision, value);
-      if (current()) {
-        setDiscussion(result);
-        setDraft(null);
-      }
-    } catch (cause) {
-      if (!current()) return;
-      if (cause instanceof SessionApiError && cause.code === 'REVISION_CONFLICT') {
-        setError('Ваш комментарий изменился в другой вкладке. Сверьте текст и повторите действие.');
-        const latest = await client.comments(sessionId, selection).catch(() => null);
-        if (latest && current()) {
-          setDiscussion(latest);
-          setDraft(previous => previous && { ...previous, revision: latest.myRevision });
+    const operation = (async () => {
+      try {
+        const result = await client.saveComment(sessionId, selection, draft?.revision ?? discussion.myRevision, value);
+        if (current()) {
+          setDiscussion(result);
+          setDraft(null);
         }
-      } else {
-        setError(cause instanceof Error ? cause.message : 'Не удалось сохранить комментарий.');
+        return true;
+      } catch (cause) {
+        if (!current()) return false;
+        if (cause instanceof SessionApiError && cause.code === 'REVISION_CONFLICT') {
+          setError('Ваш комментарий изменился в другой вкладке. Сверьте текст и повторите действие.');
+          const latest = await client.comments(sessionId, selection).catch(() => null);
+          if (latest && current()) {
+            setDiscussion(latest);
+            setDraft(previous => previous && { ...previous, revision: latest.myRevision });
+          }
+        } else {
+          setError(cause instanceof Error ? cause.message : 'Не удалось сохранить комментарий.');
+        }
+        return false;
+      } finally {
+        state.pending = false;
+        if (current()) setSaving(false);
       }
-    } finally {
-      state.pending = false;
-      if (current()) setSaving(false);
-    }
+    })();
+    pendingSave.current = operation;
+    void operation.finally(() => { if (pendingSave.current === operation) pendingSave.current = null; });
+    return operation;
   }
+
+  useImperativeHandle(ref, () => ({
+    saveDraft() {
+      if (pendingSave.current) return pendingSave.current;
+      const value = draft?.text.trim().normalize('NFC');
+      return value && value !== mine?.text ? save(value) : Promise.resolve(true);
+    },
+  }));
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
