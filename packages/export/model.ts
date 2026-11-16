@@ -21,7 +21,7 @@ import {
   provisionalObservationYears,
 } from '../statistics/series';
 import { calendarFigures, scenarioFigure, statisticalFigure } from './figures';
-import { roadmapReportSections } from './sections';
+import { roadmapReportSections, availableRoadmapReportSections } from './sections';
 import type { RoadmapReportOptions, RoadmapReportSection } from './sections';
 import { ROADMAP_EXPORT_VERSION } from './types';
 import type { PreparedRoadmapExport, ReportBlock } from './types';
@@ -328,7 +328,7 @@ export async function prepareRoadmapExport(
     scenarios,
     issues: deduplicatedIssues,
   };
-  const published = (options.sections && !options.sections.includes('statistics')
+  const published = (snapshot.territory.level === 'organization' || (options.sections && !options.sections.includes('statistics'))
     ? []
     : (options.publishedStatistics ?? []))
     .filter(({ territoryKey }) => territoryKey === snapshot.territory.key)
@@ -436,7 +436,8 @@ function buildReportBlocks(
   const scenarioItems = new Map(
     activeRoadmapItems(snapshot, 'scenario').map((item) => [item.id, item]),
   );
-  const selected = new Set(options.sections ?? roadmapReportSections.map(({ id }) => id));
+  const allowed = new Set(availableRoadmapReportSections(snapshot.territory.level).map(({ id }) => id));
+  const selected = new Set((options.sections ?? [...allowed]).filter(section => allowed.has(section)));
   const existingMetrics = new Set(
     snapshot.series.flatMap((series) =>
       !isTeamStatisticalSeries(series) || series.baseSeries ? [series.metricId] : [],

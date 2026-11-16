@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
-  ArrowUpDown, Banknote, BriefcaseBusiness, FileText, HeartPulse, House, Lightbulb, MapPin,
+  Banknote, BarChart3, BriefcaseBusiness, Cloud, FileText, HeartPulse, House, Lightbulb, MapPin,
   RotateCcw, School, Search, ThumbsDown, ThumbsUp, UsersRound,
 } from 'lucide-react';
 import type { TextAnchor } from '@domain/index';
@@ -61,13 +61,10 @@ export function LivePracticeVoting({ state, api, workshop, onOpenSource, manifes
   onOpenSource: (anchor: TextAnchor) => void; manifest: CorpusManifest;
 }) {
   const votes = useLivePracticeVotes({ api, sessionId: state.snapshot?.session.id ?? null, userId: state.auth.userId });
-  const [sort, setSort] = useState<'score' | 'title'>('score');
+  const [view, setView] = useState<'cloud' | 'ranking'>('cloud');
   const [query, setQuery] = useState('');
   const [inspecting, setInspecting] = useState<SharedSubmission | null>(null);
   const votedFamilies = (votes.data as WorkspaceVotesSnapshot | null)?.families;
-  const families = useMemo(() => [...(votedFamilies ?? [])].sort((a, b) => sort === 'score'
-    ? b.score - a.score || b.support - a.support || a.title.localeCompare(b.title, 'ru')
-    : a.title.localeCompare(b.title, 'ru')), [sort, votedFamilies]);
   const regions = useMemo(() => manifest.documents.map(entry => ({
     id: entry.regionId, name: entry.territory, hasDocument: Boolean(entry.textUrl),
   })), [manifest]);
@@ -77,6 +74,11 @@ export function LivePracticeVoting({ state, api, workshop, onOpenSource, manifes
   ), [entries]);
   const groupedFamilies = workshop.snapshot?.families;
   const groups = useMemo(() => new Map(groupedFamilies?.map(family => [family.id, family])), [groupedFamilies]);
+  const families = useMemo(() => [...(votedFamilies ?? [])].sort((a, b) => view === 'ranking'
+    ? b.score - a.score || b.support - a.support || a.title.localeCompare(b.title, 'ru') || a.familyId.localeCompare(b.familyId)
+    : (groups.get(b.familyId)?.createdAt ?? '').localeCompare(groups.get(a.familyId)?.createdAt ?? '')
+      || a.familyId.localeCompare(b.familyId)), [view, votedFamilies, groups]);
+  const positions = useMemo(() => new Map(families.map((family, index) => [family.familyId, index + 1])), [families]);
   const needle = query.trim().toLocaleLowerCase('ru');
   const visible = needle ? families.filter(family => {
     const content = groups.get(family.familyId);
@@ -84,16 +86,18 @@ export function LivePracticeVoting({ state, api, workshop, onOpenSource, manifes
       .some(text => text?.toLocaleLowerCase('ru').includes(needle));
   }) : families;
 
-  return <section className="live-votes" aria-label="Рейтинг практик">
+  return <section className="live-votes" aria-label="Рейтинг практик" data-view={view}>
     <header className="live-votes-heading">
       <div><h2>Практики</h2><p>Выберите меры, которые стоит обсуждать.</p></div>
       <div className="live-votes-tools">
-        <label className="live-votes-order"><ArrowUpDown size={16} aria-hidden="true" />
-          <span className="session-sr-only">Порядок практик</span>
-          <select value={sort} onChange={event => setSort(event.target.value as 'score' | 'title')}>
-            <option value="score">По оценке группы</option><option value="title">По названию</option>
-          </select>
-        </label>
+        <div className="live-votes-view-switch" role="group" aria-label="Вид практик">
+          <button type="button" aria-pressed={view === 'cloud'} onClick={() => setView('cloud')}>
+            <Cloud size={18} aria-hidden="true" />Облако
+          </button>
+          <button type="button" aria-pressed={view === 'ranking'} onClick={() => setView('ranking')}>
+            <BarChart3 size={18} aria-hidden="true" />Рейтинг
+          </button>
+        </div>
         <label className="workshop-note-search"><Search size={16} aria-hidden="true" />
           <input type="search" aria-label="Найти меру" placeholder="Найти меру" value={query}
             onChange={event => setQuery(event.target.value)} />
@@ -106,7 +110,7 @@ export function LivePracticeVoting({ state, api, workshop, onOpenSource, manifes
     {votes.data && !families.length ? <div className="workshop-empty"><h3>Практики ещё не отобраны</h3>
       <p>Выберите меры во вкладке «Программы» или добавьте свою публикацию через «Опубликованные карточки».</p></div> : null}
     {families.length && !visible.length ? <p className="live-vote-query-empty">По этому запросу мер нет.</p> : null}
-    <div className="live-vote-list">
+    <div className="live-vote-list" data-view={view}>
       {visible.map(family => {
         const content = groups.get(family.familyId);
         const variants = content?.submissionIds.map(id => submissions.get(id))
@@ -115,8 +119,11 @@ export function LivePracticeVoting({ state, api, workshop, onOpenSource, manifes
         const Icon = practiceIcon(family.title);
         const localVariants = variants.filter(item => item.bundle.practice.regionId !== 'federal');
         const covered = new Set(localVariants.map(item => item.bundle.practice.regionId)).size;
-        return <article className="workshop-note live-vote-card" key={family.familyId}
+        return <article className="workshop-note live-vote-card" key={family.familyId} data-view={view}
           aria-labelledby={`practice-vote-${family.familyId}`} data-note-tone={noteTone(family.familyId)}>
+          {view === 'ranking' ? <span className="live-vote-position" aria-label={`Место ${positions.get(family.familyId)}`}>
+            {positions.get(family.familyId)}
+          </span> : null}
           <header className="live-vote-card-main"><Icon size={25} aria-hidden="true" />
             <h3 id={`practice-vote-${family.familyId}`}>{family.title}</h3>
           </header>

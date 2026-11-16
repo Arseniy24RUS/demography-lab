@@ -1,10 +1,16 @@
 # Stage 5: territorial roadmaps
 
-One roadmap is unique per `(session_id, territory_key)`. Canonical territory identity comes from a sealed dataset imported by the administrator, never from client-provided labels. Municipality, region and federal room levels are selected by the host; the default matches the teaching session scope. The choice is locked after the first room exists. The first join binds the session to `dataEditionId`, and later joins require the same edition. Administrative districts in the source geometry are not silently treated as municipalities.
+One roadmap is unique per `(session_id, territory_key)`. Canonical territory identity comes from a sealed dataset imported by the administrator, never from client-provided labels. Municipality, region and federal room levels are selected by the host; the default matches the teaching session scope. The choice is locked after the first room exists. The first geographical join binds the session to `dataEditionId`, and later geographical joins require the same edition. Administrative districts in the source geometry are not silently treated as municipalities.
 
 All reads require current verified session membership. Participants may read the session's roadmaps but write only their current room; the host may write every room. Observers cannot join or write. One active room assignment per user/session is revisioned. Moving teams preserves the former team's work. Writes require an open session in any teaching phase. User identity and current authorization are checked before operation replay.
 
 In the shared workshop, selecting any eligible territory at the configured level opens its roadmap. The existing join operation prepares the room only on its first visit. Active attendance uses a separate endpoint and is counted once per person in each room. A view updates its presence with an increasing revision, then sends a null room when leaving. The server expires a view 25 seconds after its most recent update. A null view ID reads the counts without registering attendance.
+
+Organizations are additional workshop-owned teams. Every member who can write may create a named organization without a registry lookup. Names are NFC-normalized, whitespace is collapsed, and the resulting 1–200-code-point name is unique ignoring case within the session. Creating the same name joins the existing room without changing its name or project. Organization joins use the room UUID and the same assignment revision, authorization, operation receipts and events as geographical joins. One user still has one current team per session, and switching teams preserves all project work.
+
+An organization has `level:'organization'`, `key:'organization:<room UUID>'`, `sourceEditionId:'custom-organization-v1'`, `sourceType:'organization'`, `geographicStatus:'not-geographic'` and `sourceUrl:'urn:demography:organization:<room UUID>'`. Its region, source code and boundary version are null. Its database `dataset_id` is null; every geographical room still requires its sealed registry foreign key. Creating an organization neither inserts into nor changes the canonical registry, and does not bind the session to a geographical dataset. `RoadmapRoomLevel` includes organizations; the session scope and geographical room configuration retain their existing three-level contract.
+
+Organization teams retain passports, diagnosis, monitoring, activities, manual project indicators and external unverified facts, schedules, costs, funding, risks, workshop grounds, immutable versions and Word/PDF exports. Territorial demographic statistics, statistical fact capture, statistical scenarios and cohort settings are unavailable, including direct RPC writes. Organization snapshots and exports have empty `series` and `statistics` and no `cohortSettings`; their room level is the organization's own level. Previously frozen geographical versions and their exact canonical bytes remain unchanged.
 
 ## RPC surface
 
@@ -17,6 +23,7 @@ Named mutations receive `p_operation_id uuid, p_session_id uuid, p_input jsonb`.
 | dw_roadmap_snapshot            | p_roadmap_id              | RoadmapSnapshot                                   |
 | dw_configure_roadmaps          | ConfigureRoadmapsInput    | RoadmapsIndex                                     |
 | dw_join_roadmap                | JoinRoadmapInput          | RoadmapSnapshot; client refreshes the small index |
+| dw_create_organization_roadmap | CreateOrganizationRoadmapInput | RoadmapSnapshot; client refreshes the small index |
 | dw_roadmap_presence            | p_view_id, p_roadmap_id, p_revision | Session ID and active counts by roadmap ID |
 | dw_save_roadmap_item           | SaveRoadmapItemInput      | RoadmapSnapshot                                   |
 | dw_capture_roadmap_basis       | CaptureRoadmapBasisInput  | RoadmapSnapshot                                   |

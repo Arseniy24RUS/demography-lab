@@ -87,6 +87,7 @@ const messages: Record<string, string> = {
   DATASET_MISMATCH:
     'Занятие закреплено за другим выпуском территориальных данных. Откройте соответствующую версию приложения.',
   ROADMAP_CONFIGURATION_LOCKED: 'Уровень команд уже закреплён созданными дорожными картами.',
+  ORGANIZATION_STATISTICS_UNAVAILABLE: 'У команды организации нет демографической статистики и прогноза.',
   TERRITORY_NOT_ELIGIBLE: 'Эта единица исходной карты не подходит для выбранного уровня команд.',
   TERRITORY_OUT_OF_SCOPE: 'Территория находится вне региона выбранного занятия.',
   ROADMAP_ROOM_REQUIRED:

@@ -15,6 +15,7 @@ const levels = {
   municipality: 'Муниципальный',
   region: 'Региональный',
   federal: 'Федеральный',
+  organization: 'Организация',
 };
 
 const smartHints: Record<RoadmapSmartCriterion, [string, string]> = {
@@ -84,7 +85,9 @@ function PassportForm({ autosave, snapshot, editable }: Omit<RoadmapWorkspacePro
       <div className="rm-passport-card">
         <div className="rm-passport-level"><span>Уровень проекта</span> <strong>{levels[snapshot.territory.level]}</strong></div>
         <TextField label="Название проекта" singleLine value={data.title} onChange={(title) => update({ title })}
-          hint="Кратко назовите проект и отразите его связь с территорией и семьями." />
+          hint={snapshot.territory.level === 'organization'
+            ? 'Кратко назовите проект и отразите его связь с организацией и семьями.'
+            : 'Кратко назовите проект и отразите его связь с территорией и семьями.'} />
         <div className="rm-form-grid">
           <TextField label="Целевая группа" value={data.targetGroup} onChange={(targetGroup) => update({ targetGroup })}
             hint="Например, молодые семьи с детьми до трёх лет или многодетные семьи." />

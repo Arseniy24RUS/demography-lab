@@ -6,6 +6,7 @@ import type {
 } from '../../../../packages/export/types';
 import { prepareRoadmapExport, roadmapJson } from '../../../../packages/export/model';
 import type { RoadmapReportOptions } from '../../../../packages/export/sections';
+import { availableRoadmapReportSections } from '../../../../packages/export/sections';
 
 export type { ExportedRoadmapFile, RoadmapExportFormat };
 export interface RoadmapDownloadOptions extends RoadmapReportOptions {
@@ -141,6 +142,10 @@ async function currentStatistics(territoryKey: string): Promise<Partial<RoadmapR
 }
 
 async function buildReportOptions(version: RoadmapVersion, options: RoadmapDownloadOptions): Promise<RoadmapReportOptions> {
+  if (version.snapshot.territory.level === 'organization') {
+    const allowed = new Set(availableRoadmapReportSections('organization').map(section => section.id));
+    return { sections: options.sections?.filter(section => allowed.has(section)) ?? [...allowed] };
+  }
   const { key } = version.snapshot.territory;
   const includes = (section: 'forecast' | 'statistics') => !options.sections || options.sections.includes(section);
   const [cohort, statistics] = await Promise.all([

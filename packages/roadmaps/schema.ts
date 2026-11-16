@@ -49,6 +49,7 @@ export const roadmapDateSchema = z
   });
 const nullableDate = roadmapDateSchema.nullable();
 const scope = z.enum(['municipality', 'region', 'federal']);
+const roomLevel = z.enum(['municipality', 'region', 'federal', 'organization']);
 const itemStatus = z.enum(['active', 'archived']);
 const domain = z.enum(['nonnegative', 'signed', 'percent', 'ratio']);
 const semantic = z.enum(['stock', 'flow', 'rate', 'share']);
@@ -328,7 +329,7 @@ export const frozenRoadmapItemSchema = unionWith(frozenItemFields);
 export const roadmapTerritorySchema = z.strictObject({
   key: id,
   name: text(500, 1),
-  level: scope,
+  level: roomLevel,
   regionId: id.nullable(),
   sourceEditionId: id,
   sourceCode: text(160, 1).nullable(),
@@ -336,7 +337,13 @@ export const roadmapTerritorySchema = z.strictObject({
   geographicStatus: text(100, 1),
   sourceUrl: text(2000, 1),
   boundaryVersion: id.nullable(),
-});
+}).refine((v) => v.level === 'organization'
+  ? /^organization:[a-f\d]{8}-(?:[a-f\d]{4}-){3}[a-f\d]{12}$/u.test(v.key)
+    && v.sourceEditionId === 'custom-organization-v1' && v.sourceType === 'organization'
+    && v.sourceUrl === `urn:demography:organization:${v.key.slice('organization:'.length)}`
+    && v.geographicStatus === 'not-geographic' && v.regionId === null && v.sourceCode === null && v.boundaryVersion === null
+    && v.name === v.name.normalize('NFC').replace(/\s+/gu, ' ').trim() && Array.from(v.name).length <= 200
+  : !v.key.startsWith('organization:') && v.sourceType !== 'organization');
 const barrierGround = z.strictObject({
   id: uuid,
   title: text(480, 1).refine((v) => Array.from(v).length <= 240),
@@ -530,7 +537,7 @@ export const saveRoadmapCohortInputSchema = z.strictObject({
 });
 const sharedData = {
   territory: roadmapTerritorySchema,
-  roomLevel: scope,
+  roomLevel,
   basis: z.array(roadmapBasisSchema).max(40),
   series: z.array(z.union([canonicalMunicipalSeriesSchema, teamStatisticalSeriesSchema])).max(54),
   statistics: statisticsHeadsSchema.optional(),
@@ -560,6 +567,15 @@ const coherentStatistics = (v: {
       series.metricId === head.metricId
     );
   });
+const coherentOrganization = (v: {
+  territory: { level: string };
+  series: unknown[];
+  statistics?: unknown[];
+  cohortSettings?: unknown;
+  items?: Array<{ kind: string; data: unknown }>;
+}) => v.territory.level !== 'organization' || (!v.series.length && !(v.statistics ?? []).length
+  && v.cohortSettings === undefined && !(v.items ?? []).some(item => item.kind === 'scenario'
+    || (item.kind === 'fact' && (item.data as { sourceKind: string }).sourceKind !== 'external_unverified')));
 export const roadmapSnapshotSchema = z
   .strictObject({
     sessionId: uuid,
@@ -583,7 +599,7 @@ export const roadmapSnapshotSchema = z
       ) &&
       new Set(v.basis.map((x) => x.id)).size === v.basis.length &&
       new Set(v.series.map((x) => x.id)).size === v.series.length &&
-      coherentStatistics(v),
+      coherentStatistics(v) && coherentOrganization(v),
   );
 export const frozenRoadmapDataSchema = z
   .strictObject({
@@ -623,6 +639,8 @@ export const frozenRoadmapDataSchema = z
       issue('Старая версия не должна содержать структуру нового формата.');
     if (!coherentStatistics(v))
       issue('Состояние статистических показателей не соответствует сохранённым редакциям.');
+    if (!coherentOrganization(v))
+      issue('Команда организации не содержит территориальную статистику или демографические прогнозы.');
     if (
       v.territory.level !== v.roomLevel ||
       new Set(v.items.map((x) => x.id)).size !== v.items.length ||
@@ -666,14 +684,20 @@ export const roadmapsProjectionSchema = z
       })
       .nullable(),
   })
-  .refine((v) => v.selected === null || coherentStatistics(v.selected));
+  .refine((v) => v.selected === null || (v.selected.territory.level === v.selected.roomLevel
+    && coherentStatistics(v.selected) && coherentOrganization(v.selected)));
 export const configureRoadmapsInputSchema = z.strictObject({
   expectedRevision: revision,
   roomLevel: scope,
 });
-export const joinRoadmapInputSchema = z.strictObject({
+export const joinRoadmapInputSchema = z.union([z.strictObject({
   territoryKey: id,
   dataEditionId: id,
+  expectedAssignmentRevision: integer,
+}), z.strictObject({ roadmapId: uuid, expectedAssignmentRevision: integer })]);
+export const createOrganizationRoadmapInputSchema = z.strictObject({
+  name: z.string().max(2000).transform(value => value.normalize('NFC').replace(/\s+/gu, ' ').trim())
+    .pipe(text(400, 1).refine(value => Array.from(value).length <= 200)),
   expectedAssignmentRevision: integer,
 });
 export const freezeRoadmapInputSchema = z.strictObject({

@@ -37,8 +37,9 @@ export function RoadmapProjection({
   const shown = frozen?.projection ?? controller.projection;
   const presenceCounts = frozen ? frozen.presenceCounts : controller.presenceCounts;
   const activeCount = (roomId: string) => presenceCounts ? presenceCounts.get(roomId) ?? 0 : '—';
-  const selected = shown?.selected ?? null,
-    scenarios = selected ? computeRoadmapScenarios(selected) : [];
+  const selected = shown?.selected ?? null;
+  const isOrganization = selected?.territory.level === 'organization';
+  const scenarios = selected && !isOrganization ? computeRoadmapScenarios(selected) : [];
   const scenario = scenarios.find((item) => item.itemId === scenarioId) ?? scenarios[0],
     series =
       scenario?.result && selected
@@ -53,7 +54,7 @@ export function RoadmapProjection({
   const readiness = selected ? assessRoadmapReadiness(selected) : null;
   const sharedRegionIds = [
     ...new Set(
-      shown?.rooms
+      shown?.rooms.filter(room => room.territory.level !== 'organization')
         .map((room) => room.territory.regionId)
         .filter((id): id is string => Boolean(id)) ?? [],
     ),
@@ -92,7 +93,7 @@ export function RoadmapProjection({
       <header className="rm-heading">
         <div>
           <h1>{shown?.title ?? 'Дорожные карты команд'}</h1>
-          <p>{selected?.territory.name ?? 'Территориальные проекты: общий ход работы'}</p>
+          <p>{selected?.territory.name ?? 'Проекты команд: общий ход работы'}</p>
         </div>
         <div className="rm-actions">
           <button className="button button-secondary" onClick={onExit}>
@@ -113,7 +114,7 @@ export function RoadmapProjection({
           value={controller.selectedId ?? ''}
           onChange={(event) => select(event.target.value || null)}
         >
-          <option value="">Все территориальные команды</option>
+          <option value="">Все команды</option>
           {shown?.rooms.map((room) => (
             <option key={room.id} value={room.id}>
               {room.territory.name}
@@ -162,7 +163,7 @@ export function RoadmapProjection({
         </p>
       ) : selected ? (
         <>
-          <div className="rm-projection-project">
+          <div className={`rm-projection-project${isOrganization ? ' rm-projection-organization' : ''}`}>
             <section>
               <span className="rm-eyebrow">
                 Редакция {selected.revision} · заполнено {readiness?.completedSections} из 8
@@ -171,7 +172,7 @@ export function RoadmapProjection({
               <h2>
                 {passport?.kind === 'passport'
                   ? passport.data.title || 'Проект пока без названия'
-                  : 'Проект территории'}
+                  : 'Проект команды'}
               </h2>
               <p>
                 {passport?.kind === 'passport'
@@ -191,7 +192,7 @@ export function RoadmapProjection({
                   : ''}
               </p>
             </section>
-            <section className="rm-chart-panel">
+            {!isOrganization ? <section className="rm-chart-panel">
               {scenarios.length ? (
                 <>
                   <label className="rm-field">
@@ -222,7 +223,7 @@ export function RoadmapProjection({
                   Сохранённый сценарий появится здесь после работы команды с диагностикой.
                 </div>
               )}
-            </section>
+            </section> : null}
           </div>
           <div className="rm-budget-totals">
             <div>
@@ -321,7 +322,7 @@ export function RoadmapProjection({
               </svg>
               <div>
                 <strong>{shown.rooms.length}</strong>
-                <span>территориальных команд</span>
+                <span>команд</span>
                 <strong>
                   {shown.rooms.filter((room) => room.latestVersionKind === 'submitted').length}
                 </strong>

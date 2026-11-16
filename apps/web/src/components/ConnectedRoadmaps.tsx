@@ -24,6 +24,8 @@ import { TerritoryPanel, useTerritoryDataset } from './roadmaps/TerritoryPanel';
 import { DiagnosticWorkbench } from './roadmaps/DiagnosticWorkbench';
 import { ActivityWorkbench } from './roadmaps/ActivityWorkbench';
 import { PassportWorkbench } from './roadmaps/PassportWorkbench';
+import { OrganizationTeams } from './roadmaps/OrganizationTeams';
+import { OrganizationDiagnosis } from './roadmaps/OrganizationDiagnosis';
 import { CalendarResources } from './roadmaps/CalendarResources';
 import { ReviewExport } from './roadmaps/ReviewExport';
 import { RoadmapItemEditor } from './roadmaps/RoadmapItemEditor';
@@ -96,6 +98,10 @@ export function ConnectedRoadmaps({
     setEditor(null);
     if (snapshot) setSelectedKey(snapshot.territory.key);
   }, [snapshot?.roadmapId]);
+  const isOrganization = snapshot?.territory.level === 'organization';
+  useEffect(() => {
+    if (isOrganization && (tab === 'diagnosis' || tab === 'forecast')) setTab('passport');
+  }, [isOrganization, tab]);
   const rooms = useMemo(() => new Map(index?.rooms.map(room => [room.territory.key, room.id])), [index?.rooms]);
   const teamCounts = useMemo(() => controller.presenceCounts
     ? new Map([...rooms].map(([key, id]) => [key, controller.presenceCounts?.get(id) ?? 0]))
@@ -110,6 +116,7 @@ export function ConnectedRoadmaps({
   );
   const workspace = snapshot ? { snapshot, controller, editable, onEdit: setEditor } : null;
   const canJoin = session.role !== 'observer' && session.status === 'open' && editionMatches;
+  const canJoinOrganization = session.role !== 'observer' && session.status === 'open';
   const regions = manifest.documents.map((entry) => ({
     id: entry.regionId,
     name: entry.territory,
@@ -118,6 +125,7 @@ export function ConnectedRoadmaps({
 
   async function openTerritory(key: string) {
     if (!index || !data.index || opening.current || controller.busy || task.working) return;
+    if (!await saveBeforeLeaving()) return;
     setEditor(null);
     if (!canJoin) {
       const existing = rooms.get(key);
@@ -144,7 +152,42 @@ export function ConnectedRoadmaps({
     }
   }
 
+  async function openOrganization(roadmapId: string) {
+    if (!index || opening.current || controller.busy || task.working || !await saveBeforeLeaving()) return;
+    setEditor(null);
+    if (!canJoinOrganization) {
+      controller.actions.select(roadmapId);
+      setTab('passport');
+      return;
+    }
+    opening.current = true;
+    try {
+      const next = await controller.actions.join({ roadmapId, expectedAssignmentRevision: index.assignmentRevision });
+      setSelectedKey(next.territory.key);
+      setTab('passport');
+    } catch {
+      // Keep the team picker visible; the controller reports the rejected join.
+    } finally {
+      opening.current = false;
+    }
+  }
+
+  async function createOrganization(name: string) {
+    if (!index || opening.current || controller.busy || task.working) throw new Error('Дождитесь завершения текущей операции.');
+    if (!await saveBeforeLeaving()) throw new Error('Сначала сохраните изменения паспорта.');
+    opening.current = true;
+    setEditor(null);
+    try {
+      const next = await controller.actions.createOrganization({ name, expectedAssignmentRevision: index.assignmentRevision });
+      setSelectedKey(next.territory.key);
+      setTab('passport');
+    } finally {
+      opening.current = false;
+    }
+  }
+
   async function goToTab(next: RoadmapTab) {
+    if (isOrganization && (next === 'diagnosis' || next === 'forecast')) next = 'passport';
     if (next === tab || !await saveBeforeLeaving()) return;
     setEditor(null);
     setTab(next);
@@ -158,7 +201,7 @@ export function ConnectedRoadmaps({
           {tab !== 'territory' && snapshot ? <p>{snapshot.territory.name}</p> : null}
         </div>
         <div className="rm-actions">
-          {tab !== 'territory' ? <button type="button" className="button button-secondary" onClick={() => void goToTab('territory')}>К территориям</button> : null}
+          {tab !== 'territory' ? <button type="button" className="button button-secondary" onClick={() => void goToTab('territory')}>{isOrganization ? 'К командам' : 'К территориям'}</button> : null}
           <button
             className="icon-button"
             aria-label="Обновить дорожные карты"
@@ -170,7 +213,7 @@ export function ConnectedRoadmaps({
         </div>
       </header>
       {tab !== 'territory' ? <nav className="rm-tabs" aria-label="Разделы дорожной карты">
-        {roadmapTabs.filter(([key]) => key !== 'territory').map(([key, label]) => {
+        {roadmapTabs.filter(([key]) => key !== 'territory' && (!isOrganization || (key !== 'diagnosis' && key !== 'forecast'))).map(([key, label]) => {
           const Icon = tabIcons[key];
           return (
             <button
@@ -192,13 +235,13 @@ export function ConnectedRoadmaps({
         </p>
       ) : null}
       {task.feedback}
-      {!editionMatches ? (
+      {!editionMatches && (!isOrganization || tab === 'territory') ? (
         <Note warning>
           Занятие закреплено за другим выпуском территориальных данных. Сохранённые материалы
           доступны; для выбора новых территорий и расчётов нужен соответствующий выпуск приложения.
         </Note>
       ) : null}
-      {data.error ? (
+      {data.error && (!isOrganization || tab === 'territory') ? (
         <div className="rm-note warning">
           <p role="alert">{data.error}</p>
           <button className="button button-secondary" onClick={data.retry}>
@@ -209,6 +252,7 @@ export function ConnectedRoadmaps({
       {workspace ? (
         <Activity mode={tab === 'passport' ? 'visible' : 'hidden'}>
           <PassportWorkbench key={workspace.snapshot.roadmapId} {...workspace} autosave={passport} />
+          {isOrganization ? <OrganizationDiagnosis {...workspace} /> : null}
         </Activity>
       ) : null}
       {tab === 'territory' ? (
@@ -239,6 +283,10 @@ export function ConnectedRoadmaps({
               </label>
             </div>
           ) : null}
+          {index ? <OrganizationTeams rooms={index.rooms} presenceCounts={controller.presenceCounts}
+            selectedId={snapshot?.roadmapId ?? null} canJoin={canJoinOrganization}
+            busy={controller.busy || task.working}
+            onCreate={createOrganization} onJoin={openOrganization} /> : null}
           {data.index && data.registry && index ? (
             <TerritoryPanel
               index={data.index}
@@ -265,7 +313,7 @@ export function ConnectedRoadmaps({
             ? 'Открываем выбранную дорожную карту…'
             : 'Сначала выберите территорию.'}
         </p>
-      ) : tab === 'passport' ? null : tab === 'diagnosis' ? (
+      ) : tab === 'passport' ? null : tab === 'diagnosis' && !isOrganization ? (
         data.index && data.registry && selectedTerritory && editionMatches ? (
           <DiagnosticWorkbench
             key={snapshot!.roadmapId}
@@ -303,7 +351,7 @@ export function ConnectedRoadmaps({
             </div>
           </>
         )
-      ) : tab === 'forecast' ? (
+      ) : tab === 'forecast' && !isOrganization ? (
         <>
           <Suspense fallback={<p className="rm-empty" role="status">Загружаем прогноз…</p>}>
               <ForecastWorkbench key={workspace.snapshot.roadmapId} workspace={workspace} />

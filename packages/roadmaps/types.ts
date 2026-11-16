@@ -19,6 +19,7 @@ export type RoadmapItemKind = (typeof roadmapItemKinds)[number];
 export type RoadmapItemStatus = 'active' | 'archived';
 export type RoadmapValueDomain = 'nonnegative' | 'signed' | 'percent' | 'ratio';
 export type RoadmapSemanticType = 'stock' | 'flow' | 'rate' | 'share';
+export type RoadmapRoomLevel = SessionScope | 'organization';
 export const ROADMAP_LIMITS = {
   rooms: 1000,
   activity: 40,
@@ -40,7 +41,7 @@ export const ROADMAP_LIMITS = {
 export interface RoadmapTerritory {
   key: string;
   name: string;
-  level: SessionScope;
+  level: RoadmapRoomLevel;
   regionId: string | null;
   sourceEditionId: string;
   sourceCode: string | null;
@@ -402,7 +403,7 @@ export interface RoadmapSnapshot {
   sourceCursor: number;
   revision: number;
   territory: RoadmapTerritory;
-  roomLevel: SessionScope;
+  roomLevel: RoadmapRoomLevel;
   canEdit: boolean;
   members: Array<{ userId: string; fullName: string }>;
   items: RoadmapItem[];
@@ -427,7 +428,7 @@ export interface FrozenRoadmapData {
   templateVersion: 'organizers-roadmap-1';
   calculationVersion: 'roadmap-analytics-1';
   territory: RoadmapTerritory;
-  roomLevel: SessionScope;
+  roomLevel: RoadmapRoomLevel;
   roadmapRevision: number;
   session: { title: string; scope: SessionScope; regionId: string | null };
   teamNames: string[];
@@ -458,7 +459,7 @@ export interface RoadmapsProjection {
   selected: {
     roadmapId: string;
     territory: RoadmapTerritory;
-    roomLevel: SessionScope;
+    roomLevel: RoadmapRoomLevel;
     revision: number;
     items: FrozenRoadmapItem[];
     basis: RoadmapBasis[];
@@ -471,9 +472,16 @@ export interface ConfigureRoadmapsInput {
   expectedRevision: number;
   roomLevel: SessionScope;
 }
-export interface JoinRoadmapInput {
+export type JoinRoadmapInput = {
   territoryKey: string;
   dataEditionId: string;
+  expectedAssignmentRevision: number;
+} | {
+  roadmapId: string;
+  expectedAssignmentRevision: number;
+};
+export interface CreateOrganizationRoadmapInput {
+  name: string;
   expectedAssignmentRevision: number;
 }
 export interface FreezeRoadmapInput {

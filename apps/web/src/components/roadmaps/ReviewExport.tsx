@@ -39,8 +39,11 @@ export function ReviewExport({
   const task = useRoadmapTask();
   const report = useRoadmapTask();
   const fontTask = useRoadmapTask();
-  const allSections = roadmapReportSections.map(section => section.id);
-  const [sections, setSections] = useState<RoadmapReportSection[]>(allSections);
+  const isOrganization = snapshot.territory.level === 'organization';
+  const availableSections = roadmapReportSections.filter(section => !isOrganization || (section.id !== 'statistics' && section.id !== 'forecast'));
+  const allSections = availableSections.map(section => section.id);
+  const [chosenSections, setSections] = useState<RoadmapReportSection[]>(allSections);
+  const sections = chosenSections.filter(section => allSections.includes(section));
   const [pdfTypeface, setPdfTypeface] = useState<'times' | 'liberation'>('times');
   const [localFonts, setLocalFonts] = useState<PdfExportFonts>();
   const latestVersion = snapshot.versions.reduce<RoadmapVersionSummary | undefined>((latest, candidate) =>
@@ -55,7 +58,7 @@ export function ReviewExport({
   }, []);
   const sectionTab: Record<string, RoadmapTab> = {
     passport: 'passport',
-    diagnosis: 'diagnosis',
+    diagnosis: isOrganization ? 'passport' : 'diagnosis',
     indicators: 'activities',
     activities: 'activities',
     calendar: 'resources',
@@ -116,7 +119,7 @@ export function ReviewExport({
                   onChange={event => setSections(event.target.checked ? allSections : [])} /> Все разделы
               </label>
               <div className="rm-export-section-list">
-                {roadmapReportSections.map(({ id, label }) => <label className="rm-check" key={id}>
+                {availableSections.map(({ id, label }) => <label className="rm-check" key={id}>
                   <input type="checkbox" checked={sections.includes(id)} onChange={event => {
                     const selected = event.target.checked;
                     setSections(current => selected ? [...current, id] : current.filter(section => section !== id));
@@ -229,7 +232,7 @@ export function ReviewExport({
                 {issue.message}
               </p>
             ))}
-            {readiness.issues.some((issue) => issue.entityId && scenarioIds.has(issue.entityId)) ? (
+            {!isOrganization && readiness.issues.some((issue) => issue.entityId && scenarioIds.has(issue.entityId)) ? (
               <button className="button button-quiet" type="button" onClick={() => onTab('forecast')}>
                 Открыть прогноз
               </button>

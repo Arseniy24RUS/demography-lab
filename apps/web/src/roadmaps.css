@@ -335,6 +335,21 @@
 .rm-map-legend .selected {
   background: #123c73;
 }
+.rm-organization-teams > .rm-actions { margin-bottom: 16px; }
+.rm-organization-teams .rm-table-select {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  overflow-wrap: anywhere;
+}
+.rm-organization-teams .rm-table-select > svg { flex-shrink: 0; }
+.rm-organization-teams table { table-layout: fixed; }
+.rm-organization-teams th:first-child { width: 72%; }
+.rm-organization-teams th:last-child { overflow-wrap: anywhere; }
+.rm-workspace .rm-organization-teams thead th { white-space: normal; }
+.rm-projection-project.rm-projection-organization { grid-template-columns: minmax(0, 1fr); }
+
 .rm-territory-inspector {
   border-left: 1px solid var(--rm-line);
   padding: 12px 0 20px 24px;

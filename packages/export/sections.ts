@@ -16,6 +16,13 @@ export const roadmapReportSections = [
 
 export type RoadmapReportSection = (typeof roadmapReportSections)[number]['id'];
 
+/** Organizations keep authored project sections without territorial demographic data. */
+export function availableRoadmapReportSections(level: string) {
+  return level === 'organization'
+    ? roadmapReportSections.filter(({ id }) => id !== 'statistics' && id !== 'forecast')
+    : [...roadmapReportSections];
+}
+
 export interface RoadmapReportOptions {
   sections?: readonly RoadmapReportSection[];
   publishedStatistics?: readonly CanonicalMunicipalSeries[];

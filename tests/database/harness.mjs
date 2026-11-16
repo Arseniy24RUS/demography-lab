@@ -76,6 +76,7 @@ export const rpcArguments = Object.freeze({
   dw_roadmap_statistics_series: ['p_session_id', 'p_input'],
   dw_configure_roadmaps: ['p_operation_id', 'p_session_id', 'p_input'],
   dw_join_roadmap: ['p_operation_id', 'p_session_id', 'p_input'],
+  dw_create_organization_roadmap: ['p_operation_id', 'p_session_id', 'p_input'],
   dw_save_roadmap_item: ['p_operation_id', 'p_session_id', 'p_input'],
   dw_capture_roadmap_fact: ['p_operation_id', 'p_session_id', 'p_input'],
   dw_capture_roadmap_basis: ['p_operation_id', 'p_session_id', 'p_input'],

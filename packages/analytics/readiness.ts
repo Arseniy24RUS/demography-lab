@@ -327,7 +327,7 @@ export function assessRoadmapReadiness(roadmap: RoadmapForAnalysis): RoadmapRead
         filled(diagnosis?.problem) && filled(diagnosis?.conclusion),
       ),
       check('diagnosis-hypothesis', 'Предполагаемая причина', filled(diagnosis?.causeHypothesis)),
-      check(
+      ...(roadmap.territory.level === 'organization' ? [] : [check(
         'diagnosis-facts',
         'Факты с периодом, единицей и источником',
         facts.length > 0 &&
@@ -339,7 +339,7 @@ export function assessRoadmapReadiness(roadmap: RoadmapForAnalysis): RoadmapRead
               filled(item.data.sourceReference) &&
               filled(item.data.interpretation),
           ),
-      ),
+      )]),
       check(
         'diagnosis-basis',
         'Актуальность выбранных оснований',

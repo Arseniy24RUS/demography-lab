@@ -7,6 +7,7 @@ import {
   parseRoadmapsProjection,
   configureRoadmapsInputSchema,
   joinRoadmapInputSchema,
+  createOrganizationRoadmapInputSchema,
   saveRoadmapItemInputSchema,
   saveRoadmapCohortInputSchema,
   captureRoadmapBasisInputSchema,
@@ -18,6 +19,7 @@ import {
 import type {
   ConfigureRoadmapsInput,
   JoinRoadmapInput,
+  CreateOrganizationRoadmapInput,
   SaveRoadmapItemInput,
   SaveRoadmapCohortInput,
   CaptureRoadmapBasisInput,
@@ -113,7 +115,7 @@ export class RoadmapsApi {
   private async mutate(
     sessionId: string,
     name: string,
-    input: { roadmapId?: string; territoryKey?: string },
+    input: { roadmapId?: string; territoryKey?: string; name?: string },
   ) {
     const next = await this.transport.mutate(
       name,
@@ -132,6 +134,11 @@ export class RoadmapsApi {
   }
   join(sessionId: string, input: JoinRoadmapInput) {
     return this.mutate(sessionId, 'dw_join_roadmap', joinRoadmapInputSchema.parse(input));
+  }
+  async createOrganization(sessionId: string, input: CreateOrganizationRoadmapInput) {
+    const next = await this.mutate(sessionId, 'dw_create_organization_roadmap', createOrganizationRoadmapInputSchema.parse(input));
+    if (next.territory.level !== 'organization') throw new Error('Получена дорожная карта другого типа команды.');
+    return next;
   }
   saveItem(sessionId: string, input: SaveRoadmapItemInput) {
     return this.mutate(sessionId, 'dw_save_roadmap_item', saveRoadmapItemInputSchema.parse(input));

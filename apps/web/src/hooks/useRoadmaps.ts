@@ -16,6 +16,7 @@ import type {
   RoadmapsProjection,
   ConfigureRoadmapsInput,
   JoinRoadmapInput,
+  CreateOrganizationRoadmapInput,
   SaveRoadmapItemInput,
   SaveRoadmapCohortInput,
   CaptureRoadmapBasisInput,
@@ -363,6 +364,15 @@ export function useRoadmaps({
     },
     join: async (input: JoinRoadmapInput) => {
       const next = await run((c, id) => c.join(id, input));
+      if (!isCurrent(identity, client)) throw new Error('Открытый модуль изменился.');
+      state.current.selected = next.roadmapId;
+      setSelectedId(next.roadmapId);
+      apply(next, identity);
+      await refreshRef.current();
+      return next;
+    },
+    createOrganization: async (input: CreateOrganizationRoadmapInput) => {
+      const next = await run((c, id) => c.createOrganization(id, input));
       if (!isCurrent(identity, client)) throw new Error('Открытый модуль изменился.');
       state.current.selected = next.roadmapId;
       setSelectedId(next.roadmapId);
