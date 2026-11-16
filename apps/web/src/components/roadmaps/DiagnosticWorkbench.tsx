@@ -471,12 +471,12 @@ export function DiagnosticWorkbench({
                     {calculationError}
                   </p>
                 ) : null}
-                <Note>
+                {isTeamStatisticalSeries(selected) || scenarioMode ? <Note>
                   {isTeamStatisticalSeries(selected)
                     ? `Используется уточнение команды, редакция ${selected.revision}. Источники отдельных лет указаны в истории; актуальность и сопоставимость требуют проверки.`
-                    : 'Происхождение значений указано в паспорте ряда. Сопоставимость муниципальных границ требует проверки.'}{' '}
+                    : null}{' '}
                   {scenarioMode ? ' Сценарии — условные расчёты.' : null}
-                </Note>
+                </Note> : null}
                 {selected.id !== currentSeries?.id ? (
                   <Note warning>
                     Открыта закреплённая редакция данных.{' '}
