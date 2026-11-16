@@ -283,10 +283,6 @@ export function ConnectedRoadmaps({
               </label>
             </div>
           ) : null}
-          {index ? <OrganizationTeams rooms={index.rooms} presenceCounts={controller.presenceCounts}
-            selectedId={snapshot?.roadmapId ?? null} canJoin={canJoinOrganization}
-            busy={controller.busy || task.working}
-            onCreate={createOrganization} onJoin={openOrganization} /> : null}
           {data.index && data.registry && index ? (
             <TerritoryPanel
               index={data.index}
@@ -306,6 +302,10 @@ export function ConnectedRoadmaps({
                 : 'Загружаем территории…'}
             </p>
           ) : null}
+          {index ? <OrganizationTeams rooms={index.rooms} presenceCounts={controller.presenceCounts}
+            selectedId={snapshot?.roadmapId ?? null} canJoin={canJoinOrganization}
+            busy={controller.busy || task.working}
+            onCreate={createOrganization} onJoin={openOrganization} /> : null}
         </>
       ) : !workspace ? (
         <p className="rm-empty" aria-busy={controller.loading}>

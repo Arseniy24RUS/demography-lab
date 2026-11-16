@@ -729,10 +729,10 @@ export function App() {
                   editable={session.state.snapshot.session.role !== 'observer' && session.state.snapshot.session.status === 'open'} />
               </Suspense>
             ) : null}
-            renderLiveVotes={() => (
+            renderLiveVotes={({ variantActions }) => (
               <Suspense fallback={<p aria-busy="true">Открываем рейтинг…</p>}>
                 <LivePracticeVoting state={session.state} api={session.api} workshop={workshop}
-                  onOpenSource={session.actions.openSource} manifest={manifest} />
+                  onOpenSource={session.actions.openSource} manifest={manifest} variantActions={variantActions} />
               </Suspense>
             )}
             renderRoadmaps={() => (

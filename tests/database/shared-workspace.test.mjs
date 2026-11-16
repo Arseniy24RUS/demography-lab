@@ -25,7 +25,8 @@ async function family(db,s,sid){
  const bundle=await realPracticeBundle('mordovia-kindergarten-compensation');
  const published=await rpc(db,s,'dw_publish_submission',{p_operation_id:op(),p_session_id:sid,p_local_key:bundle.practice.id,p_expected_revision:null,p_bundle:bundle});
  const board=await rpc(db,s,'dw_workshop_snapshot',{p_session_id:sid});
- return rpc(db,s,'dw_save_family',{p_operation_id:op(),p_session_id:sid,p_family_id:null,p_expected_board_revision:board.boardRevision,p_title:'Поддержка дошкольного воспитания',p_mechanism:'Возмещение части родительских расходов',p_rationale:'Обсуждение механизма поддержки',p_submission_ids:[published.submissions[0].id]});
+ const automatic=board.families.find(item=>item.submissionIds.includes(published.submissions[0].id));
+ return rpc(db,s,'dw_save_family',{p_operation_id:op(),p_session_id:sid,p_family_id:automatic?.id??null,p_expected_board_revision:board.boardRevision,p_title:'Поддержка дошкольного воспитания',p_mechanism:'Возмещение части родительских расходов',p_rationale:'Обсуждение механизма поддержки',p_submission_ids:[published.submissions[0].id]});
 }
 async function priorDatabase(){
  const db=new PGlite();

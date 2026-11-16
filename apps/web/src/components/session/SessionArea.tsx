@@ -8,7 +8,7 @@ import type {
   SessionRegionOption,
 } from '../../../../../packages/collaboration/types';
 import { SessionAuthPanel } from './SessionAuthPanel';
-import { ActiveSession, type PracticeGrouping } from './ActiveSession';
+import { ActiveSession, type PracticeBoardContext, type PracticeGrouping } from './ActiveSession';
 import { OfflineSeminarPanel } from './OfflineSeminarPanel';
 
 export function SessionArea({
@@ -41,7 +41,7 @@ export function SessionArea({
   renderRoadmaps?: () => ReactNode;
   renderFlipchart?: () => ReactNode;
   renderObjectiveFactors?: () => ReactNode;
-  renderLiveVotes?: () => ReactNode;
+  renderLiveVotes?: (context: PracticeBoardContext) => ReactNode;
   practiceGrouping?: PracticeGrouping;
 }) {
   const ready = state.auth.status === 'signed-in' && state.bootstrap?.profile;

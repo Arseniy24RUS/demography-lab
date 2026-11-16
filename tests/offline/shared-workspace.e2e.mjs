@@ -1,7 +1,7 @@
 /** Compiled app + production offline server/PGlite. All participant changes use the rendered UI. */
 import { chromium, expect } from '@playwright/test';
 import { mkdtemp, mkdir, readFile, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { tmpdir, platform, arch } from 'node:os';
 import { join, resolve } from 'node:path';
 import { openRuntime } from '../../scripts/offline/storage.mjs';
 import { startServer } from '../../scripts/offline/server.mjs';
@@ -27,7 +27,7 @@ const errors = [], externalRequests = [], failedResponses = [], invitationReques
 const responseChecks = [], reconciledPassportConflicts = [];
 const report = {
   version: JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8')).version,
-  environment: 'Linux Chromium; compiled application and production offline PGlite; LAN host mapped to loopback; no physical Wi-Fi or macOS claim',
+  environment: `${platform()} ${arch()} Chromium; compiled application and production offline PGlite; LAN host mapped to loopback; no physical Wi-Fi claim`,
   browser: browser.version(), steps, dataDirectory: directory,
 };
 let lastPage;
@@ -186,6 +186,15 @@ async function selectTerritory(page, name) {
   const territories = page.getByRole('region', { name: 'Выбор территории', exact: true });
   const back = page.getByRole('button', { name: 'К территориям', exact: true });
   if (await back.isVisible()) await back.click();
+  await expect(territories.locator('.rm-territory-map')).toBeVisible();
+  await expect(territories.getByRole('table')).toBeVisible();
+  const organizations = page.getByRole('region', { name: 'Команды организаций', exact: true });
+  await expect(organizations).toBeVisible();
+  expect(await organizations.evaluate(node => {
+    const picker = document.querySelector('.rm-territory-panel');
+    return picker !== null && Boolean(picker.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING)
+      && node.getBoundingClientRect().top >= picker.getBoundingClientRect().bottom - 1;
+  })).toBe(true);
   await territories.getByRole('table').getByRole('button', { name, exact: true }).click();
   await expect(roadmapNav(page).getByRole('button', { name: 'Паспорт', exact: true })).toHaveAttribute('aria-current', 'page');
   await expect(page.getByRole('form', { name: 'Паспорт проекта', exact: true })).toBeVisible();
@@ -400,33 +409,28 @@ try {
     await expect(a.page.getByRole('region', { name: 'Рейтинг практик', exact: true })).toBeVisible();
     await expect(scenes(a.page).getByRole('button', { name: 'Рейтинг', exact: true })).toHaveCount(0);
     await expect(scenes(a.page).getByRole('button', { name: 'Группировка', exact: true })).toHaveCount(0);
-    for (const page of [a.page, b.page]) await page.getByRole('button', { name: 'Опубликованные карточки', exact: true }).click();
+    for (const page of [a.page, b.page]) {
+      await expect(page.getByRole('button', { name: 'Опубликованные карточки', exact: true })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Настроить группы', exact: true })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'В рейтинг', exact: true })).toHaveCount(0);
+    }
     await expect(b.page.getByRole('article', { name: PRACTICE, exact: true })).toBeVisible();
   });
-  await stage('An ordinary participant sends a publication to the rating and edits its group when needed', a.page, async () => {
-    const publication = a.page.getByRole('article', { name: PRACTICE, exact: true });
-    const adding = rpc(a.page, 'dw_save_family');
-    await publication.getByRole('button', { name: 'В рейтинг', exact: true }).click();
-    const added = await adding;
-    expect(added.status(), await added.text()).toBe(200);
-    await expect(publication.getByText('В рейтинге', { exact: true })).toBeVisible();
-    await expect(b.page.getByRole('article', { name: PRACTICE, exact: true }).getByText('В рейтинге', { exact: true })).toBeVisible();
-    await a.page.getByRole('button', { name: 'Настроить группы', exact: true }).click();
+  await stage('An author publication is immediately votable and its group is editable on the same page', a.page, async () => {
     await expect(scenes(a.page).getByRole('button', { name: 'Практики', exact: true })).toHaveAttribute('aria-current', 'page');
     const family = a.page.getByRole('article', { name: PRACTICE, exact: true });
-    const expand = family.getByRole('button', { name: /Региональных вариантов: 1/u });
-    if ((await expand.getAttribute('aria-expanded')) === 'false') await expand.click();
-    await family.getByRole('button', { name: `Редактировать семейство «${PRACTICE}»`, exact: true }).click();
-    const editor = a.page.getByRole('dialog', { name: 'Редактировать семейство', exact: true });
-    await editor.getByLabel('Название семейства', { exact: true }).fill(FAMILY);
+    await expect(family.getByRole('button', { name: `Поддержать: ${PRACTICE}`, exact: true })).toBeEnabled();
+    await family.getByText('Варианты мер · 1', { exact: true }).click();
+    await family.getByRole('button', { name: 'Изменить группу', exact: true }).click();
+    const editor = a.page.getByRole('dialog', { name: 'Изменить группу', exact: true });
+    await editor.getByLabel('Название группы', { exact: true }).fill(FAMILY);
     await editor.getByLabel('Общий механизм', { exact: true }).fill('Возмещение части платы за уход и присмотр в дошкольной организации.');
-    await editor.getByLabel('Обоснование объединения', { exact: true }).fill('Сохранены точные условия и цитата региональной программы.');
     const saving = rpc(a.page, 'dw_save_family');
-    await editor.getByRole('button', { name: 'Сохранить семейство', exact: true }).click();
+    await editor.getByRole('button', { name: 'Сохранить группу', exact: true }).click();
     const response = await saving;
     expect(response.status(), await response.text()).toBe(200);
     await expect(editor).toBeHidden();
-    await expect(a.page.getByRole('article', { name: FAMILY, exact: true })).toContainText('Региональных вариантов: 1');
+    await expect(a.page.getByRole('article', { name: FAMILY, exact: true })).toContainText('Варианты мер · 1');
     await screenshot(a.page, 'shared-family-participant-desktop.png');
   });
   await stage('Likes, dislikes and withdrawal update on the independent phone without opening a voting round', a.page, async () => {
@@ -510,9 +514,10 @@ try {
     expect(invitationRequests).toEqual([]);
     await screenshot(teacher.page, 'shared-teacher-first-flipchart.png');
     await scene(teacher.page, 'Практики');
-    await teacher.page.getByRole('button', { name: 'Опубликованные карточки', exact: true }).click();
-    const publication = teacher.page.getByRole('article', { name: PRACTICE, exact: true });
+    const publication = teacher.page.getByRole('article', { name: FAMILY, exact: true });
     await expect(publication).toBeVisible();
+    await publication.getByText('Варианты мер · 1', { exact: true }).click();
+    await expect(publication).toContainText(NAME_A);
     // A profile edit emits a session change and exercises the changed-cursor host path.
     const updatedAuthor = `${NAME_A} — обновлено преподавателю`;
     await a.page.locator('.header-account .account-name').click();

@@ -48,7 +48,8 @@ it('shares one board, anonymous survey entry and live votes over production offl
   const bundle=await realPracticeBundle('mordovia-kindergarten-compensation');
   const published=await rpc('dw_publish_submission',{p_operation_id:op(),p_session_id:sid,p_local_key:bundle.practice.id,p_expected_revision:null,p_bundle:bundle},a);
   const board=await rpc('dw_workshop_snapshot',{p_session_id:sid},a);
-  const grouped=await rpc('dw_save_family',{p_operation_id:op(),p_session_id:sid,p_family_id:null,p_expected_board_revision:board.boardRevision,
+  const automatic=board.families.find(item=>item.submissionIds.includes(published.submissions[0].id));
+  const grouped=await rpc('dw_save_family',{p_operation_id:op(),p_session_id:sid,p_family_id:automatic?.id??null,p_expected_board_revision:board.boardRevision,
    p_title:'Поддержка семей',p_mechanism:'Совместно обсуждаемый механизм',p_rationale:'Группа сопоставляет предложения',p_submission_ids:[published.submissions[0].id]},a);
   const fid=grouped.families[0].id;
   const before=await rpc('dw_workspace_votes',{p_session_id:sid},a),fingerprint=before.families[0].fingerprint;

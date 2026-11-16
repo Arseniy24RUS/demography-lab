@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { WorkshopActions, WorkshopView } from '../workshop/workshop-ui';
 import { isFactorStage, type WorkshopStage } from '@/lib/workshop-navigation';
@@ -28,7 +28,16 @@ export interface PracticeGrouping {
   saveFamily: WorkshopActions['saveFamily'];
 }
 
-type PracticeView = 'voting' | 'publications' | 'families';
+export interface PracticeBoardContext {
+  variantActions(submission: SharedSubmission): {
+    busy: boolean;
+    focused: boolean;
+    onEdit?: () => void;
+    onWithdraw?: () => void;
+    onRestore?: () => void;
+    onFocus?: () => void;
+  };
+}
 
 export function ActiveSession({
   state,
@@ -36,7 +45,6 @@ export function ActiveSession({
   actions,
   regions,
   workspaceView,
-  workshopVisit,
   onStage,
   renderWorkshop,
   renderBarriers,
@@ -60,7 +68,7 @@ export function ActiveSession({
   renderRoadmaps?: () => ReactNode;
   renderFlipchart?: () => ReactNode;
   renderObjectiveFactors?: () => ReactNode;
-  renderLiveVotes?: () => ReactNode;
+  renderLiveVotes?: (context: PracticeBoardContext) => ReactNode;
   practiceGrouping?: PracticeGrouping;
 }) {
   const id = useId();
@@ -71,15 +79,8 @@ export function ActiveSession({
   const [error, setError] = useState('');
   const [working, setWorking] = useState(false);
   const [contextOpen, setContextOpen] = useResponsiveDisclosure();
-  const defaultPracticeView = renderLiveVotes ? 'voting' : 'publications';
-  const [practiceView, setPracticeView] = useState<PracticeView>(defaultPracticeView);
-  const showPublications = workspaceView === 'board' && practiceView === 'publications';
-  const workshopView = workspaceView === 'regions'
-    ? 'regions'
-    : workspaceView === 'board' && practiceView !== 'publications' ? practiceView : null;
-  useEffect(() => {
-    setPracticeView(defaultPracticeView);
-  }, [workshopVisit, defaultPracticeView]);
+  const showPublications = workspaceView === 'board' && !renderLiveVotes;
+  const workshopView = workspaceView === 'regions' ? 'regions' : null;
   const disabled = state.busy !== null || working;
   const isHost = session.role === 'host';
   const canContribute =
@@ -88,11 +89,6 @@ export function ActiveSession({
   const grouped = useMemo(() => new Set(families?.flatMap((family) => family.submissionIds)), [families]);
   const canAddToRating = canContribute && session.status === 'open' &&
     practiceGrouping !== undefined && practiceGrouping.snapshot.round?.status !== 'open';
-  const practiceViews: ReadonlyArray<readonly [PracticeView, string]> = [
-    ['voting', 'Оценка практик'],
-    ['publications', 'Опубликованные карточки'],
-    ...(canContribute ? [['families', 'Настроить группы'] as const] : []),
-  ];
   const regionNames = new Map([
     ...regions.map((region) => [region.id, region.name] as const),
     ['federal', 'Федеральный уровень'],
@@ -137,7 +133,7 @@ export function ActiveSession({
     const title = submission.bundle.practice.title.trim();
     const mechanism = submission.bundle.practice.mechanism.trim();
     if (!title || !mechanism || Array.from(title).length > 300 || Array.from(mechanism).length > 4000) {
-      setPracticeView('families');
+      setError('Уточните название и содержание авторской карточки перед оценкой.');
       return;
     }
     void perform(() => practiceGrouping.saveFamily({
@@ -149,6 +145,31 @@ export function ActiveSession({
       submissionIds: [submission.id],
     }));
   }
+
+  const variantActions: PracticeBoardContext['variantActions'] = (submission) => {
+    const own = submission.authorId === state.auth.userId;
+    const shared = submission.status === 'shared';
+    const fromCatalog = Boolean(submission.bundle.catalogSource);
+    const editable = session.status === 'open' && practiceGrouping?.snapshot.round?.status !== 'open';
+    return {
+      busy: disabled,
+      focused: session.focusSubmissionId === submission.id,
+      onEdit: editable && own && canContribute && shared && !fromCatalog
+        ? () => { setEditing(submission); setError(''); }
+        : undefined,
+      onWithdraw: editable && shared && (isHost || (own && canContribute && !fromCatalog))
+        ? () => { setModerating(submission); setError(''); }
+        : undefined,
+      onRestore: editable && !shared && isHost
+        ? () => void perform(() => actions.moderateSubmission(submission.id, submission.revision, 'shared'))
+        : undefined,
+      onFocus: isHost && shared
+        ? () => void perform(() => actions.updateSession({
+          focusSubmissionId: session.focusSubmissionId === submission.id ? null : submission.id,
+        }, session.revision))
+        : undefined,
+    };
+  };
 
   return (
     <>
@@ -170,21 +191,6 @@ export function ActiveSession({
         ] as const).map(([key, label, available]) => available ? <button type="button" key={key}
           aria-current={workspaceView === key ? 'page' : undefined} onClick={() => onStage(key)}>{label}</button> : null)}
       </nav> : null}
-      {workspaceView === 'board' && renderWorkshop ? (
-        <div className="practice-board-controls" role="group" aria-label="Виды практик">
-          {practiceViews.map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              className="session-board-filter"
-              aria-pressed={practiceView === key}
-              onClick={() => setPracticeView(key)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      ) : null}
       {workspaceView === 'flipchart'
         ? renderFlipchart?.()
         : workspaceView === 'objective'
@@ -195,8 +201,8 @@ export function ActiveSession({
         ? renderBarriers?.()
         : workspaceView === 'solutions'
         ? renderSolutions?.()
-        : workshopView === 'voting' && renderLiveVotes
-          ? renderLiveVotes()
+        : workspaceView === 'board' && renderLiveVotes
+          ? renderLiveVotes({ variantActions })
           : workshopView ? renderWorkshop?.(workshopView) : null}
       <div
         className="session-workspace"

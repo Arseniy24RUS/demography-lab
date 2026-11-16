@@ -18,19 +18,23 @@ const family = (familyId: string, title: string, support: number, oppose = 0): W
 });
 const props = {
   state: {
+    busy: null,
     auth: { userId: 'participant' },
     snapshot: {
-      session: { id: 'workshop' },
+      session: { id: 'workshop', status: 'open', role: 'participant' },
       submissions: [{
         id: 'source-1', status: 'shared',
         bundle: { practice: { title: firstTitle, regionId: 'moskva', amount: 'Исходная сумма' } },
+      }, {
+        id: 'source-2', status: 'shared',
+        bundle: { practice: { title: secondTitle, regionId: 'respublika-mordoviia' } },
       }],
     },
   },
   api: null,
   workshop: { snapshot: { families: [
     { id: firstId, title: firstTitle, mechanism: firstTitle, submissionIds: ['source-1'], createdAt: '2026-11-16T10:00:00Z' },
-    { id: secondId, title: secondTitle, mechanism: secondTitle, submissionIds: [], createdAt: '2026-11-16T11:00:00Z' },
+    { id: secondId, title: secondTitle, mechanism: secondTitle, submissionIds: ['source-2'], createdAt: '2026-11-16T11:00:00Z' },
   ] } },
   onOpenSource: vi.fn(),
   manifest: { documents: [{ regionId: 'moskva', territory: 'Москва', textUrl: null }] },
@@ -89,7 +93,8 @@ describe('practice cloud and ranking', () => {
 
   it('preserves search, expanded source variants and original ranking positions across view changes', () => {
     render(createElement(LivePracticeVoting, props));
-    const variants = screen.getByText('Варианты мер · 1').closest('details')!;
+    const card = screen.getByRole('article', { name: firstTitle });
+    const variants = within(card).getByText('Варианты мер · 1').closest('details')!;
     variants.open = true;
     fireEvent(variants, new Event('toggle'));
     expect(screen.getByText('Исходная сумма')).toBeTruthy();
