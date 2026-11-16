@@ -6,7 +6,6 @@ import {
   HelpCircle,
   Library,
   FileText,
-  Link2,
   CheckCircle2,
   AlertCircle,
   X,
@@ -15,12 +14,11 @@ import {
 } from 'lucide-react';
 import { validateAnchor } from '@domain/index';
 import type {
-  DocumentVersion,
   PracticeOccurrence,
   PracticeVariant,
   TextAnchor,
 } from '@domain/index';
-import type { CorpusManifest, PracticeCatalog, CorpusDocument, RichVariant } from './lib/corpus';
+import type { CorpusManifest, PracticeCatalog, CorpusDocument, CorpusEntry, RichVariant } from './lib/corpus';
 import { loadManifest, loadCatalog, loadDocument, readable } from './lib/corpus';
 import { loadFamilyCatalog, EXTERNAL_CATALOG_FAMILY } from './lib/family-catalog';
 import { useWorkspace, newId } from './hooks/useWorkspace';
@@ -29,13 +27,11 @@ import {
   anchorQuote,
   ensureAnnotation,
   localOccurrences,
-  saveLink,
   withLocalEvidence,
 } from './lib/workspace-domain';
-import type { FieldReview } from './lib/workspace-domain';
 import { LibraryPanel } from './components/LibraryPanel';
 import { DocumentReader } from './components/DocumentReader';
-import { EvidenceInspector } from './components/EvidenceInspector';
+import { DocumentCardComposer } from './components/DocumentCardComposer';
 import { PracticeCatalogView } from './components/PracticeCatalogView';
 import { MyWorkView } from './components/MyWorkView';
 import { Modal } from './components/Modal';
@@ -96,7 +92,6 @@ export function App() {
   const [doc, setDoc] = useState<CorpusDocument>();
   const [docLoading, setDocLoading] = useState(false);
   const [docError, setDocError] = useState<string>();
-  const [versions, setVersions] = useState<DocumentVersion[]>([]);
   const [route] = useState(() => new URLSearchParams(location.hash.slice(1)));
   const [projectorMode, setProjectorMode] = useState(() => route.get('projector') === '1');
   const [view, setView] = useState<View>(() => route.has('documents') || route.has('document') ? 'documents' : 'sessions');
@@ -116,7 +111,9 @@ export function App() {
     null,
   );
   const [note, setNote] = useState('');
-  const [editor, setEditor] = useState<{ card?: CustomPracticeCard } | null>(null);
+  const [editor, setEditor] = useState<{
+    card?: CustomPracticeCard; entry: CorpusEntry; document?: CorpusDocument; anchor: TextAnchor | null;
+  } | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
   const [shareDraft, setShareDraft] = useState<{
     bundle: SharedPracticeBundle;
@@ -303,7 +300,6 @@ export function App() {
           'Цитата относится к другой редакции или не совпадает с текстом. Исходная запись сохранена; автоматическая подмена запрещена.',
         );
       setDoc(material);
-      setVersions(prev => [...prev.filter(v => v.id !== material.version.id), material.version].slice(-5));
       setDocumentId(target.id);
       setFocusAnchor(anchor);
       setFocusNonce((n) => n + 1);
@@ -329,19 +325,14 @@ export function App() {
       if (target) setDocumentId(target.id);
     }
   }
-  async function saveEvidence(review: FieldReview, rationale: string) {
-    if (!doc || !selection || !selected) return;
-    try {
-      await mutate((draft) => {
-        if (selected.regionId !== doc.entry.regionId)
-          throw new Error('Для другого региона создайте отдельный вариант практики.');
-        saveLink(draft, doc, selection, selected, review, rationale);
-      });
-      setSelection(null);
-      notify('Связь и проверка выбранных полей сохранены.');
-    } catch (e) {
-      fail(e);
+  function createCard() {
+    if (!entry) return;
+    if (selection && (!doc || selection.versionId !== doc.version.id || !validateAnchor(doc.version, selection).valid)) {
+      notify('Не удалось проверить выбранные фрагменты. Выберите их в тексте программы ещё раз.', true);
+      return;
     }
+    setSelectedId(null);
+    setEditor({ entry, document: doc, anchor: selection ? structuredClone(selection) : null });
   }
   async function saveQuotation() {
     if (!doc || !selection) return;
@@ -355,14 +346,11 @@ export function App() {
     }
   }
   async function saveCardForm(form: CardForm) {
-    if (!entry || !editor) return;
+    if (!editor) return;
     try {
       const id = editor.card?.id ?? newId('practice');
       const now = new Date().toISOString();
       await mutate((draft) => {
-        const anchor =
-          selection && doc && selection.versionId === doc.version.id ? selection : null;
-        const annotation = anchor && doc ? ensureAnnotation(draft, doc, anchor) : null;
         if (editor.card) {
           const index = draft.customCards.findIndex((c) => c.id === editor.card!.id);
           if (index < 0) throw new Error('Карточка уже изменена или удалена.');
@@ -373,10 +361,12 @@ export function App() {
             updatedAt: now,
           };
         } else {
+          const annotation = editor.anchor && editor.document
+            ? ensureAnnotation(draft, editor.document, editor.anchor) : null;
           const card: CustomPracticeCard = {
             id,
-            familyId: selected?.familyId ?? 'author-proposals',
-            regionId: entry.regionId,
+            familyId: 'author-proposals',
+            regionId: editor.entry.regionId,
             ...form,
             occurrenceIds: annotation ? [annotation.id] : [],
             evidence: [],
@@ -391,18 +381,21 @@ export function App() {
       setSelectedId(id);
       setView('documents');
       setMobilePane('evidence');
-      notify('Карточка сохранена. Проверьте документальные основания её полей.');
+      notify('Карточка сохранена в разделе «Моя работа».');
     } catch (e) {
       fail(e);
     }
   }
   async function editCard(card: CustomPracticeCard) {
     const target = manifest?.documents.find((d) => d.regionId === card.regionId);
+    const cardEntry = target ?? entry;
+    if (!cardEntry) return;
     if (target && target.id !== documentId) {
       setDocumentId(target.id);
       setSelection(null);
     }
-    setEditor({ card });
+    const anchor = state?.annotations.find(annotation => card.occurrenceIds.includes(annotation.id))?.anchor ?? null;
+    setEditor({ card, entry: cardEntry, anchor });
   }
   async function beginShare() {
     if (!selected || !manifest) return;
@@ -496,7 +489,7 @@ export function App() {
       </main>
     );
   const titles = {
-    documents: ['Документы и практики', 'Найдите фрагмент и проверьте основание меры'],
+    documents: ['Документы и практики', 'Выберите фрагменты документа и создайте свою карточку меры'],
     practices: ['Региональные практики', 'Сравните механизмы, условия и документальные основания'],
     work: ['Моя работа', 'Цитаты, авторские карточки и результаты проверки'],
     territories: ['Территории и сценарии', 'Муниципальные данные, сопоставления и условные траектории'],
@@ -604,7 +597,7 @@ export function App() {
               [
                 ['library', 'Библиотека', Library],
                 ['document', 'Документ', FileText],
-                ['evidence', 'Связь', Link2],
+                ['evidence', 'Карточка', BookOpen],
               ] as const
             ).map(([key, label, Icon]) => (
               <button
@@ -635,13 +628,12 @@ export function App() {
               onDocumentLoaded={(next) => {
                 if (next.entry.id !== entry.id) return;
                 setDoc(next);
-                setVersions(prev => [...prev.filter(v => v.id !== next.version.id), next.version].slice(-5));
               }}
               loading={docLoading}
               error={docError}
               selection={selection}
-              onSelection={setSelection}
-              onLink={() => setMobilePane('evidence')}
+              onSelection={anchor => { setSelection(anchor); setSelectedId(null); }}
+              onCreateCard={createCard}
               onSaveNote={() => {
                 setNote('');
                 setDialog('note');
@@ -650,24 +642,19 @@ export function App() {
               focusNonce={focusNonce}
               onDetails={() => setDialog('source')}
             />
-            <EvidenceInspector
+            <DocumentCardComposer
               doc={doc}
               entry={entry}
               selection={selection}
-              variants={variants}
               occurrences={occurrences}
-              versions={versions}
               selected={selected}
-              onSelect={setSelectedId}
               onOpenCitation={(o: PracticeOccurrence) => {
                 void openAnchor(o.anchor);
               }}
-              onSave={saveEvidence}
-              comparisons={catalog.catalogComparisons}
-              catalogLoaded={externalCatalog.length > 0}
-              catalogBusy={catalogBusy}
-              onLoadCatalog={loadExternal}
-              onCreate={() => setEditor({})}
+              onCreate={createCard}
+              onEdit={state.customCards.find(card => card.id === selectedId)
+                ? () => { const card = state.customCards.find(card => card.id === selectedId); if (card) void editCard(card); }
+                : undefined}
               onShare={() => {
                 void beginShare();
               }}
@@ -689,7 +676,7 @@ export function App() {
           onOpen={(id) => {
             void openCard(id);
           }}
-          onCreate={() => setEditor({})}
+          onCreate={createCard}
         />
       ) : view === 'territories' ? (
         <Suspense fallback={<main id="main-content" className="loading-screen" aria-busy="true"><p>Открываем территории…</p></main>}><TerritoryExplorer onOpenSession={() => setView('sessions')} /></Suspense>
@@ -857,8 +844,8 @@ export function App() {
             </div>
             <div className="help-step">
               <span>
-                <strong>Сопоставьте карточку.</strong> Выберите предложенную практику или создайте
-                новую. Для получателей, суммы и условий укажите характер подтверждения.
+                <strong>Создайте карточку.</strong> Укажите название, отредактируйте содержание
+                и при необходимости добавьте получателей, сумму и условия. Исходные фрагменты сохранятся отдельно.
               </span>
             </div>
             <div className="help-step">
@@ -875,8 +862,7 @@ export function App() {
           </div>
           <p className="modal-intro">
             Подготовленный текст и редакция программы доступны для исследования. Действие норм на
-            дату занятия проверяется по официальным источникам. Отметка «Проверено по цитате»
-            фиксирует вашу проверку конкретного поля.
+            дату занятия проверяется по официальным источникам.
           </p>
         </Modal>
       ) : null}
@@ -917,8 +903,8 @@ export function App() {
       ) : null}
       {editor ? (
         <CardEditor
-          entry={entry}
-          anchor={selection}
+          entry={editor.entry}
+          anchor={editor.anchor}
           initial={editor.card}
           onClose={() => setEditor(null)}
           onSave={saveCardForm}

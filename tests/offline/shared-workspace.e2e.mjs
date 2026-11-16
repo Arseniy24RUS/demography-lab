@@ -42,7 +42,7 @@ const LINKED_BARRIER = 'Нестабильный график работы';
 const LINKED_MEASURE = 'Гибкий график для родителей';
 const RANKED_FAMILY = 'Региональный материнский (семейный) капитал';
 const roadmapNav = page => page.getByRole('navigation', { name: 'Разделы дорожной карты', exact: true });
-const inspector = page => page.getByRole('complementary', { name: 'Связь цитаты и практики' });
+const inspector = page => page.getByRole('complementary', { name: 'Карточка по документу' });
 const rpc = (page, name) => page.waitForResponse(response =>
   new URL(response.url()).pathname === `/rest/v1/rpc/${name}` && response.request().method() === 'POST');
 
@@ -316,13 +316,60 @@ try {
     await expect(list.getByRole('button', { name: 'Республика Мордовия', exact: true })).toHaveAttribute('data-measures', 'unselected');
     await noOverflow(b.page, 390);
   });
-  await stage('Full source search and exact quotation lead to the prepared card and a real shared publication', a.page, async () => {
+  await stage('Two exact source excerpts create an editable author card that survives reload before publication', a.page, async () => {
     const reader = a.page.getByRole('region', { name: 'Полный текст программы', exact: true });
     await reader.getByRole('textbox', { name: 'Поиск в полном тексте', exact: true }).fill('компенсация платы');
     await reader.getByRole('button', { name: /^Страница 59\b/u }).first().click();
     await reader.getByRole('button', { name: 'Выбрать фрагмент 604', exact: true }).click();
-    await reader.getByRole('button', { name: 'Связать', exact: true }).click();
-    await inspector(a.page).getByRole('button', { name: /^Компенсация родительской платы за детский сад.*Есть фрагмент в этой редакции/u }).click();
+    await reader.getByRole('button', { name: 'Выбрать фрагмент 605', exact: true }).click();
+    await expect(reader.getByText('Выбрано фрагментов: 2', { exact: true })).toBeVisible();
+    await expect(reader.getByRole('button', { name: 'Связать', exact: true })).toHaveCount(0);
+    await expect(inspector(a.page).getByRole('searchbox')).toHaveCount(0);
+    await expect(inspector(a.page).getByText('Подходящие карточки', { exact: true })).toHaveCount(0);
+    await reader.getByRole('button', { name: 'Создать карточку', exact: true }).click();
+    const card = a.page.getByRole('dialog', { name: 'Новая карточка по документу', exact: true });
+    await expect(card.getByLabel('Название практики', { exact: true })).toHaveValue('');
+    const content = card.getByRole('textbox', { name: 'Содержание карточки', exact: true });
+    await expect(content).toHaveValue(/компенсация платы[\s\S]*20 - 29%/u);
+    await card.getByLabel('Название практики', { exact: true }).fill(PRACTICE);
+    const initialContent = 'Компенсация части родительской платы за присмотр и уход в дошкольных организациях.';
+    const authoredContent = `${initialContent} Для первого ребёнка — 20–29% среднего размера платы, в пределах фактически внесённой суммы.`;
+    await content.fill(initialContent);
+    const savingCard = rpc(a.page, 'dw_workspace_commit');
+    await card.getByRole('button', { name: 'Сохранить карточку', exact: true }).click();
+    const savedResponse = await savingCard;
+    expect(savedResponse.status(), await savedResponse.text()).toBe(200);
+    const saved = await savedResponse.json();
+    const authored = saved.snapshot.state.customCards.find(value => value.title === PRACTICE);
+    expect(authored.mechanism).toBe(initialContent);
+    expect(authored.occurrenceIds).toHaveLength(1);
+    const source = saved.snapshot.state.annotations.find(value => value.id === authored.occurrenceIds[0]);
+    expect(source.anchor.spans).toHaveLength(2);
+    expect(source.anchor.spans[0].exact).toContain('компенсация платы');
+    expect(source.anchor.spans[1].exact).toContain('20 - 29%');
+    expect(saved.snapshot.state.linkDecisions).toHaveLength(0);
+    await expect(card).toBeHidden();
+    await inspector(a.page).getByRole('button', { name: 'Редактировать карточку', exact: true }).click();
+    const editing = a.page.getByRole('dialog', { name: 'Редактирование карточки', exact: true });
+    await expect(editing.getByLabel('Название практики', { exact: true })).toHaveValue(PRACTICE);
+    await editing.getByRole('textbox', { name: 'Содержание карточки', exact: true }).fill(authoredContent);
+    const savingEdit = rpc(a.page, 'dw_workspace_commit');
+    await editing.getByRole('button', { name: 'Сохранить карточку', exact: true }).click();
+    const editedResponse = await savingEdit;
+    expect(editedResponse.status(), await editedResponse.text()).toBe(200);
+    const edited = await editedResponse.json();
+    expect(edited.snapshot.state.customCards.find(value => value.id === authored.id).occurrenceIds).toEqual(authored.occurrenceIds);
+    expect(edited.snapshot.state.annotations).toEqual(saved.snapshot.state.annotations);
+    await expect(editing).toBeHidden();
+    await openReference(a.page, 'Моя работа');
+    const ownCard = a.page.locator('.work-item').filter({ has: a.page.getByRole('heading', { name: PRACTICE, exact: true }) });
+    await expect(ownCard).toContainText(authoredContent);
+    await a.page.reload();
+    await openReference(a.page, 'Моя работа');
+    await expect(ownCard).toContainText(authoredContent);
+    await expect(a.page.locator('.work-item').filter({ hasText: source.anchor.spans[0].exact })).toContainText(source.anchor.spans[1].exact);
+    // Reopen the author's saved card rather than selecting an existing catalogue candidate.
+    await ownCard.getByRole('button', { name: 'Открыть', exact: true }).click();
     await expect(inspector(a.page).getByRole('heading', { name: PRACTICE, exact: true })).toBeVisible();
     await inspector(a.page).getByRole('button', { name: 'Отправить в занятие', exact: true }).click();
     const publication = a.page.getByRole('dialog', { name: 'Отправить практику в занятие', exact: true });
@@ -333,15 +380,20 @@ try {
     expect(response.status(), await response.text()).toBe(200);
     const published = await response.json();
     const entry = published.submissions.find(value => value.bundle.practice.title === PRACTICE);
-    expect(entry.bundle.occurrences.length).toBeGreaterThan(0);
+    expect(entry.bundle.practice.id).toBe(authored.id);
+    expect(entry.bundle.practice.mechanism).toBe(authoredContent);
+    expect(entry.bundle.occurrences).toHaveLength(1);
+    expect(entry.bundle.occurrences[0].anchor).toEqual(source.anchor);
     expect(entry.bundle.occurrences.some(value => value.anchor.spans.some(span => span.exact.includes('компенсация платы')))).toBe(true);
     await expect(publication).toBeHidden();
-    await expect(reader).toBeVisible();
+    await expect(a.page.getByRole('region', { name: 'Рейтинг практик', exact: true })).toBeVisible();
     const list = b.page.getByRole('group', { name: 'Выбрать программу по названию' });
     await expect(list.getByRole('button', { name: /Республика Мордовия.*меры отобраны/u })).toHaveAttribute('data-measures', 'selected');
     await expect(b.page.getByRole('group', { name: 'Карта региональных программ', exact: true })
       .locator('[data-region-id="respublika-mordoviia"]')).toHaveAttribute('data-measures', 'selected');
-    await a.page.getByRole('button', { name: 'К карточкам', exact: true }).click();
+    await scene(a.page, 'Программы');
+    await expect(a.page.getByRole('group', { name: 'Карта региональных программ', exact: true })
+      .locator('[data-region-id="respublika-mordoviia"]')).toHaveAttribute('data-measures', 'selected');
     await expect(scenes(a.page).getByRole('button', { name: 'Программы', exact: true })).toHaveAttribute('aria-current', 'page');
     await scene(a.page, 'Практики');
     await scene(b.page, 'Практики');

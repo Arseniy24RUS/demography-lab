@@ -11,7 +11,7 @@ const PARTICIPANT_NAME = 'Участница муниципальной кома
 const navigation = (page: Page) => page.getByRole('navigation', { name: 'Основная навигация' });
 const reader = (page: Page) => page.getByRole('region', { name: 'Полный текст программы' });
 const inspector = (page: Page) =>
-  page.getByRole('complementary', { name: 'Связь цитаты и практики' });
+  page.getByRole('complementary', { name: 'Карточка по документу' });
 const sharedCard = (page: Page) => page.getByRole('article', { name: PRACTICE_TITLE, exact: true });
 
 let errors: Array<{ label: string; text: string; url: string }>;
@@ -182,34 +182,29 @@ async function openPreparedPractice(page: Page, mobile = false) {
   if (mobile)
     await page
       .getByRole('navigation', { name: 'Панели рабочей области' })
-      .getByRole('button', { name: /^Связь(?:\s*\d+)?$/ })
+      .getByRole('button', { name: /^Карточка(?:\s*\d+)?$/ })
       .click();
   await expect(
     inspector(page).getByRole('heading', { name: PRACTICE_TITLE, exact: true }),
   ).toBeVisible();
 }
 
-async function verifyRecipientField(page: Page) {
+async function createCardFromSource(page: Page) {
   await openPreparedPractice(page);
   await inspector(page)
-    .getByRole('button', { name: 'Открыть точную цитату', exact: true })
+    .getByRole('button', { name: 'Открыть цитату 1', exact: true })
     .first()
     .click();
   await expect(
     reader(page).getByRole('textbox', { name: 'Номер страницы', exact: true }),
   ).toHaveValue('59');
   await reader(page).getByRole('button', { name: 'Выбрать фрагмент 604', exact: true }).click();
-  await inspector(page)
-    .getByRole('combobox', { name: 'Проверка поля Получатели', exact: true })
-    .selectOption('supports');
-  await inspector(page)
-    .getByRole('textbox', { name: 'Обоснование связи', exact: true })
-    .fill('Получатели названы в точном фрагменте программы на странице 59.');
-  await inspector(page)
-    .getByRole('checkbox', { name: 'Сопоставил выбранные поля с цитатой и её контекстом' })
-    .check();
-  await inspector(page).getByRole('button', { name: 'Подтвердить связь', exact: true }).click();
-  await expect(inspector(page).getByText('Проверено по цитате', { exact: true })).toHaveCount(1);
+  await reader(page).getByRole('button', { name: 'Создать карточку', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Новая карточка по документу', exact: true });
+  await dialog.getByRole('textbox', { name: 'Название практики', exact: true }).fill(PRACTICE_TITLE);
+  await expect(dialog.getByRole('textbox', { name: 'Содержание карточки', exact: true })).toHaveValue(/компенсация платы/u);
+  await dialog.getByRole('button', { name: 'Сохранить карточку', exact: true }).click();
+  await expect(dialog).toBeHidden();
 }
 
 async function publish(page: Page, note: string) {
@@ -260,7 +255,7 @@ test('independent browsers publish a reviewed source, synchronize, reload, and o
     const { code } = await createSession(page);
     await login(participant, 'participant-a@workshop.test', PARTICIPANT_NAME, request);
     await joinSession(participant, code);
-    await verifyRecipientField(participant);
+    await createCardFromSource(participant);
     const note =
       'Сопоставили получателей с первичным текстом; предлагаем обсудить переносимость условий.';
     await publish(participant, note);

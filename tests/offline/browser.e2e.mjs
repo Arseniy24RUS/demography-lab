@@ -202,11 +202,11 @@ try {
     savedNotebookQuote = annotation.anchor.spans.map(span => span.exact).join('\n');
     expect(savedNotebookQuote.length).toBeGreaterThan(5);
     await expect(quotation).toBeHidden();
-    const inspector = teacher.page.getByRole('complementary', { name: 'Связь цитаты и практики', exact: true });
+    const inspector = teacher.page.getByRole('complementary', { name: 'Карточка по документу', exact: true });
     await inspector.getByRole('button', { name: 'Создать карточку', exact: true }).click();
-    const card = teacher.page.getByRole('dialog', { name: 'Новая карточка практики', exact: true });
+    const card = teacher.page.getByRole('dialog', { name: 'Новая карточка по документу', exact: true });
     await card.getByRole('textbox', { name: 'Название практики', exact: true }).fill(notebookCardTitle);
-    await card.getByRole('textbox', { name: 'Механизм поддержки', exact: true }).fill('Учебный механизм с сохранением точного основания из программы.');
+    await card.getByRole('textbox', { name: 'Содержание карточки', exact: true }).fill('Учебный механизм с сохранением точного основания из программы.');
     const savedCard = teacher.page.waitForResponse(response => new URL(response.url()).pathname === '/rest/v1/rpc/dw_workspace_commit'
       && response.request().postDataJSON()?.p_state?.customCards?.some(card => card.title === notebookCardTitle));
     await card.getByRole('button', { name: 'Сохранить карточку', exact: true }).click();

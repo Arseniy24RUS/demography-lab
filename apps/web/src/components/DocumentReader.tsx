@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Search, ExternalLink, Link2, X, Bookmark, FileSearch } from 'lucide-react';
+import { Search, ExternalLink, Plus, X, Bookmark, FileSearch } from 'lucide-react';
 import { codePointLength } from '@domain/index';
 import type { TextAnchor } from '@domain/index';
 import { loadDocument } from '@/lib/corpus';
@@ -71,13 +71,13 @@ export function DocumentReader(props: {
   selection: TextAnchor | null;
   onSelection: (anchor: TextAnchor | null) => void;
   onDocumentLoaded: (document: CorpusDocument) => void;
-  onLink: () => void;
+  onCreateCard: () => void;
   onSaveNote: () => void;
   focusAnchor: TextAnchor | null;
   focusNonce: number;
   onDetails: () => void;
 }) {
-  const { entry, selection, focusAnchor, focusNonce, onDetails, onLink, onSaveNote } = props;
+  const { entry, selection, focusAnchor, focusNonce, onDetails, onCreateCard, onSaveNote } = props;
   const latest = useRef(props);
   latest.current = props;
   const [query, setQuery] = useState(''),
@@ -540,7 +540,7 @@ export function DocumentReader(props: {
         <div className="selection-toolbar">
           <div>
             <strong>Выбрано фрагментов: {selection.spans.length}</strong>
-            <span>Цитата привязана к редакции источника</span>
+            <span>Фрагменты сохранятся вместе с новой карточкой</span>
           </div>
           <div className="inline-actions">
             <button
@@ -551,9 +551,9 @@ export function DocumentReader(props: {
             >
               <Bookmark size={16} />
             </button>
-            <button className="button button-primary small" onClick={onLink}>
-              <Link2 size={14} />
-              Связать
+            <button className="button button-primary small" onClick={onCreateCard}>
+              <Plus size={14} />
+              Создать карточку
             </button>
             <button
               className="icon-button"

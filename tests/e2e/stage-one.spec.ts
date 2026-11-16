@@ -7,7 +7,7 @@ const PRACTICE_TITLE = 'Компенсация родительской плат
 const QUERY = 'компенсация платы, взимаемой';
 
 const reader = (page: Page): Locator => page.getByRole('region', { name: 'Полный текст программы' });
-const inspector = (page: Page): Locator => page.getByRole('complementary', { name: 'Связь цитаты и практики' });
+const inspector = (page: Page): Locator => page.getByRole('complementary', { name: 'Карточка по документу' });
 const navigation = (page: Page): Locator => page.getByRole('navigation', { name: 'Основная навигация' });
 
 let runtimeErrors: string[];
@@ -77,36 +77,23 @@ async function expectNoHorizontalOverflow(page: Page): Promise<void> {
   expect(widths.body, `Body width ${widths.body} exceeds viewport ${widths.viewport}`).toBeLessThanOrEqual(widths.viewport + 1);
 }
 
-async function createVerifiedRecipientLink(page: Page): Promise<void> {
-  await navigation(page).getByRole('button', { name: 'Практики', exact: true }).click();
-  await expect(page.getByRole('heading', { level: 1, name: 'Региональные практики' })).toBeVisible();
-  await page.getByRole('combobox', { name: 'Регион практики' }).selectOption('respublika-mordoviia');
-  await page.getByRole('textbox', { name: 'Поиск практик' }).fill(PRACTICE_TITLE);
-  const tile = page.getByRole('article').filter({ has: page.getByRole('heading', { name: PRACTICE_TITLE, exact: true }) });
-  await expect(tile).toHaveCount(1);
-  await tile.getByRole('button', { name: 'Проверить', exact: true }).click();
-  await expect(inspector(page).getByRole('heading', { name: PRACTICE_TITLE, exact: true })).toBeVisible();
-  await inspector(page).getByRole('button', { name: 'Открыть точную цитату', exact: true }).first().click();
-  await expect(page).toHaveURL(/#document=regional-respublika-mordoviia$/);
-  await expect(reader(page).getByRole('textbox', { name: 'Номер страницы' })).toHaveValue('59');
-  await expect(reader(page).getByRole('article', { name: 'Страница 59', exact: true })).toContainText('компенсация платы, взимаемой с родителей');
-
+async function createSourceCard(page: Page): Promise<void> {
+  await searchAndOpenPage59(page);
   // This accessible label identifies the real paragraph on p. 59 of the pinned edition.
   // No DOM range, annotation, IndexedDB record or source response is fabricated.
   await reader(page).getByRole('button', { name: 'Выбрать фрагмент 604', exact: true }).click();
   await expect(reader(page).getByRole('button', { name: 'Убрать фрагмент 604', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(reader(page).getByText('Выбрано фрагментов: 1', { exact: true })).toBeVisible();
-  const save = inspector(page).getByRole('button', { name: 'Подтвердить связь', exact: true });
-  await expect(save).toBeDisabled();
-  await inspector(page).getByRole('combobox', { name: 'Проверка поля Получатели', exact: true }).selectOption('supports');
-  await inspector(page).getByRole('textbox', { name: 'Обоснование связи' }).fill('Фрагмент называет родителей детей в государственных и муниципальных дошкольных организациях.');
-  await expect(save).toBeDisabled();
-  await inspector(page).getByRole('checkbox', { name: 'Сопоставил выбранные поля с цитатой и её контекстом' }).check();
-  await expect(save).toBeEnabled();
-  await save.click();
-  await expect(page.getByRole('status').filter({ hasText: 'Связь и проверка выбранных полей сохранены.' })).toBeVisible();
-  await expect(inspector(page).getByText('Проверено по цитате', { exact: true })).toHaveCount(1);
-
+  await reader(page).getByRole('button', { name: 'Создать карточку', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Новая карточка по документу', exact: true });
+  await expect(dialog.getByRole('textbox', { name: 'Название практики', exact: true })).toHaveValue('');
+  await expect(dialog.getByRole('textbox', { name: 'Содержание карточки', exact: true })).toHaveValue(/компенсация платы/u);
+  await dialog.getByRole('textbox', { name: 'Название практики', exact: true }).fill(PRACTICE_TITLE);
+  await dialog.getByRole('textbox', { name: 'Содержание карточки', exact: true }).fill('Авторское изложение меры: компенсация расходов семьи на дошкольное образование.');
+  await dialog.getByRole('button', { name: 'Сохранить карточку', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await expect(inspector(page).getByRole('heading', { name: PRACTICE_TITLE, exact: true })).toBeVisible();
+  await expect(inspector(page).getByRole('button', { name: 'Подтвердить связь', exact: true })).toHaveCount(0);
 }
 
 async function saveUnlinkedQuotation(page: Page, fragmentNumber: number, comment: string): Promise<void> {
@@ -145,24 +132,30 @@ test('Mordovia loads and full-document search reaches a page that was not render
   await expect(reader(page).getByText('из 137', { exact: true })).toBeVisible();
   await saveScreenshot(page, testInfo, 'desktop-initial-mordovia.png');
   await searchAndOpenPage59(page);
-  await expect(inspector(page).getByText('Текст и позиции совпадают с выбранной редакцией')).toBeVisible();
+  await reader(page).getByRole('button', { name: 'Выбрать фрагмент 604', exact: true }).click();
+  await expect(inspector(page).getByRole('button', { name: 'Создать карточку', exact: true })).toBeEnabled();
   await saveScreenshot(page, testInfo, 'desktop-full-document-search.png');
 });
 
-test('practice → citation → selected block → field review survives a real reload', async ({ page }, testInfo) => {
-  await createVerifiedRecipientLink(page);
+test('source excerpt → editable author card survives a real reload with its exact citation', async ({ page }, testInfo) => {
+  await createSourceCard(page);
 
   await navigation(page).getByRole('button', { name: 'Моя работа', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Сохранённые цитаты 1', exact: true })).toBeVisible();
-  await expect(page.getByText('Поля проверены', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: PRACTICE_TITLE, exact: true })).toBeVisible();
+  const original = await guestSnapshot(page);
+  expect(original.state.customCards).toHaveLength(1);
+  expect(original.state.customCards[0].occurrenceIds).toEqual([original.state.annotations[0].id]);
+  expect(original.state.linkDecisions).toEqual([]);
   await page.reload();
   await expect(page.getByRole('heading', { level: 1, name: 'Документы и практики' })).toBeVisible();
   await navigation(page).getByRole('button', { name: 'Моя работа', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Сохранённые цитаты 1', exact: true })).toBeVisible();
-  await expect(page.getByText('Поля проверены', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: PRACTICE_TITLE, exact: true }).click();
+  const card = page.getByRole('article').filter({ has: page.getByRole('heading', { name: PRACTICE_TITLE, exact: true }) });
+  await card.getByRole('button', { name: 'Открыть', exact: true }).click();
   await expect(inspector(page).getByRole('heading', { name: PRACTICE_TITLE, exact: true })).toBeVisible();
-  await expect(inspector(page).getByText('Проверено по цитате', { exact: true })).toHaveCount(1);
+  await expect(inspector(page).getByText(original.state.annotations[0].anchor.spans[0].exact, { exact: true })).toBeVisible();
+  expect((await guestSnapshot(page)).state.annotations[0].anchor).toEqual(original.state.annotations[0].anchor);
   await expect(reader(page).getByRole('textbox', { name: 'Номер страницы' })).toHaveValue('59');
   await saveScreenshot(page, testInfo, 'desktop-review-after-reload.png');
 });
@@ -191,11 +184,12 @@ test('guest quotations autosave with exact sources and have no archive or duplic
 });
 
 test('a separate browser starts with its own empty guest notebook and cannot import another guest archive', async ({ page, browser }, testInfo) => {
-  await createVerifiedRecipientLink(page);
+  await createSourceCard(page);
   const original = await guestSnapshot(page);
-  expect(original.state.linkDecisions).toHaveLength(1);
-  expect(original.state.linkDecisions[0].status).toBe('verified');
-  expect(original.state.linkDecisions[0].fieldEvidence[0]).toMatchObject({ kind: 'fragment', reviewStatus: 'verified' });
+  expect(original.state.customCards).toHaveLength(1);
+  expect(original.state.customCards[0].reviewStatus).toBe('candidate');
+  expect(original.state.customCards[0].occurrenceIds).toEqual([original.state.annotations[0].id]);
+  expect(original.state.linkDecisions).toEqual([]);
   const receiver = await browser.newContext({ baseURL: new URL('/', page.url()).origin, viewport: { width: 1440, height: 1000 }, locale: 'ru-RU', reducedMotion: 'reduce' });
   try {
     const second = await receiver.newPage();
@@ -211,7 +205,8 @@ test('a separate browser starts with its own empty guest notebook and cannot imp
     await page.reload();
     await navigation(page).getByRole('button', { name: 'Моя работа', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Сохранённые цитаты 1', exact: true })).toBeVisible();
-    expect((await guestSnapshot(page)).state.linkDecisions).toEqual(original.state.linkDecisions);
+    expect((await guestSnapshot(page)).state.customCards).toEqual(original.state.customCards);
+    expect((await guestSnapshot(page)).state.annotations).toEqual(original.state.annotations);
   } finally { await receiver.close(); }
 });
 
@@ -260,10 +255,11 @@ test('two real tabs receive each other’s saved quotations without reloading an
 
 test('the card modal traps keyboard focus, updates the tab order and returns focus on Escape', async ({ page }) => {
   const originalOverflow = await page.evaluate(() => document.body.style.overflow);
+  await reader(page).getByRole('button', { name: 'Выбрать фрагмент 1', exact: true }).click();
   const opener = inspector(page).getByRole('button', { name: 'Создать карточку', exact: true });
   await opener.focus();
   await page.keyboard.press('Enter');
-  const dialog = page.getByRole('dialog', { name: 'Новая карточка практики', exact: true });
+  const dialog = page.getByRole('dialog', { name: 'Новая карточка по документу', exact: true });
   const close = dialog.getByRole('button', { name: 'Закрыть окно', exact: true });
   const cancel = dialog.getByRole('button', { name: 'Отмена', exact: true });
   const save = dialog.getByRole('button', { name: 'Сохранить карточку', exact: true });
@@ -279,7 +275,7 @@ test('the card modal traps keyboard focus, updates the tab order and returns foc
   await expect(dialog.getByRole('textbox', { name: 'Название практики', exact: true })).toBeFocused();
   await page.keyboard.type('Учебная проверка клавиатуры');
   await page.keyboard.press('Tab');
-  await expect(dialog.getByRole('textbox', { name: 'Механизм поддержки', exact: true })).toBeFocused();
+  await expect(dialog.getByRole('textbox', { name: 'Содержание карточки', exact: true })).toBeFocused();
   await page.keyboard.type('Проверка доступного ввода и сохранения фокуса в окне.');
   await expect(save).toBeEnabled();
   await page.keyboard.press('Shift+Tab');
@@ -314,13 +310,15 @@ test.describe('mobile Chromium viewport 390 × 844', () => {
     await expect(reader(page)).toBeVisible();
     await searchAndOpenPage59(page);
     await reader(page).getByRole('button', { name: 'Выбрать фрагмент 604', exact: true }).tap();
-    await reader(page).getByRole('button', { name: 'Связать', exact: true }).tap();
+    await reader(page).getByRole('button', { name: 'Создать карточку', exact: true }).tap();
+    const card = page.getByRole('dialog', { name: 'Новая карточка по документу', exact: true });
+    await card.getByRole('textbox', { name: 'Название практики', exact: true }).fill(PRACTICE_TITLE);
+    await expect(card.getByRole('textbox', { name: 'Содержание карточки', exact: true })).toHaveValue(/компенсация платы/u);
+    await expectNoHorizontalOverflow(page);
+    await card.getByRole('button', { name: 'Сохранить карточку', exact: true }).tap();
     await expect(inspector(page)).toBeVisible();
-    const candidate = inspector(page).getByRole('button', { name: /^Компенсация родительской платы за детский сад.*Есть фрагмент в этой редакции/ });
-    await expect(candidate).toHaveCount(1);
-    await candidate.tap();
     await expect(inspector(page).getByRole('heading', { name: PRACTICE_TITLE, exact: true })).toBeVisible();
-    await expect(inspector(page).getByRole('combobox', { name: 'Проверка поля Получатели', exact: true })).toBeVisible();
+    await expect(inspector(page).getByRole('button', { name: 'Редактировать карточку', exact: true })).toBeVisible();
     await expectNoHorizontalOverflow(page);
     await saveScreenshot(page, testInfo, 'mobile-evidence-390.png', true);
     await page.setViewportSize({ width: 320, height: 750 });

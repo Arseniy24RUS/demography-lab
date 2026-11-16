@@ -135,8 +135,12 @@ test('participants open the same programme and a source-backed publication updat
     await source.getByRole('textbox', { name: 'Поиск в полном тексте', exact: true }).fill('компенсация платы');
     await source.getByRole('button', { name: /^Страница 59\b/u }).first().click();
     await source.getByRole('button', { name: 'Выбрать фрагмент 604', exact: true }).click();
-    await source.getByRole('button', { name: 'Связать', exact: true }).click();
-    await inspector(page).getByRole('button', { name: /^Компенсация родительской платы за детский сад.*Есть фрагмент в этой редакции/u }).click();
+    await source.getByRole('button', { name: 'Создать карточку', exact: true }).click();
+    const authored = page.getByRole('dialog', { name: 'Новая карточка по документу', exact: true });
+    await authored.getByRole('textbox', { name: 'Название практики', exact: true }).fill(MORDOVIA_TITLE);
+    await expect(authored.getByRole('textbox', { name: 'Содержание карточки', exact: true })).toHaveValue(/компенсация платы/u);
+    await authored.getByRole('button', { name: 'Сохранить карточку', exact: true }).click();
+    await expect(authored).toBeHidden();
     await inspector(page).getByRole('button', { name: 'Отправить в занятие', exact: true }).click();
     const publication = page.getByRole('dialog', { name: 'Отправить практику в занятие', exact: true });
     await publication.getByLabel('Комментарий для обсуждения', { exact: true }).fill('Мера с точной цитатой из программы Мордовии.');

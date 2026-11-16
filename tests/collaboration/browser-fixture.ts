@@ -12,7 +12,7 @@ export const SAKHALIN_TITLE = 'Компенсация родительской �
 
 export const navigation = (page: Page) => page.getByRole('navigation', { name: 'Основная навигация' });
 export const reader = (page: Page) => page.getByRole('region', { name: 'Полный текст программы' });
-export const inspector = (page: Page) => page.getByRole('complementary', { name: 'Связь цитаты и практики' });
+export const inspector = (page: Page) => page.getByRole('complementary', { name: 'Карточка по документу' });
 
 export class BrowserAudit {
   private pages: Page[] = [];
@@ -115,7 +115,7 @@ export async function preparedPractice(page: Page, regionId: string, title: stri
   await page.getByRole('textbox', { name: 'Поиск практик', exact: true }).fill(title);
   const tile = page.getByRole('article').filter({ has: page.getByRole('heading', { name: title, exact: true }) });
   await tile.getByRole('button', { name: 'Проверить', exact: true }).click();
-  if (mobile) await page.getByRole('navigation', { name: 'Панели рабочей области' }).getByRole('button', { name: /^Связь(?:\s*\d+)?$/ }).click();
+  if (mobile) await page.getByRole('navigation', { name: 'Панели рабочей области' }).getByRole('button', { name: /^Карточка(?:\s*\d+)?$/ }).click();
   await expect(inspector(page).getByRole('heading', { name: title, exact: true })).toBeVisible();
 }
 

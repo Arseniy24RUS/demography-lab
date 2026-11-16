@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Save, FileText } from 'lucide-react';
+import { codePointLength } from '@domain/index';
 import type { PracticeVariant, TextAnchor } from '@domain/index';
 import type { CorpusEntry } from '@/lib/corpus';
 import { anchorQuote } from '@/lib/workspace-domain';
@@ -27,14 +28,18 @@ export function CardEditor({
   busy: boolean;
 }) {
   const [title, setTitle] = useState(initial?.title ?? '');
-  const [mechanism, setMechanism] = useState(initial?.mechanism ?? '');
+  const { sourceQuote, sourceTooLong } = useMemo(() => {
+    const quote = anchor ? anchorQuote(anchor) : '';
+    return { sourceQuote: quote, sourceTooLong: codePointLength(quote) > 4000 };
+  }, [anchor]);
+  const [mechanism, setMechanism] = useState(initial?.mechanism ?? (sourceTooLong ? '' : sourceQuote));
   const [eligibility, setEligibility] = useState(initial?.eligibility ?? '');
   const [amount, setAmount] = useState(initial?.amount ?? '');
   const [conditions, setConditions] = useState(initial?.conditions?.join('\n') ?? '');
   const enabled = title.trim().length >= 5 && mechanism.trim().length >= 10;
   return (
     <Modal
-      title={initial ? 'Редактирование карточки' : 'Новая карточка практики'}
+      title={initial ? 'Редактирование карточки' : 'Новая карточка по документу'}
       onClose={onClose}
       wide
       actions={
@@ -65,23 +70,28 @@ export function CardEditor({
       }
     >
       <p className="modal-intro">
-        Регион: <strong>{entry.territory}</strong>. Заполните только сведения, которые удалось
-        установить. После сохранения проверьте основания каждого поля.
+        Регион: <strong>{entry.territory}</strong>. Назовите карточку и отредактируйте её содержание:
+        можно пересказать выбранный текст своими словами. Исходные цитаты сохранятся отдельно без изменений.
       </p>
       {anchor ? (
         <blockquote className="quote-panel" style={{ marginBottom: 20 }}>
-          <div className="quote-text">{anchorQuote(anchor)}</div>
+          {anchor.spans.map((span, index) => <div key={`${span.blockId}:${span.start}:${span.end}`}
+            style={{ marginTop: index ? 12 : 0 }}>
+            <div className="quote-text" style={{ maxHeight: 'none', overflow: 'visible' }}>{span.exact}</div>
+          </div>)}
           <footer>
             <FileText size={12} />
-            Выделение сохранится вместе с карточкой
+            {anchor.spans.length} фрагм. · Исходные цитаты сохранятся вместе с карточкой
           </footer>
         </blockquote>
       ) : (
         <div className="notice info">
-          Карточка будет сохранена как авторский черновик. Цитату можно добавить после поиска в
-          документе.
+          {initial ? 'Ранее сохранённые исходные цитаты останутся у карточки.'
+            : 'Карточка будет сохранена как авторский черновик без исходных цитат.'}
         </div>
       )}
+      {!initial && sourceTooLong ? <p className="form-hint">В выбранном тексте больше 4000 знаков.
+        Кратко изложите содержание карточки своими словами; исходные цитаты сохранятся целиком.</p> : null}
       <div className="card-editor-grid">
         <div className="form-field full">
           <label htmlFor="card-title">Название практики</label>
@@ -95,14 +105,14 @@ export function CardEditor({
           />
         </div>
         <div className="form-field full">
-          <label htmlFor="card-mechanism">Механизм поддержки</label>
+          <label htmlFor="card-mechanism">Содержание карточки</label>
           <textarea
             id="card-mechanism"
             className="input"
             maxLength={4000}
             value={mechanism}
             onChange={(e) => setMechanism(e.target.value)}
-            placeholder="Как работает мера и какое ограничение она затрагивает?"
+            placeholder="Опишите выбранную меру и то, как она работает"
           />
         </div>
         <div className="form-field">
@@ -141,8 +151,7 @@ export function CardEditor({
       </div>
       {initial ? (
         <p className="form-hint">
-          Изменение формулировки поля потребует повторной проверки прежнего основания. Ранее
-          сохранённая цитата останется неизменной.
+          Изменения сохранятся в карточке. Ранее сохранённые исходные цитаты останутся неизменными.
         </p>
       ) : null}
     </Modal>
