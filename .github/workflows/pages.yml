@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: '24'
           cache: npm
-      - run: node --test tests/deployment/pages-source.test.mjs
+      - run: node --test tests/deployment/*.test.mjs
       - run: npm ci --no-audit --no-fund
       - run: npm run build
       - run: npm run check:survey-bundle
@@ -33,6 +33,11 @@ jobs:
           node scripts/seed-roadmaps.mjs --check
           node scripts/seed-family-catalog.mjs --check
           node scripts/check-pages.mjs dist
+      - name: Preserve bundles for already open tabs
+        timeout-minutes: 5
+        env:
+          PAGES_SITE_URL: https://xn----7sbabangicd2azeshy9ajmfct0b3e8kka.xn--p1ai/
+        run: node scripts/retain-pages-assets.mjs dist
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

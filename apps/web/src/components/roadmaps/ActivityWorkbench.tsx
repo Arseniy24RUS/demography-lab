@@ -36,6 +36,7 @@ export function ActivityWorkbench(
     [sourceKey, setSourceKey] = useState(''),
     [rationale, setRationale] = useState(''),
     [evidenceId, setEvidenceId] = useState<string | null>(null),
+    [removingBasis, setRemovingBasis] = useState<RoadmapBasis | null>(null),
     [archiving, setArchiving] = useState<string | null>(null);
   const task = useRoadmapTask();
   const activities = activeItems(snapshot, 'activity').sort(compareRoadmapActivities),
@@ -110,6 +111,20 @@ export function ActivityWorkbench(
         >
           Сохранённые барьеры, связи с практиками и авторские решения из предыдущих этапов.
         </SectionHeading>
+        {diagnosis ? (
+          <div className="rm-source-preview">
+            <h3>Барьеры и проблема нашей команды</h3>
+            <p className="rm-long-text">
+              {diagnosis.data.problem || 'Опишите проблему и барьеры, с которыми работает команда.'}
+            </p>
+            {editable ? (
+              <EditButton
+                label="Редактировать описание барьеров"
+                onClick={() => onEdit({ kind: 'diagnosis', id: diagnosis.id })}
+              />
+            ) : null}
+          </div>
+        ) : null}
         <div className="rm-card-grid">
           {snapshot.basis
             .filter((item) => item.status === 'active')
@@ -211,6 +226,17 @@ export function ActivityWorkbench(
                     Подтвердить текущую редакцию
                   </button>
                 ) : null}
+                {editable && basis.sourceKind !== 'factor' ? (
+                  <button
+                    className="button button-quiet"
+                    type="button"
+                    disabled={task.working || controller.busy}
+                    onClick={() => setRemovingBasis(basis)}
+                  >
+                    <Archive size={15} aria-hidden="true" />
+                    Убрать из дорожной карты
+                  </button>
+                ) : null}
               </article>
             ))}
         </div>
@@ -229,12 +255,6 @@ export function ActivityWorkbench(
             >
               <Link2 size={15} aria-hidden="true" /> Закрепить отдельный источник
             </button>
-            {diagnosis?.data.problem ? (
-              <EditButton
-                label="Изменить описание проблемы"
-                onClick={() => onEdit({ kind: 'diagnosis', id: diagnosis.id })}
-              />
-            ) : null}
           </div>
         ) : null}
       </section>
@@ -466,6 +486,64 @@ export function ActivityWorkbench(
             />
           </label>
           {task.feedback}
+        </Modal>
+      ) : null}
+      {removingBasis ? (
+        <Modal
+          title="Убрать основание из дорожной карты?"
+          onClose={() => {
+            if (!task.working) setRemovingBasis(null);
+          }}
+        >
+          <p>
+            <strong>{basisTitle(removingBasis)}</strong>
+          </p>
+          <p>
+            Основание будет убрано из текущей дорожной карты. Исходная карточка в общей мастерской,
+            мероприятия и ранее сохранённые версии останутся.
+          </p>
+          {removingBasis.sourceKind === 'barrier' && diagnosis?.data.problem ? (
+            <p>
+              Описание проблемы команда редактирует отдельно. Если в нём остался лишний барьер,
+              измените текст кнопкой «Редактировать описание барьеров».
+            </p>
+          ) : null}
+          {task.feedback}
+          <div className="rm-actions">
+            <button
+              className="button button-primary"
+              type="button"
+              disabled={!editable || task.working || controller.busy}
+              onClick={() => {
+                const basis = removingBasis;
+                if (!editable || basis.sourceKind === 'factor') return;
+                const sourceKind = basis.sourceKind;
+                void task.run(async () => {
+                  await controller.actions.captureBasis({
+                    roadmapId: snapshot.roadmapId,
+                    basisId: basis.id,
+                    expectedRevision: basis.revision,
+                    sourceKind,
+                    sourceId: basis.sourceId,
+                    expectedSourceRevision: basis.sourceRevision,
+                    rationale: basis.rationale,
+                    status: 'archived',
+                  });
+                  setRemovingBasis(null);
+                }, 'Основание убрано из дорожной карты.');
+              }}
+            >
+              Убрать из дорожной карты
+            </button>
+            <button
+              className="button button-secondary"
+              type="button"
+              disabled={task.working}
+              onClick={() => setRemovingBasis(null)}
+            >
+              Оставить
+            </button>
+          </div>
         </Modal>
       ) : null}
       {archiving ? (

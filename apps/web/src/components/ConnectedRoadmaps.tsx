@@ -381,6 +381,7 @@ export function ConnectedRoadmaps({
         </>
       ) : tab === 'activities' ? (
         <ActivityWorkbench
+          key={workspace.snapshot.roadmapId}
           {...workspace}
           barriers={barriers.snapshot}
           readEvidence={barriers.actions.readEvidence}

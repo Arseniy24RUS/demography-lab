@@ -9,6 +9,7 @@ import {
 import type { PassportAutosave } from '../../hooks/usePassportAutosave';
 import { SectionHeading } from './common';
 import type { RoadmapWorkspaceProps } from './common';
+import { ObjectiveTextArea } from './ObjectiveTextArea';
 import './passport-workbench.css';
 
 const levels = {
@@ -112,7 +113,7 @@ function PassportForm({ autosave, snapshot, editable }: Omit<RoadmapWorkspacePro
           <legend>Задачи проекта</legend>
           <p className="rm-muted">Обычно достаточно трёх или четырёх задач. Опишите шаги, которые ведут к цели.</p>
           {data.objectives.map((objective, index) => <div className="rm-array-row" key={objective.id}>
-            <input aria-label={`Задача ${index + 1}`} maxLength={1000} value={objective.title}
+            <ObjectiveTextArea aria-label={`Задача ${index + 1}`} maxLength={1000} value={objective.title}
               onChange={(event) => update({
                 objectives: data.objectives.map((row) => row.id === objective.id
                   ? { ...row, title: event.target.value }

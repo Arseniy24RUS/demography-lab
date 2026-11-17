@@ -588,6 +588,41 @@
 .rm-array-row > .icon-button {
   flex: none;
 }
+.rm-objective-input {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.rm-objective-input > textarea,
+.rm-objective-input > .rm-objective-mirror {
+  grid-area: 1 / 1;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 11px;
+  border: 1px solid #cbd8e8;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.rm-objective-input > textarea {
+  height: 100%;
+  resize: none;
+  overflow: hidden;
+}
+.rm-objective-input > .rm-objective-mirror {
+  visibility: hidden;
+  pointer-events: none;
+}
+.rm-field > .rm-objective-preview {
+  color: var(--rm-ink);
+  font-size: 14px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 .rm-array > .rm-muted {
   margin-bottom: 10px;
 }

@@ -12,6 +12,7 @@ import {
 } from '../../../../../packages/analytics';
 import { activeItems, emptyData, kindLabels, Note } from './common';
 import type { EditorTarget, RoadmapWorkspaceProps } from './common';
+import { ObjectiveTextArea } from './ObjectiveTextArea';
 
 type Field = {
   key: string;
@@ -371,6 +372,9 @@ export function RoadmapItemEditor({
             </option>
           ))}
         </select>
+        {key === 'objectiveId' && data[key] ? <small className="rm-objective-preview" aria-hidden="true">
+          {options.find(([value]) => value === data[key])?.[1]}
+        </small> : null}
       </label>
     );
   }
@@ -626,7 +630,7 @@ export function RoadmapItemEditor({
             <legend>Задачи проекта</legend>
             {objectives.map((objective, index) => (
               <div className="rm-array-row" key={objective.id}>
-                <input
+                <ObjectiveTextArea
                   aria-label={`Задача ${index + 1}`}
                   maxLength={1000}
                   value={objective.title}
